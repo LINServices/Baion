@@ -19,6 +19,15 @@ builder.Services
 
 var app = builder.Build();
 
+// El orquestador se publica tras el gateway en la ruta /baion. UsePathBase es aditivo: si el gateway
+// no recorta el prefijo, la app sigue respondiendo tanto en /baion/... como en la raíz (local y tests).
+// Se puede cambiar o vaciar con Orchestrator:PathBase.
+var pathBase = app.Configuration["Orchestrator:PathBase"] ?? "/baion";
+if (!string.IsNullOrWhiteSpace(pathBase))
+{
+    app.UsePathBase(pathBase);
+}
+
 app.UseWebSockets();
 app.UseAuthentication();
 
