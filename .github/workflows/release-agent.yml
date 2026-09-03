@@ -50,8 +50,12 @@ jobs:
       # El agente no referencia ningún paquete LIN.*/Global.*/Http.Utils, así que el
       # package source mapping de nuget.config nunca consulta el feed interno "LI" y
       # el restore funciona sin credenciales.
+      # El restore ha de ser específico del RID: si no, project.assets.json no trae
+      # el target net10.0/<rid> y publish falla con NETSDK1047.
       - name: Restaurar
-        run: dotnet restore src/Agent/Baion.Agent.Host/Baion.Agent.Host.csproj
+        run: >
+          dotnet restore src/Agent/Baion.Agent.Host/Baion.Agent.Host.csproj
+          --runtime ${{ matrix.rid }}
 
       - name: Preparar la carpeta de despliegue
         run: |
