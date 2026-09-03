@@ -43,7 +43,7 @@ internal class AgentConnectionHandler(IServiceScopeFactory scopeFactory, IAgentR
 
         if (!registry.TryRegister(connection))
         {
-            await RejectAsync(channel, socket, "agent.already_connected", "El servidor ya tiene una conexión activa en esta instancia.", cancellationToken);
+            await RejectAsync(channel, socket, "agent.already_connected", $"El servidor ya tiene una conexión activa en esta instancia: {hello.MachineId}", cancellationToken);
             return;
         }
 
