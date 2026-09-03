@@ -11,7 +11,25 @@ internal class AgentRegistry : IAgentRegistry
 
     public int Count => _connections.Count;
 
-    public bool TryRegister(IAgentConnection connection) => _connections.TryAdd(connection.ServerId, connection);
+    public bool TryRegister(IAgentConnection connection)
+    {
+        lock (_connections)
+        {
+            _connections.TryGetValue(connection.ServerId, out var existingConnection);
+
+            if (existingConnection != null)
+            {
+               existingConnection.CloseAsync("New connection established").GetAwaiter().GetResult();
+                _connections.TryRemove(new KeyValuePair<Guid, IAgentConnection>(existingConnection.ServerId, existingConnection));
+            }
+
+            _connections.TryAdd(connection.ServerId, connection);
+        }
+
+        return true;
+    }
+
+    
 
     public bool TryGet(Guid serverId, [NotNullWhen(true)] out IAgentConnection? connection) => _connections.TryGetValue(serverId, out connection);
 
