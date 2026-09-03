@@ -83,11 +83,13 @@ jobs:
           chmod +x "$stage/publish/Baion.Agent.Host"
           chmod +x "$stage/install.sh"
 
+      # El zip se hace desde dentro de la carpeta: al descomprimir quedan directamente
+      # el script de instalación y la carpeta publish/, sin un directorio intermedio.
       - name: Empaquetar el zip
         run: |
           set -euo pipefail
           stage="baion-agent-${{ matrix.rid }}"
-          zip -r "$stage.zip" "$stage"
+          ( cd "$stage" && zip -r "../$stage.zip" . )
 
       - name: Subir el artefacto
         uses: actions/upload-artifact@v4
