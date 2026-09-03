@@ -1,0 +1,89 @@
+name: Build & Deploy
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+env:
+  PUBLISH_URL: ${{ secrets.LIN_CLOUD_URL_2002 }}
+  PUBLISH_KEY: ${{ secrets.LIN_CLOUD_KEY_2002 }}
+  DOTNET_VERSION: ${{ secrets.LIN_CLOUD_DOTNET_VERSION_2002 }} # ej: 9.0 / 8.0
+  PROJECT_PATH: ${{ secrets.LIN_CLOUD_CSPROJ_2002 }} 
+  PUBLISH_DIR: ./publish
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # --------------------
+      # Checkout
+      # --------------------
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # --------------------
+      # Setup .NET
+      # --------------------
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "${{ env.DOTNET_VERSION }}.x"
+
+      # --------------------
+      # Cache NuGet
+      # --------------------
+      - name: Cache NuGet
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/packages.lock.json', '**/*.csproj') }}
+          restore-keys: |
+            nuget-${{ runner.os }}-
+
+      # ====================
+      # 1️⃣ COMPILE
+      # ====================
+      - name: Clean
+        run: dotnet clean "$PROJECT_PATH" -c Release
+
+      - name: Restore
+        run: dotnet restore "$PROJECT_PATH" -r linux-x64
+
+      - name: Build
+        run: >
+          dotnet build "$PROJECT_PATH"
+          -c Release
+          -r linux-x64
+          --self-contained false
+          -f net${{ env.DOTNET_VERSION }}
+          --no-restore
+
+      - name: Publish
+        run: |
+          dotnet publish "$PROJECT_PATH" \
+            -c Release \
+            -f net${{ env.DOTNET_VERSION }} \
+            -r linux-x64 \
+            --self-contained false \
+            --no-build \
+            -p:PublishSingleFile=false \
+            -p:GenerateRuntimeConfigurationFiles=true \
+            -p:DebugType=None \
+            -p:DebugSymbols=false \
+            -o "$PUBLISH_DIR"
+
+      - name: Zip Published Files
+        run: |
+          cd "$PUBLISH_DIR"
+          zip -r ../app.zip .
+
+      - name: Upload ZIP a LIN Cloud IIS Push
+        run: |
+          curl -X POST \
+            "$PUBLISH_URL/api/Publish?createRelease=true" \
+            -H "accept: text/plain" \
+            -H "Content-Type: multipart/form-data" \
+            -H "Key: $PUBLISH_KEY" \
+            -F "file=@app.zip"
