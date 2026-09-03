@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="/" />
+    <link rel="icon" type="image/png" href="/favicon.png">
+    @* Los neutros se invierten con prefers-color-scheme; esto hace que el navegador pinte el fondo
+       y las barras de scroll del lado correcto antes de que llegue la hoja de estilos. *@
+    <meta name="color-scheme" content="light dark" />
+    <ResourcePreloader />
+    @* Gilroy va autoalojada y se descubre desde app.css: no hay ninguna fuente de un CDN. *@
+    <link rel="stylesheet" href="@Assets["css/app.css"]" />
+    <link rel="stylesheet" href="@Assets["Baion.Cliente.Web.styles.css"]" />
+    <ImportMap />
+    <HeadOutlet @rendermode="RenderModeForPage" />
+</head>
+
+<body>
+    <Routes @rendermode="RenderModeForPage" />
+    <ReconnectModal />
+    <script src="@Assets["_framework/blazor.web.js"]"></script>
+</body>
+
+</html>
+
+@code {
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    // El login es una página estática: firma la cookie durante la petición, y para eso necesita
+    // que no haya circuito interactivo por medio.
+    private IComponentRenderMode? RenderModeForPage => HttpContext.AcceptsInteractiveRouting() ? InteractiveServer : null;
+}

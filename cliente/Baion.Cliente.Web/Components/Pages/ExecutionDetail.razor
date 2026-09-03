@@ -1,0 +1,221 @@
+@page "/ejecuciones/{ExecutionId:guid}"
+@attribute [Authorize]
+@implements IDisposable
+
+@inject IBaionApiClient Api
+
+<PageTitle>@Titulo · Baion</PageTitle>
+
+<PageHeader Seccion="@Seccion" Titulo="@Titulo">
+    <Acciones>
+        @if (EstaViva)
+        {
+            @* Negro para lo que está pasando ahora mismo; el acento se reserva para lo ya logrado. *@
+            <span class="baion-chip">
+                <span class="baion-chip-dot animate-pulse bg-ink" aria-hidden="true"></span>
+                Actualizando cada 2 s
+            </span>
+        }
+        <a class="baion-button-ghost" href="/ejecuciones">
+            <Icon Nombre="chevron-left" Tamano="14" />
+            Volver al historial
+        </a>
+    </Acciones>
+</PageHeader>
+
+<AlertMessage Mensaje="@_error" />
+
+@if (_cargando)
+{
+    <GhostLoader Descripcion="Cargando la ejecución…" />
+}
+else if (_ejecucion is null)
+{
+    <EmptyState Icono="history"
+                Titulo="No se encontró la ejecución"
+                Descripcion="Puede que se haya purgado del historial o que el enlace esté equivocado.">
+        <Accion>
+            <a class="baion-button" href="/ejecuciones">Ir al historial</a>
+        </Accion>
+    </EmptyState>
+}
+else
+{
+    <div class="baion-card p-6">
+        <dl class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            <DetailField Etiqueta="Estado">
+                <ExecutionStatusBadge Estado="@_ejecucion.Status" />
+            </DetailField>
+            <DetailField Etiqueta="Código de salida">
+                <span class="font-mono tabular-nums @ClaseSalida">@(_ejecucion.ExitCode?.ToString() ?? "—")</span>
+            </DetailField>
+            <DetailField Etiqueta="Modo">
+                @Modo(_ejecucion.Mode)
+            </DetailField>
+            <DetailField Etiqueta="Duración">
+                <span class="tabular-nums">@TimeFormat.Elapsed(_ejecucion.StartedAt, _ejecucion.CompletedAt)</span>
+            </DetailField>
+            <DetailField Etiqueta="Servidor">
+                @_ejecucion.ServerName
+            </DetailField>
+            <DetailField Etiqueta="Encolada">
+                <span class="tabular-nums">@TimeFormat.Absolute(_ejecucion.QueuedAt)</span>
+            </DetailField>
+            <DetailField Etiqueta="Iniciada">
+                <span class="tabular-nums">@TimeFormat.Absolute(_ejecucion.StartedAt)</span>
+            </DetailField>
+            <DetailField Etiqueta="Terminada">
+                <span class="tabular-nums">@TimeFormat.Absolute(_ejecucion.CompletedAt)</span>
+            </DetailField>
+        </dl>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(_ejecucion.ErrorMessage))
+    {
+        <div class="mt-3 flex items-start gap-2 rounded-xl border border-danger/30 bg-surface px-4 py-3 text-body text-danger" role="alert">
+            <span class="mt-px shrink-0" aria-hidden="true"><Icon Nombre="circle-alert" Tamano="14" /></span>
+            <span>El orquestador no pudo completar la ejecución: @_ejecucion.ErrorMessage</span>
+        </div>
+    }
+
+    <div class="mt-3 grid gap-3">
+        <PanelCard Icono="terminal" Titulo="Salida estándar" Ancha="true">
+            <Accion>
+                <span class="text-label tabular-nums text-muted">@Lineas(_ejecucion.StdOut)</span>
+            </Accion>
+            <ChildContent>
+                @if (string.IsNullOrEmpty(_ejecucion.StdOut))
+                {
+                    <p class="text-body text-muted">El script no escribió nada en la salida estándar.</p>
+                }
+                else
+                {
+                    <pre class="baion-output">@_ejecucion.StdOut</pre>
+                }
+            </ChildContent>
+        </PanelCard>
+
+        <PanelCard Icono="circle-alert" Titulo="Salida de error" Ancha="true">
+            <Accion>
+                <span class="text-label tabular-nums text-muted">@Lineas(_ejecucion.StdErr)</span>
+            </Accion>
+            <ChildContent>
+                @if (string.IsNullOrEmpty(_ejecucion.StdErr))
+                {
+                    <p class="text-body text-muted">El script no escribió nada en la salida de error.</p>
+                }
+                else
+                {
+                    <pre class="baion-output-error">@_ejecucion.StdErr</pre>
+                }
+            </ChildContent>
+        </PanelCard>
+    </div>
+}
+
+@code {
+    private ScriptExecutionDetail? _ejecucion;
+    private string? _error;
+    private bool _cargando = true;
+    private PeriodicTimer? _temporizador;
+    private CancellationTokenSource? _cancelacion;
+
+    /// <summary>Identificador de la ejecución; llega en la ruta.</summary>
+    [Parameter]
+    public Guid ExecutionId { get; set; }
+
+    private string Titulo => _ejecucion?.ScriptName ?? "Ejecución";
+
+    // El eyebrow sitúa la ejecución en su servidor, que es el contexto que el título no puede dar.
+    private string Seccion => _ejecucion is null ? "Ejecución" : $"Ejecución en {_ejecucion.ServerName}";
+
+    private bool EstaViva => _ejecucion is not null && ExecutionStatus.IsLive(_ejecucion.Status);
+
+    private string ClaseSalida => _ejecucion?.ExitCode switch
+    {
+        null => "text-muted",
+        0 => "text-ink",
+        _ => "text-danger"
+    };
+
+    // Saltar de una ejecución a otra reutiliza el componente, así que el seguimiento anterior sobra.
+    protected override async Task OnParametersSetAsync()
+    {
+        Detener();
+        _cargando = true;
+        await CargarAsync();
+        _cargando = false;
+    }
+
+    // En el prerender no hay circuito al que empujar cambios: el sondeo espera a que la página sea interactiva.
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (RendererInfo.IsInteractive && _temporizador is null && EstaViva)
+        {
+            _ = SeguirAsync();
+        }
+    }
+
+    public void Dispose() => Detener();
+
+    private async Task CargarAsync()
+    {
+        var resultado = await Api.GetExecutionAsync(ExecutionId, CancellationToken.None);
+
+        _ejecucion = resultado.Value;
+        _error = resultado.ErrorMessage;
+    }
+
+    /// <summary>
+    /// Mientras la ejecución sigue viva la API es la única que sabe cómo va: se la sondea hasta que
+    /// termina para ver crecer su salida sin recargar la página.
+    /// </summary>
+    private async Task SeguirAsync()
+    {
+        _cancelacion = new CancellationTokenSource();
+        _temporizador = new PeriodicTimer(IntervaloRefresco);
+
+        try
+        {
+            while (await _temporizador.WaitForNextTickAsync(_cancelacion.Token))
+            {
+                await CargarAsync();
+                await InvokeAsync(StateHasChanged);
+
+                if (!EstaViva)
+                {
+                    break;
+                }
+            }
+        }
+        catch (Exception excepcion) when (excepcion is OperationCanceledException or ObjectDisposedException)
+        {
+            // El componente se destruyó mientras esperábamos el siguiente sondeo.
+        }
+        finally
+        {
+            Detener();
+        }
+    }
+
+    private void Detener()
+    {
+        _cancelacion?.Cancel();
+        _cancelacion?.Dispose();
+        _cancelacion = null;
+
+        _temporizador?.Dispose();
+        _temporizador = null;
+    }
+
+    private static string Modo(string modo) => modo switch
+    {
+        "attached" => "En primer plano",
+        "detached" => "En segundo plano",
+        _ => modo
+    };
+
+    private static string Lineas(string? texto) => string.IsNullOrEmpty(texto) ? "vacía" : $"{texto.Split('\n').Length} líneas";
+
+    private static readonly TimeSpan IntervaloRefresco = TimeSpan.FromSeconds(2);
+}

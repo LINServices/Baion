@@ -1,0 +1,6 @@
+{
+  "$schema": "https://xunit.net/schema/current/xunit.runner.schema.json",
+
+  "//": "Cada clase levanta aplicaciones completas con su base y su conexión al broker. En paralelo se saturan LocalDB y el broker, y los fallos dejan de ser reproducibles.",
+  "parallelizeTestCollections": false
+}

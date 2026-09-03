@@ -1,0 +1,23 @@
+@* Aviso a pie de cabecera. El rojo solo aparece en el icono y en el texto: un fondo de color
+   entero está prohibido por el sistema, así que el bloque se distingue por su contorno. *@
+
+@if (!string.IsNullOrWhiteSpace(Mensaje))
+{
+    <div class="mb-6 flex items-start gap-2 rounded-xl border bg-surface px-4 py-3 text-body @Clases"
+         role="@(EsError ? "alert" : "status")">
+        <span class="mt-px shrink-0" aria-hidden="true">
+            <Icon Nombre="@(EsError ? "circle-alert" : "circle-check")" Tamano="14" />
+        </span>
+        <span>@Mensaje</span>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public string? Mensaje { get; set; }
+
+    [Parameter]
+    public bool EsError { get; set; } = true;
+
+    private string Clases => EsError ? "border-danger/30 text-danger" : "border-line text-ink-2";
+}

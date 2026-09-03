@@ -1,0 +1,229 @@
+@using System.ComponentModel.DataAnnotations
+
+@inject IBaionApiClient Api
+@inject NavigationManager Navigation
+
+<div class="baion-card p-6">
+    <div class="mb-6 flex items-start justify-between gap-4">
+        <div class="flex items-center gap-2">
+            <span class="text-ink" aria-hidden="true"><Icon Nombre="play" /></span>
+            <h2 class="text-title text-ink">Ejecutar script</h2>
+        </div>
+        <button type="button" class="baion-button-icon" title="Cerrar" aria-label="Cerrar" @onclick="Cancelar">
+            <Icon Nombre="x" Tamano="20" />
+        </button>
+    </div>
+
+    <AlertMessage Mensaje="@_error" />
+
+    @if (_cargandoServidores)
+    {
+        <GhostLoader Filas="2" Descripcion="Buscando servidores compatibles…" />
+    }
+    else if (_compatibles.Count == 0)
+    {
+        @* El ámbar del sistema solo vive en el icono: un bloque de color aquí está prohibido. *@
+        <div class="flex items-start gap-2 rounded-xl border border-line bg-surface-alt px-4 py-3 text-body text-ink-2" role="status">
+            <span class="mt-px shrink-0 text-warn" aria-hidden="true"><Icon Nombre="circle-alert" Tamano="14" /></span>
+            <span>
+                Ningún servidor conectado puede ejecutar este script. Necesita un agente en línea sobre @ScriptRuntimes.SupportedPlatforms(Runtime).
+                @if (_incompatibles > 0)
+                {
+                    <span>Hay @_incompatibles servidor@(_incompatibles == 1 ? "" : "es") descartado@(_incompatibles == 1 ? "" : "s") por plataforma o por estar desconectado@(_incompatibles == 1 ? "" : "s").</span>
+                }
+            </span>
+        </div>
+    }
+    else
+    {
+        <EditForm Model="_entrada" OnValidSubmit="LanzarAsync">
+            <DataAnnotationsValidator />
+
+            <div class="grid gap-5 sm:grid-cols-2">
+                <div>
+                    <label class="baion-label" for="servidor">Servidor</label>
+                    <SelectShell Class="mt-2">
+                        <InputSelect id="servidor" @bind-Value="_entrada.ServerId" class="baion-select">
+                            @foreach (var servidor in _compatibles)
+                            {
+                                <option value="@servidor.Id">@servidor.Name (@ScriptRuntimes.PlatformLabel(servidor.Platform))</option>
+                            }
+                        </InputSelect>
+                    </SelectShell>
+                </div>
+
+                <div>
+                    <label class="baion-label" for="modo">Modo</label>
+                    <SelectShell Class="mt-2">
+                        <InputSelect id="modo" @bind-Value="_entrada.Mode" class="baion-select">
+                            <option value="attached">Adjunto — espera el resultado</option>
+                            <option value="detached">Desatendido — lanza y no espera</option>
+                        </InputSelect>
+                    </SelectShell>
+                    @if (_entrada.Mode == "detached")
+                    {
+                        <p class="mt-2 flex items-start gap-1.5 text-label text-ink-2">
+                            <span class="mt-px shrink-0 text-warn" aria-hidden="true"><Icon Nombre="circle-alert" Tamano="14" /></span>
+                            No se recogerá su salida ni su código de salida.
+                        </p>
+                    }
+                </div>
+            </div>
+
+            <details class="mt-6">
+                <summary class="cursor-pointer text-body text-ink-2 transition-colors duration-150 ease-brand hover:text-ink">Opciones avanzadas</summary>
+
+                <div class="mt-4 grid gap-5 sm:grid-cols-2">
+                    <div>
+                        <label class="baion-label" for="timeout">Timeout (s)</label>
+                        <InputNumber id="timeout" @bind-Value="_entrada.TimeoutSeconds" class="baion-input mt-2 tabular-nums" placeholder="@DefaultTimeoutSeconds.ToString()" />
+                        <ValidationMessage For="() => _entrada.TimeoutSeconds" class="mt-2 text-label text-danger" />
+                        <p class="mt-2 text-label text-muted">Vacío usa el del script (@DefaultTimeoutSeconds s).</p>
+                    </div>
+
+                    <div>
+                        <label class="baion-label" for="directorio">Directorio de trabajo</label>
+                        <InputText id="directorio" @bind-Value="_entrada.WorkingDirectory" class="baion-input mt-2" placeholder="Opcional" />
+                    </div>
+
+                    <div class="sm:col-span-2">
+                        <label class="baion-label" for="entorno">Variables de entorno</label>
+                        <InputTextArea id="entorno" @bind-Value="_entrada.Environment" rows="3" class="baion-textarea mt-2"
+                                       spellcheck="false" placeholder="CLAVE=valor (una por línea)" />
+                        <ValidationMessage For="() => _entrada.Environment" class="mt-2 text-label text-danger" />
+                    </div>
+                </div>
+            </details>
+
+            <div class="mt-6 flex items-center gap-2">
+                <button type="submit" class="baion-button" disabled="@_lanzando">
+                    @(_lanzando ? "Lanzando…" : "Ejecutar ahora")
+                </button>
+                <button type="button" class="baion-button-ghost" @onclick="Cancelar" disabled="@_lanzando">Cancelar</button>
+            </div>
+        </EditForm>
+    }
+</div>
+
+@code {
+    private readonly EntradaEjecucion _entrada = new();
+
+    private IReadOnlyList<ServerSummary> _compatibles = [];
+    private int _incompatibles;
+    private string? _error;
+    private bool _cargandoServidores = true;
+    private bool _lanzando;
+
+    [Parameter, EditorRequired]
+    public Guid ScriptId { get; set; }
+
+    [Parameter, EditorRequired]
+    public string Runtime { get; set; } = string.Empty;
+
+    [Parameter]
+    public int DefaultTimeoutSeconds { get; set; } = 300;
+
+    /// <summary>Se invoca al cerrar el formulario sin lanzar nada.</summary>
+    [Parameter]
+    public EventCallback Cerrado { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var resultado = await Api.GetServersAsync(CancellationToken.None);
+        var servidores = resultado.Value ?? [];
+
+        // Se descartan los que no soportan el intérprete y los que no tienen agente conectado:
+        // ofrecerlos solo llevaría a un rechazo del orquestador con el formulario ya enviado.
+        _compatibles = servidores.Where(EsElegible).ToList();
+        _incompatibles = servidores.Count - _compatibles.Count;
+
+        _entrada.ServerId = _compatibles.FirstOrDefault()?.Id ?? Guid.Empty;
+        _error = resultado.ErrorMessage;
+        _cargandoServidores = false;
+    }
+
+    private bool EsElegible(ServerSummary servidor) => servidor.Status == "online" && ScriptRuntimes.IsSupported(Runtime, servidor.Platform);
+
+    private async Task LanzarAsync()
+    {
+        if (!TryParseEntorno(_entrada.Environment, out var entorno, out var lineaInvalida))
+        {
+            _error = $"La línea «{lineaInvalida}» no tiene el formato CLAVE=valor.";
+            return;
+        }
+
+        _lanzando = true;
+        _error = null;
+
+        var peticion = new Models.DispatchScriptRequest(
+            ScriptId,
+            _entrada.ServerId,
+            _entrada.Mode,
+            _entrada.TimeoutSeconds,
+            string.IsNullOrWhiteSpace(_entrada.WorkingDirectory) ? null : _entrada.WorkingDirectory.Trim(),
+            entorno.Count == 0 ? null : entorno);
+
+        var resultado = await Api.DispatchAsync(peticion, CancellationToken.None);
+
+        _lanzando = false;
+
+        if (resultado is not { IsSuccess: true, Value: Models.ScriptExecutionDispatched despacho })
+        {
+            _error = resultado.ErrorMessage;
+            return;
+        }
+
+        // Se va al detalle: es donde la ejecución se sigue en vivo hasta que termina.
+        Navigation.NavigateTo($"/ejecuciones/{despacho.ExecutionId}");
+    }
+
+    private async Task Cancelar() => await Cerrado.InvokeAsync();
+
+    /// <summary>Convierte el bloque de texto en pares CLAVE=valor, ignorando líneas vacías y comentarios.</summary>
+    private static bool TryParseEntorno(string? texto, out Dictionary<string, string> entorno, out string lineaInvalida)
+    {
+        entorno = [];
+        lineaInvalida = string.Empty;
+
+        if (string.IsNullOrWhiteSpace(texto))
+        {
+            return true;
+        }
+
+        foreach (var linea in texto.Split('\n'))
+        {
+            var limpia = linea.Trim();
+
+            if (limpia.Length == 0 || limpia.StartsWith('#'))
+            {
+                continue;
+            }
+
+            var separador = limpia.IndexOf('=');
+
+            if (separador <= 0)
+            {
+                lineaInvalida = limpia;
+                return false;
+            }
+
+            entorno[limpia[..separador].Trim()] = limpia[(separador + 1)..].Trim();
+        }
+
+        return true;
+    }
+
+    private sealed class EntradaEjecucion
+    {
+        public Guid ServerId { get; set; }
+
+        public string Mode { get; set; } = "attached";
+
+        [Range(1, 86_400, ErrorMessage = "El timeout debe estar entre 1 segundo y 24 horas.")]
+        public int? TimeoutSeconds { get; set; }
+
+        public string? WorkingDirectory { get; set; }
+
+        public string? Environment { get; set; }
+    }
+}

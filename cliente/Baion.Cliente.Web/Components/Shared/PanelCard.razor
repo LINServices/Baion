@@ -1,0 +1,50 @@
+@* Tarjeta base del sistema: hairline de 1px, nunca sombra. La cabecera es siempre icono en ink +
+   título, y la flecha ↗ de la esquina aparece solo si la tarjeta lleva a algún sitio. *@
+
+<article class="group relative flex flex-col @(Ancha ? "p-6" : "p-5") @(Href is null ? "baion-card" : "baion-card-link")">
+    <header class="flex items-center gap-2">
+        <span class="shrink-0 text-ink" aria-hidden="true"><Icon Nombre="@Icono" /></span>
+        <h3 class="min-w-0 truncate text-title text-ink">@Titulo</h3>
+
+        @if (Href is not null)
+        {
+            @* El área clicable es la tarjeta entera, no solo la flecha: el ::after la cubre para que
+               el hover del borde y del fondo se corresponda con lo que ocurre al pulsar. *@
+            <a class="ml-auto shrink-0 text-muted transition-colors duration-150 ease-brand after:absolute
+                      after:inset-0 after:rounded-2xl group-hover:text-ink"
+               href="@Href" aria-label="Abrir @Titulo">
+                <Icon Nombre="arrow-up-right" />
+            </a>
+        }
+        else if (Accion is not null)
+        {
+            <div class="ml-auto shrink-0">@Accion</div>
+        }
+    </header>
+
+    <div class="mt-6 flex flex-1 flex-col">@ChildContent</div>
+</article>
+
+@code {
+    /// <summary>Nombre del icono de la cabecera; va en ink, no en gris.</summary>
+    [Parameter, EditorRequired]
+    public string Icono { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public string Titulo { get; set; } = string.Empty;
+
+    /// <summary>Destino de la flecha ↗. Sin destino no se pinta la flecha.</summary>
+    [Parameter]
+    public string? Href { get; set; }
+
+    /// <summary>Control alternativo en la esquina, para tarjetas que no navegan.</summary>
+    [Parameter]
+    public RenderFragment? Accion { get; set; }
+
+    /// <summary>Padding de 24px, para tarjetas anchas o con gráfico; por defecto son 20px.</summary>
+    [Parameter]
+    public bool Ancha { get; set; }
+
+    [Parameter, EditorRequired]
+    public RenderFragment? ChildContent { get; set; }
+}

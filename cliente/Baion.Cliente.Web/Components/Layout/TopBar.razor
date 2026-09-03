@@ -1,0 +1,68 @@
+@* Una sola fila de 56px, sin borde inferior: la separación con el contenido la da el espacio.
+   Orden del sistema: marca · navegación · acciones · identidad. *@
+
+<header class="flex h-14 shrink-0 items-center gap-4 md:gap-6">
+    <a class="flex size-9 shrink-0 items-center justify-center" href="/" aria-label="Baion, inicio">
+       <img class="h-5 w-5" src="./favicon.png" />
+    </a>
+
+    @* Por debajo de 768px las pills no caben en fila: se vuelven scroll horizontal, sin cambiar de forma. *@
+    <nav class="-mx-1 flex min-w-0 flex-1 items-center gap-1 overflow-x-auto px-1" aria-label="Secciones">
+        @foreach (var enlace in Enlaces)
+        {
+            <NavLink class="baion-nav-pill" ActiveClass="baion-nav-pill-active" href="@enlace.Href" Match="@enlace.Match">
+                @enlace.Texto
+            </NavLink>
+        }
+    </nav>
+
+    <AuthorizeView>
+        <Authorized>
+            <form class="shrink-0" method="post" action="/logout">
+                <AntiforgeryToken />
+                <button type="submit" class="baion-button-icon" title="Cerrar sesión" aria-label="Cerrar sesión">
+                    <Icon Nombre="log-out" Tamano="20" />
+                </button>
+            </form>
+
+            <div class="flex shrink-0 items-center gap-3">
+                <span class="text-title flex size-9 items-center justify-center rounded-full border border-line bg-surface-alt text-ink-2"
+                      aria-hidden="true">@Inicial(context)</span>
+                <div class="hidden leading-tight sm:block">
+                    <p class="text-title max-w-40 truncate text-ink">@context.User.Identity?.Name</p>
+                    <p class="text-label text-muted">@Roles(context)</p>
+                </div>
+            </div>
+        </Authorized>
+        <NotAuthorized>
+            <span class="text-body shrink-0 text-muted">Sin sesión</span>
+        </NotAuthorized>
+    </AuthorizeView>
+</header>
+
+@code {
+    private record Enlace(string Href, string Texto, NavLinkMatch Match);
+
+    private static readonly Enlace[] Enlaces =
+    [
+        new("", "Panel", NavLinkMatch.All),
+        new("servidores", "Servidores", NavLinkMatch.Prefix),
+        new("scripts", "Scripts", NavLinkMatch.Prefix),
+        new("ejecuciones", "Ejecuciones", NavLinkMatch.Prefix)
+    ];
+
+    private static string Roles(AuthenticationState state)
+    {
+        var roles = string.Join(", ", state.User.FindAll(System.Security.Claims.ClaimTypes.Role).Select(claim => claim.Value));
+
+        return roles.Length == 0 ? "Sin rol" : roles;
+    }
+
+    /// <summary>Avatar por defecto: no hay foto de perfil, así que la inicial hace de retrato.</summary>
+    private static string Inicial(AuthenticationState state)
+    {
+        var nombre = state.User.Identity?.Name;
+
+        return string.IsNullOrWhiteSpace(nombre) ? "?" : nombre.Trim()[..1].ToUpperInvariant();
+    }
+}

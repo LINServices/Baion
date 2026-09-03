@@ -1,0 +1,55 @@
+@if (TotalElementos > 0)
+{
+    <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
+        <p class="text-label tabular-nums text-muted">@Resumen</p>
+
+        @if (TotalPaginas > 1)
+        {
+            <div class="flex items-center gap-2">
+                <button type="button" class="baion-button-icon" disabled="@(!HayAnterior)"
+                        aria-label="Página anterior" @onclick="() => IrAsync(Pagina - 1)">
+                    <Icon Nombre="chevron-left" />
+                </button>
+
+                <span class="px-1 text-label tabular-nums text-muted">Página @Pagina de @TotalPaginas</span>
+
+                <button type="button" class="baion-button-icon" disabled="@(!HaySiguiente)"
+                        aria-label="Página siguiente" @onclick="() => IrAsync(Pagina + 1)">
+                    <Icon Nombre="chevron-right" />
+                </button>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public int Pagina { get; set; } = 1;
+
+    [Parameter, EditorRequired]
+    public int TamanoPagina { get; set; }
+
+    [Parameter, EditorRequired]
+    public int TotalElementos { get; set; }
+
+    [Parameter, EditorRequired]
+    public int TotalPaginas { get; set; }
+
+    [Parameter]
+    public bool HayAnterior { get; set; }
+
+    [Parameter]
+    public bool HaySiguiente { get; set; }
+
+    /// <summary>Recibe la página a la que hay que saltar; recargar es cosa de quien usa el componente.</summary>
+    [Parameter, EditorRequired]
+    public EventCallback<int> OnCambioPagina { get; set; }
+
+    private int Primero => ((Pagina - 1) * TamanoPagina) + 1;
+
+    private int Ultimo => Math.Min(Pagina * TamanoPagina, TotalElementos);
+
+    private string Resumen => $"Mostrando {NumberFormat.Count(Primero)}–{NumberFormat.Count(Ultimo)} de {NumberFormat.Count(TotalElementos)}";
+
+    private async Task IrAsync(int pagina) => await OnCambioPagina.InvokeAsync(Math.Clamp(pagina, 1, Math.Max(TotalPaginas, 1)));
+}

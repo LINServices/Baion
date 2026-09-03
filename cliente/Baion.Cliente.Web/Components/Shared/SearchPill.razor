@@ -1,0 +1,45 @@
+@* Buscador del sistema: pill con hairline y el botón redondo en negro dentro. La altura queda en
+   40px para que se alinee con el resto de los controles de la fila. *@
+
+<div class="flex h-10 items-center gap-3 rounded-full border border-line bg-surface py-1 pl-1 pr-4
+            transition-colors duration-150 ease-brand focus-within:border-line-strong">
+    <button type="button" class="flex size-8 shrink-0 items-center justify-center rounded-full bg-ink text-on-ink"
+            aria-label="Buscar" @onclick="BuscarAsync">
+        <Icon Nombre="search" Tamano="14" />
+    </button>
+
+    <input class="w-36 min-w-0 bg-transparent text-body text-ink outline-none placeholder:text-muted sm:w-48"
+           type="search" placeholder="@Placeholder" aria-label="@Placeholder" autocomplete="off"
+           value="@Valor" @oninput="CambiarAsync" @onkeydown="BuscarSiEsEnterAsync" />
+</div>
+
+@code {
+    [Parameter]
+    public string? Valor { get; set; }
+
+    [Parameter]
+    public EventCallback<string?> ValorChanged { get; set; }
+
+    /// <summary>Se invoca al pulsar el botón o Enter; quien usa el componente decide qué recargar.</summary>
+    [Parameter, EditorRequired]
+    public EventCallback OnBuscar { get; set; }
+
+    [Parameter]
+    public string Placeholder { get; set; } = "Buscar";
+
+    private async Task CambiarAsync(ChangeEventArgs argumentos)
+    {
+        Valor = argumentos.Value as string;
+        await ValorChanged.InvokeAsync(Valor);
+    }
+
+    private async Task BuscarSiEsEnterAsync(KeyboardEventArgs argumentos)
+    {
+        if (argumentos.Key is "Enter")
+        {
+            await BuscarAsync();
+        }
+    }
+
+    private async Task BuscarAsync() => await OnBuscar.InvokeAsync();
+}

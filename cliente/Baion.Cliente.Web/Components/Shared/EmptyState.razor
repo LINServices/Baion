@@ -1,0 +1,35 @@
+@* Estado vacío: icono de 20px en gris, una frase y, si hay algo que hacer, la acción primaria.
+   La frase es una invitación, nunca una disculpa. *@
+
+<div class="baion-card flex flex-col items-center gap-4 px-6 py-16 text-center">
+    <span class="text-muted" aria-hidden="true"><Icon Nombre="@Icono" Tamano="20" /></span>
+
+    <div>
+        <p class="text-title text-ink">@Titulo</p>
+
+        @if (!string.IsNullOrWhiteSpace(Descripcion))
+        {
+            <p class="mx-auto mt-2 max-w-[62ch] text-body text-ink-2">@Descripcion</p>
+        }
+    </div>
+
+    @if (Accion is not null)
+    {
+        <div class="flex items-center gap-2">@Accion</div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Titulo { get; set; } = string.Empty;
+
+    [Parameter]
+    public string? Descripcion { get; set; }
+
+    [Parameter]
+    public string Icono { get; set; } = "inbox";
+
+    /// <summary>Lo que se puede hacer desde aquí; si no hay nada que hacer, se deja vacío.</summary>
+    [Parameter]
+    public RenderFragment? Accion { get; set; }
+}

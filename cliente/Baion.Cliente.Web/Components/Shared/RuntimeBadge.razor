@@ -1,0 +1,8 @@
+<span class="baion-chip">@Texto</span>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Runtime { get; set; } = string.Empty;
+
+    private string Texto => ScriptRuntimes.Label(Runtime);
+}

@@ -1,0 +1,136 @@
+@* Formulario de script compartido por el alta (/scripts/nuevo) y la edición (/scripts/{id}/editar).
+   El componente solo gestiona los campos y su validación; guardar y navegar es cosa de la página. *@
+
+@if (!EsErrorDeCampo)
+{
+    <AlertMessage Mensaje="@ErrorGeneral" />
+}
+
+<EditForm Model="Entrada" OnValidSubmit="EnviarAsync">
+    <DataAnnotationsValidator />
+
+    <div class="grid gap-3 lg:grid-cols-3">
+        <div class="baion-card space-y-5 p-5 lg:col-span-1">
+            <div>
+                <label class="baion-label" for="nombre">Nombre</label>
+                <InputText id="nombre" @bind-Value="Entrada.Name" class="baion-input mt-2" placeholder="reiniciar-nginx" />
+                <ValidationMessage For="() => Entrada.Name" class="mt-2 text-label text-danger" />
+                @if (ErrorDeCampo("nombre") is { } mensajeNombre)
+                {
+                    <p class="mt-2 text-label text-danger">@mensajeNombre</p>
+                }
+            </div>
+
+            <div>
+                <label class="baion-label" for="descripcion">Descripción</label>
+                <InputText id="descripcion" @bind-Value="Entrada.Description" class="baion-input mt-2" placeholder="Opcional" />
+                <ValidationMessage For="() => Entrada.Description" class="mt-2 text-label text-danger" />
+            </div>
+
+            <div>
+                <label class="baion-label" for="runtime">Intérprete</label>
+                <SelectShell Class="mt-2">
+                    <InputSelect id="runtime" @bind-Value="Entrada.Runtime" class="baion-select">
+                        @foreach (var opcion in ScriptRuntimes.All)
+                        {
+                            <option value="@opcion.Value">@opcion.Label</option>
+                        }
+                    </InputSelect>
+                </SelectShell>
+                <p class="mt-2 text-label text-muted">Solo podrá ejecutarse en servidores @ScriptRuntimes.SupportedPlatforms(Entrada.Runtime).</p>
+            </div>
+
+            <div>
+                <label class="baion-label" for="timeout">Timeout por defecto (s)</label>
+                <InputNumber id="timeout" @bind-Value="Entrada.DefaultTimeoutSeconds" class="baion-input mt-2 tabular-nums" />
+                <ValidationMessage For="() => Entrada.DefaultTimeoutSeconds" class="mt-2 text-label text-danger" />
+                @if (ErrorDeCampo("timeout") is { } mensajeTimeout)
+                {
+                    <p class="mt-2 text-label text-danger">@mensajeTimeout</p>
+                }
+                <p class="mt-2 text-label text-muted">Al vencer, el agente mata el proceso y todos sus hijos.</p>
+            </div>
+
+            <button type="submit" class="baion-button w-full" disabled="@Guardando">
+                @(Guardando ? "Guardando…" : TextoBoton)
+            </button>
+        </div>
+
+        <div class="baion-card p-5 lg:col-span-2">
+            <label class="baion-label" for="contenido">Contenido</label>
+            <InputTextArea id="contenido" @bind-Value="Entrada.Content" rows="22" class="baion-textarea mt-2"
+                           spellcheck="false" placeholder="@Ejemplo" />
+            <ValidationMessage For="() => Entrada.Content" class="mt-2 text-label text-danger" />
+            @if (ErrorDeCampo("contenido") is { } mensajeContenido)
+            {
+                <p class="mt-2 text-label text-danger">@mensajeContenido</p>
+            }
+        </div>
+    </div>
+</EditForm>
+
+@code {
+    /// <summary>Script a editar. Nulo en el alta: el formulario arranca vacío.</summary>
+    [Parameter]
+    public Models.ScriptDetail? Original { get; set; }
+
+    /// <summary>La página lo sube mientras la llamada de guardado está en curso.</summary>
+    [Parameter]
+    public bool Guardando { get; set; }
+
+    /// <summary>Error de la llamada que no cae en un campo concreto.</summary>
+    [Parameter]
+    public string? ErrorGeneral { get; set; }
+
+    /// <summary>Código de error de la API (<c>title</c> del <c>ProblemDetails</c>), si lo hubo.</summary>
+    [Parameter]
+    public string? ErrorCodigo { get; set; }
+
+    /// <summary>Se invoca con los campos ya validados en el navegador; la página hace la llamada.</summary>
+    [Parameter, EditorRequired]
+    public EventCallback<ScriptFormEntrada> OnGuardar { get; set; }
+
+    public ScriptFormEntrada Entrada { get; private set; } = new();
+
+    private Guid _precargadoDe;
+
+    private string TextoBoton => Original is null ? "Crear script" : "Guardar cambios";
+
+    private bool EsErrorDeCampo => ErrorCodigo is "script.name_required" or "script.content_required" or "script.timeout_invalid";
+
+    protected override void OnParametersSet()
+    {
+        var clave = Original?.Id ?? Guid.Empty;
+
+        if (Original is not null && _precargadoDe != clave)
+        {
+            Entrada = new ScriptFormEntrada
+            {
+                Name = Original.Name,
+                Description = Original.Description,
+                Content = Original.Content,
+                Runtime = Original.Runtime,
+                DefaultTimeoutSeconds = Original.DefaultTimeoutSeconds
+            };
+
+            _precargadoDe = clave;
+        }
+    }
+
+    private async Task EnviarAsync() => await OnGuardar.InvokeAsync(Entrada);
+
+    private string? ErrorDeCampo(string campo) => ErrorCodigo switch
+    {
+        "script.name_required" when campo == "nombre" => "Indica un nombre para el script.",
+        "script.content_required" when campo == "contenido" => "El script no puede estar vacío.",
+        "script.timeout_invalid" when campo == "timeout" => "El timeout debe estar entre 1 segundo y 24 horas.",
+        _ => null
+    };
+
+    private string Ejemplo => Entrada.Runtime switch
+    {
+        "bash" or "sh" => "#!/usr/bin/env bash\nset -euo pipefail\n\necho \"hola\"",
+        "pythonCross" => "import sys\n\nprint(\"hola\")",
+        _ => "Write-Output 'hola'"
+    };
+}

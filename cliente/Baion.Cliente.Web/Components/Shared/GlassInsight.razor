@@ -1,0 +1,25 @@
+@* Módulo glass: tarjeta traslúcida con el degradado del acento y dos copias difuminadas detrás.
+   Es el elemento memorable del sistema y se usa UNA vez por vista; duplicarlo lo mata. Dentro va
+   un insight redactado como frase natural, con las cifras clave en peso 600. *@
+
+<div class="relative h-full">
+    <div class="baion-glass-halo pointer-events-none absolute left-8 right-3 top-5 h-32 rounded-glass opacity-60 blur-xl" aria-hidden="true"></div>
+    <div class="baion-glass-halo pointer-events-none absolute left-14 right-6 top-9 h-28 rounded-glass opacity-35 blur-2xl" aria-hidden="true"></div>
+
+    <div class="baion-glass relative flex h-full flex-col overflow-hidden rounded-glass border p-6 shadow-overlay backdrop-blur-xl">
+        <p class="flex items-center gap-2 text-title text-ink">
+            <span aria-hidden="true"><Icon Nombre="sparkles" /></span>
+            @Titulo
+        </p>
+
+        <p class="mt-6 max-w-xs text-heading text-ink">@ChildContent</p>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Titulo { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public RenderFragment? ChildContent { get; set; }
+}

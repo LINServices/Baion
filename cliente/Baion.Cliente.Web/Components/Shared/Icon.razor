@@ -1,0 +1,21 @@
+@* Icono lineal del set Lucide. Hereda currentColor y fija el grosor de trazo del sistema (1.5px),
+   así que el color lo pone quien lo coloca y nunca hace falta escribirlo en el propio icono. *@
+
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="@Tamano" height="@Tamano"
+     fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
+     aria-hidden="true" focusable="false" @attributes="Atributos">@Trazos</svg>
+
+@code {
+    /// <summary>Nombre del icono en el set de Lucide, en kebab-case.</summary>
+    [Parameter, EditorRequired]
+    public string Nombre { get; set; } = string.Empty;
+
+    /// <summary>16px en cabeceras y controles, 14px en línea con texto, 20px en botones de icono aislados.</summary>
+    [Parameter]
+    public int Tamano { get; set; } = 16;
+
+    [Parameter(CaptureUnmatchedValues = true)]
+    public IReadOnlyDictionary<string, object>? Atributos { get; set; }
+
+    private MarkupString Trazos => new(LucideIcons.Paths(Nombre));
+}

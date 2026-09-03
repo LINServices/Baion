@@ -1,0 +1,185 @@
+@page "/ejecuciones"
+@attribute [Authorize]
+
+@inject IBaionApiClient Api
+@inject NavigationManager Navigation
+
+<PageTitle>Ejecuciones · Baion</PageTitle>
+
+<PageHeader Seccion="Actividad" Titulo="Ejecuciones">
+    <Acciones>
+        @* Grupo de filtros del sistema: los campos van con gap-2 y precedidos de un botón de icono. *@
+        <span class="flex size-10 shrink-0 items-center justify-center rounded-xl border border-line bg-surface text-muted"
+              aria-hidden="true">
+            <Icon Nombre="sliders-horizontal" Tamano="20" />
+        </span>
+
+        <SelectShell Class="w-40">
+            <select class="baion-select" aria-label="Servidor" @bind="_servidor" @bind:after="FiltrarAsync">
+                <option value="">Todos los servidores</option>
+                @foreach (var servidor in _servidores)
+                {
+                    <option value="@servidor.Id">@servidor.Name</option>
+                }
+            </select>
+        </SelectShell>
+
+        <SelectShell Class="w-40">
+            <select class="baion-select" aria-label="Estado" @bind="_estado" @bind:after="FiltrarAsync">
+                <option value="">Todos los estados</option>
+                @foreach (var estado in Estados)
+                {
+                    <option value="@estado.Clave">@estado.Texto</option>
+                }
+            </select>
+        </SelectShell>
+
+        <SelectShell Class="w-40">
+            <select class="baion-select" aria-label="Periodo" @bind="_ventana" @bind:after="FiltrarAsync">
+                <option value="24h">Últimas 24 h</option>
+                <option value="7d">Últimos 7 días</option>
+                <option value="todo">Todo el historial</option>
+            </select>
+        </SelectShell>
+
+        <button type="button" class="baion-button-icon" title="Actualizar" aria-label="Actualizar"
+                disabled="@_cargando" @onclick="CargarAsync">
+            <Icon Nombre="refresh-cw" Tamano="20" />
+        </button>
+    </Acciones>
+</PageHeader>
+
+<AlertMessage Mensaje="@_error" />
+
+@if (_cargando && _resultado is null)
+{
+    <GhostLoader Descripcion="Cargando el historial de ejecuciones…" />
+}
+else if (Ejecuciones.Count == 0)
+{
+    <EmptyState Icono="history"
+                Titulo="No hay ejecuciones en este periodo"
+                Descripcion="Amplía el periodo o quita algún filtro para ver el historial completo." />
+}
+else
+{
+    <div class="baion-card overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="baion-table">
+                <thead>
+                    <tr>
+                        <th>Servidor</th>
+                        <th>Script</th>
+                        <th>Estado</th>
+                        <th class="text-right">Salida</th>
+                        <th>Encolada</th>
+                        <th class="text-right">Duración</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var ejecucion in Ejecuciones)
+                    {
+                        <tr class="cursor-pointer" @onclick="() => Abrir(ejecucion.Id)">
+                            <td class="text-title text-ink">@ejecucion.ServerName</td>
+                            <td>
+                                <a class="text-body text-ink" href="/ejecuciones/@ejecucion.Id">@ejecucion.ScriptName</a>
+                            </td>
+                            <td><ExecutionStatusBadge Estado="@ejecucion.Status" /></td>
+                            <td class="text-right font-mono tabular-nums @ClaseSalida(ejecucion.ExitCode)">@(ejecucion.ExitCode?.ToString() ?? "—")</td>
+                            <td class="text-muted" title="@TimeFormat.Absolute(ejecucion.QueuedAt)">@TimeFormat.Relative(ejecucion.QueuedAt)</td>
+                            <td class="text-right tabular-nums">@TimeFormat.Elapsed(ejecucion.StartedAt, ejecucion.CompletedAt)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <Pagination Pagina="@Pagina" TamanoPagina="TamanoPagina" TotalElementos="@(_resultado?.TotalCount ?? 0)"
+                TotalPaginas="@(_resultado?.TotalPages ?? 1)" HayAnterior="@(_resultado?.HasPrevious ?? false)"
+                HaySiguiente="@(_resultado?.HasNext ?? false)" OnCambioPagina="CambiarPaginaAsync" />
+}
+
+@code {
+    private PagedResult<ScriptExecutionListItem>? _resultado;
+    private IReadOnlyList<ServerSummary> _servidores = [];
+    private string _servidor = string.Empty;
+    private string _estado = string.Empty;
+    private string _ventana = "24h";
+    private string? _error;
+    private bool _cargando = true;
+    private int _pagina = 1;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var servidores = await Api.GetServersAsync(CancellationToken.None);
+        _servidores = servidores.Value ?? [];
+
+        await CargarAsync();
+
+        // Que no se pueda filtrar por servidor no impide ver el historial: el aviso solo sustituye al de la carga.
+        _error ??= servidores.ErrorMessage;
+    }
+
+    private IReadOnlyList<ScriptExecutionListItem> Ejecuciones => _resultado?.Items ?? [];
+
+    private int Pagina => _resultado?.Page ?? _pagina;
+
+    private Guid? ServidorFiltrado => Guid.TryParse(_servidor, out var identificador) ? identificador : null;
+
+    private DateTimeOffset? Desde => _ventana switch
+    {
+        "24h" => DateTimeOffset.UtcNow.AddHours(-24),
+        "7d" => DateTimeOffset.UtcNow.AddDays(-7),
+        _ => null
+    };
+
+    private async Task CargarAsync()
+    {
+        _cargando = true;
+
+        var resultado = await Api.GetExecutionsAsync(ServidorFiltrado, scriptId: null, _estado, Desde, _pagina, TamanoPagina, CancellationToken.None);
+
+        _resultado = resultado.Value;
+        _error = resultado.ErrorMessage;
+        _cargando = false;
+    }
+
+    /// <summary>Cambiar un filtro invalida la página en la que estuviéramos.</summary>
+    private async Task FiltrarAsync()
+    {
+        _pagina = 1;
+        await CargarAsync();
+    }
+
+    private async Task CambiarPaginaAsync(int pagina)
+    {
+        _pagina = pagina;
+        await CargarAsync();
+    }
+
+    private void Abrir(Guid executionId) => Navigation.NavigateTo($"/ejecuciones/{executionId}");
+
+    // Un código distinto de cero es lo único que se tiñe: el rojo del sistema va en texto, no en fondo.
+    private static string ClaseSalida(int? codigo) => codigo switch
+    {
+        null => "text-muted",
+        0 => "text-ink-2",
+        _ => "text-danger"
+    };
+
+    private record Estado(string Clave, string Texto);
+
+    private static readonly Estado[] Estados =
+    [
+        new("pending", "Pendiente"),
+        new("dispatched", "Enviada"),
+        new("running", "En curso"),
+        new("succeeded", "Correcta"),
+        new("failed", "Fallida"),
+        new("timedOut", "Expirada"),
+        new("canceled", "Cancelada")
+    ];
+
+    private const int TamanoPagina = 25;
+}

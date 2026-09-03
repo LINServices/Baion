@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
+
+    <!-- Poner en false para compilar sin Node; el CSS generado que haya en wwwroot se usa tal cual. -->
+    <RunTailwind Condition="'$(RunTailwind)' == ''">true</RunTailwind>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Ni node_modules ni el CSS fuente son contenido web: el resultado va a wwwroot/css. -->
+    <Content Remove="node_modules\**" />
+    <Content Remove="Styles\**" />
+    <None Remove="node_modules\**" />
+  </ItemGroup>
+
+  <Target Name="TailwindRestore" BeforeTargets="TailwindBuild" Condition="'$(RunTailwind)' == 'true' AND !Exists('$(MSBuildProjectDirectory)\node_modules')">
+    <Message Importance="high" Text="Instalando dependencias de Tailwind..." />
+    <Exec Command="npm install" WorkingDirectory="$(MSBuildProjectDirectory)" />
+  </Target>
+
+  <!-- El CSS se genera antes de recoger los estáticos, para que MapStaticAssets vea el archivo final. -->
+  <Target Name="TailwindBuild" BeforeTargets="ResolveStaticWebAssetsInputs" Condition="'$(RunTailwind)' == 'true'">
+    <Exec Command="npm run css:build" WorkingDirectory="$(MSBuildProjectDirectory)" />
+  </Target>
+
+</Project>

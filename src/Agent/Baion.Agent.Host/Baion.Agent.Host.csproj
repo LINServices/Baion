@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <UserSecretsId>dotnet-Baion.Agent.Host-49133fe0-791a-4049-af06-a111920431f3</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Systemd" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Baion.Agent.Core\Baion.Agent.Core.csproj" />
+    <ProjectReference Include="..\Baion.Agent.Execution\Baion.Agent.Execution.csproj" />
+    <ProjectReference Include="..\Baion.Agent.Metrics\Baion.Agent.Metrics.csproj" />
+  </ItemGroup>
+</Project>

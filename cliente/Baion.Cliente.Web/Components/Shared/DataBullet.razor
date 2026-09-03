@@ -1,0 +1,20 @@
+@* Fila de un desglose: viñeta de 5px, etiqueta y valor a la derecha. La viñeta va rellena en el
+   acento solo para el ítem actual; el resto queda en contorno fantasma. *@
+
+<div class="flex items-center gap-2">
+    <span class="size-[5px] shrink-0 rounded-full @(Actual ? "bg-current-500" : "border border-ghost")" aria-hidden="true"></span>
+    <span class="min-w-0 truncate text-body text-ink-2">@Etiqueta</span>
+    <span class="ml-auto text-value tabular-nums text-ink">@Valor</span>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Etiqueta { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public string Valor { get; set; } = string.Empty;
+
+    /// <summary>Marca el ítem actual o destacado del desglose. Como mucho uno por lista.</summary>
+    [Parameter]
+    public bool Actual { get; set; }
+}

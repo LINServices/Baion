@@ -1,0 +1,74 @@
+@page "/servidores"
+@attribute [Authorize]
+
+@inject IBaionApiClient Api
+
+<PageTitle>Servidores · Baion</PageTitle>
+
+<PageHeader Seccion="Infraestructura" Titulo="Servidores">
+    <Acciones>
+        <button type="button" class="baion-button-icon" title="Actualizar" aria-label="Actualizar"
+                disabled="@_cargando" @onclick="RecargarAsync">
+            <Icon Nombre="refresh-cw" Tamano="20" />
+        </button>
+        <a class="baion-button" href="/servidores/enrolar">
+            <Icon Nombre="plus" Tamano="14" />
+            Enrolar servidor
+        </a>
+    </Acciones>
+</PageHeader>
+
+<AlertMessage Mensaje="@_error" />
+<AlertMessage Mensaje="@_aviso" EsError="false" />
+
+<ServerTable Servidores="_servidores" Ocupado="_ocupado" AlDesactivar="DesactivarAsync" AlReactivar="ReactivarAsync" />
+
+@code {
+    private IReadOnlyList<ServerSummary> _servidores = [];
+    private string? _error;
+    private string? _aviso;
+    private Guid? _ocupado;
+    private bool _cargando = true;
+
+    protected override async Task OnInitializedAsync() => await RecargarAsync();
+
+    private async Task RecargarAsync()
+    {
+        _cargando = true;
+
+        var resultado = await Api.GetServersAsync(CancellationToken.None);
+
+        _servidores = resultado.Value ?? [];
+        _error = resultado.ErrorMessage;
+        _cargando = false;
+    }
+
+    private async Task DesactivarAsync(ServerSummary servidor) =>
+        await CambiarEstadoAsync(servidor, Api.DisableServerAsync, $"«{servidor.Name}» quedó desactivado y su agente fue desconectado.");
+
+    private async Task ReactivarAsync(ServerSummary servidor) =>
+        await CambiarEstadoAsync(servidor, Api.EnableServerAsync, $"«{servidor.Name}» vuelve a estar admitido; su agente reconectará por su cuenta.");
+
+    private async Task CambiarEstadoAsync(ServerSummary servidor, Func<Guid, CancellationToken, Task<ApiResult<ServerSummary>>> accion, string confirmacion)
+    {
+        _ocupado = servidor.Id;
+        _error = null;
+        _aviso = null;
+
+        var resultado = await accion(servidor.Id, CancellationToken.None);
+
+        _ocupado = null;
+
+        if (!resultado.IsSuccess)
+        {
+            _error = resultado.ErrorMessage;
+            return;
+        }
+
+        _aviso = confirmacion;
+
+        // Se recarga la lista entera y no solo la fila: al desactivar cambian también la presencia y la
+        // última señal, y el propio orquestador puede haber tocado más de lo que devuelve la llamada.
+        await RecargarAsync();
+    }
+}

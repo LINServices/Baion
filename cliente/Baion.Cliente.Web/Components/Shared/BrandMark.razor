@@ -1,0 +1,27 @@
+@* Marca de Baion: contorno en ink con el punto del acento dentro. El acento marca el núcleo activo
+   del orquestador, que es lo único que aquí significa algo; el resto es contorno. *@
+
+<span class="inline-flex items-center gap-2.5 text-ink" @attributes="Atributos">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="@Tamano" height="@Tamano"
+         fill="none" aria-hidden="true" focusable="false">
+        <rect x="3.75" y="3.75" width="16.5" height="16.5" rx="5.5" stroke="currentColor" stroke-width="1.5" />
+        <circle cx="12" cy="12" r="3.25" class="fill-current-500" />
+    </svg>
+
+    @if (ConNombre)
+    {
+        <span class="text-title">Baion</span>
+    }
+</span>
+
+@code {
+    [Parameter]
+    public int Tamano { get; set; } = 24;
+
+    /// <summary>Acompaña la marca con el nombre; en la barra superior basta el símbolo.</summary>
+    [Parameter]
+    public bool ConNombre { get; set; }
+
+    [Parameter(CaptureUnmatchedValues = true)]
+    public IReadOnlyDictionary<string, object>? Atributos { get; set; }
+}

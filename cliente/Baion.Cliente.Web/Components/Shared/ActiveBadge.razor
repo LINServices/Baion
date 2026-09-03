@@ -1,0 +1,12 @@
+@* Un script activo es «lo que está en uso», así que lleva el chip del acento; uno inactivo se queda
+   en contorno con la viñeta fantasma. *@
+
+<span class="baion-chip @(Activo ? "baion-chip-current" : string.Empty)">
+    <span class="baion-chip-dot @(Activo ? "bg-current-500" : "border border-ghost")" aria-hidden="true"></span>
+    @(Activo ? "Activo" : "Inactivo")
+</span>
+
+@code {
+    [Parameter, EditorRequired]
+    public bool Activo { get; set; }
+}

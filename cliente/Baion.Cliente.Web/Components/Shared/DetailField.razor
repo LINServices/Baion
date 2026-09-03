@@ -1,0 +1,15 @@
+@* Par etiqueta/valor de una ficha. Jerarquía extrema: la etiqueta susurra en 11px gris y el valor
+   se lee en ink. Nada de versalitas con tracking abierto: rompen el registro del sistema. *@
+
+<div>
+    <dt class="text-label text-muted">@Etiqueta</dt>
+    <dd class="mt-2 text-value text-ink">@ChildContent</dd>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Etiqueta { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public RenderFragment? ChildContent { get; set; }
+}

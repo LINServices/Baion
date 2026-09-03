@@ -1,0 +1,38 @@
+<span class="baion-chip @Clases">
+    <span class="baion-chip-dot @ClasePunto @(EnProceso ? "animate-pulse" : string.Empty)" aria-hidden="true"></span>
+    @Texto
+</span>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Estado { get; set; } = string.Empty;
+
+    private bool EnProceso => Estado is "provisioning";
+
+    private string Texto => Estado switch
+    {
+        "online" => "En línea",
+        "offline" => "Desconectado",
+        "provisioning" => "Aprovisionando",
+        "disabled" => "Deshabilitado",
+        _ => Estado
+    };
+
+    // El chip no lleva fondo de color: solo el estado activo se tiñe, porque el acento significa
+    // «lo que está funcionando». Un servidor deshabilitado se marca con contorno rojo, no con bloque.
+    private string Clases => Estado switch
+    {
+        "online" => "baion-chip-current",
+        "disabled" => "baion-chip-danger",
+        _ => string.Empty
+    };
+
+    // Desconectado va en fantasma: es lo que todavía no ocurre, igual que los ticks de las barras.
+    private string ClasePunto => Estado switch
+    {
+        "online" => "bg-current-500",
+        "provisioning" => "bg-ink",
+        "disabled" => "bg-danger",
+        _ => "border border-ghost"
+    };
+}

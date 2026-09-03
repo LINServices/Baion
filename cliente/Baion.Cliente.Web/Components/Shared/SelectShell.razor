@@ -1,0 +1,19 @@
+@* Envoltorio de un select. El chevron nativo no sigue el sistema, así que .baion-select lo apaga y
+   este componente pone el del set de iconos, en muted y a 14px.
+
+   El margen va en el envoltorio y no en el select: el chevron se centra respecto a este contenedor,
+   y separarlos descuadraría el icono. *@
+
+<div class="baion-select-wrap @Class">
+    @ChildContent
+    <span class="baion-select-chevron" aria-hidden="true"><Icon Nombre="chevron-down" Tamano="14" /></span>
+</div>
+
+@code {
+    /// <summary>Clases de posición o de ancho para el envoltorio.</summary>
+    [Parameter]
+    public string? Class { get; set; }
+
+    [Parameter, EditorRequired]
+    public RenderFragment? ChildContent { get; set; }
+}

@@ -1,0 +1,128 @@
+@page "/"
+@attribute [Authorize]
+
+@inject IBaionApiClient Api
+
+<PageTitle>Panel · Baion</PageTitle>
+
+<PageHeader Seccion="Resumen" Titulo="Panel" />
+
+<AlertMessage Mensaje="@_error" />
+
+@if (_cargando)
+{
+    <GhostLoader Filas="4" Descripcion="Cargando el estado de la infraestructura…" />
+}
+else if (_resumen is not null)
+{
+    @* Bento de 12 columnas: bloques de distinto tamaño en una malla común, sin huecos. *@
+    <div class="grid grid-cols-12 gap-3">
+        <div class="col-span-12 sm:col-span-6 lg:col-span-3">
+            <PanelCard Icono="server" Titulo="Servidores" Href="/servidores">
+                <MetricValue Valor="@NumberFormat.Count(_resumen.TotalServers)" />
+
+                <div class="mt-5 flex items-start justify-between">
+                    <StatPair Valor="@NumberFormat.Count(_resumen.OnlineServers)" Etiqueta="En línea" />
+                    <StatPair Valor="@NumberFormat.Count(_resumen.OfflineServers)" Etiqueta="Desconectados" Derecha="true" />
+                </div>
+
+                @* Negro lo que está conectado; en fantasma lo que falta por conectar. *@
+                <div class="mt-5">
+                    <SegmentedBar EnCurso="@NumberFormat.Fraction(_resumen.OnlineServers, _resumen.TotalServers)"
+                                  Pendiente="@NumberFormat.Fraction(_resumen.OfflineServers, _resumen.TotalServers)"
+                                  Descripcion="@($"{_resumen.OnlineServers} de {_resumen.TotalServers} servidores en línea")" />
+                </div>
+            </PanelCard>
+        </div>
+
+        <div class="col-span-12 sm:col-span-6 lg:col-span-3">
+            <PanelCard Icono="circle-check" Titulo="Ejecuciones correctas" Href="/ejecuciones" Ancha="true">
+                <Gauge Fraccion="@FraccionCorrectas"
+                       Valor="@NumberFormat.Share(Correctas, _resumen.ExecutionsLast24Hours)"
+                       Unidad="%"
+                       Etiqueta="Últimas 24 h"
+                       Descripcion="@($"{Correctas} de {_resumen.ExecutionsLast24Hours} ejecuciones terminaron bien en las últimas 24 horas")">
+                    <Izquierda>
+                        <StatPair Valor="@NumberFormat.Count(_resumen.ExecutionsLast24Hours)" Etiqueta="Lanzadas" />
+                    </Izquierda>
+                    <Derecha>
+                        <StatPair Valor="@NumberFormat.Count(_resumen.FailedLast24Hours)" Etiqueta="Fallidas"
+                                  Derecha="true" Alerta="@(_resumen.FailedLast24Hours > 0)" />
+                    </Derecha>
+                </Gauge>
+            </PanelCard>
+        </div>
+
+        <div class="col-span-12 sm:col-span-6 lg:col-span-3">
+            <PanelCard Icono="activity" Titulo="En curso" Href="/ejecuciones">
+                <MetricValue Valor="@NumberFormat.Count(_resumen.RunningExecutions)" />
+
+                <div class="mt-6 space-y-3">
+                    <DataBullet Etiqueta="Scripts en el catálogo" Valor="@NumberFormat.Count(_resumen.TotalScripts)" />
+                    <DataBullet Etiqueta="Servidores gestionados" Valor="@NumberFormat.Count(_resumen.TotalServers)" />
+                    <DataBullet Etiqueta="Lanzadas en 24 h" Valor="@NumberFormat.Count(_resumen.ExecutionsLast24Hours)" />
+                </div>
+            </PanelCard>
+        </div>
+
+        <div class="col-span-12 sm:col-span-6 lg:col-span-3">
+            @* El insight se lee como una frase, no como una métrica con etiqueta, y las cifras que
+               importan van dentro del texto en peso 600: el único sitio del panel donde se usa. *@
+            <GlassInsight Titulo="Estado de la flota">
+                @if (_resumen.TotalServers == 0)
+                {
+                    <span>Aún no hay ningún servidor enrolado: instala el agente en una máquina para empezar a ver actividad aquí.</span>
+                }
+                else if (_resumen is { FailedLast24Hours: > 0 })
+                {
+                    <span>
+                        <strong class="font-semibold">@NumberFormat.Count(_resumen.FailedLast24Hours) de @NumberFormat.Count(_resumen.ExecutionsLast24Hours) ejecuciones</strong>
+                        no llegaron a terminar en las últimas 24 h.
+                    </span>
+                }
+                else if (_resumen is { ExecutionsLast24Hours: > 0 })
+                {
+                    <span>
+                        En las últimas 24 h se lanzaron <strong class="font-semibold">@NumberFormat.Count(_resumen.ExecutionsLast24Hours) ejecuciones</strong>
+                        y todas terminaron correctamente.
+                    </span>
+                }
+                else
+                {
+                    <span>
+                        <strong class="font-semibold">@NumberFormat.Count(_resumen.OnlineServers) de @NumberFormat.Count(_resumen.TotalServers) servidores</strong>
+                        están en línea y esperando trabajo.
+                    </span>
+                }
+            </GlassInsight>
+        </div>
+    </div>
+
+    <section class="mt-10">
+        <h2 class="mb-4 text-heading text-ink">Servidores</h2>
+        <ServerTable Servidores="_servidores" />
+    </section>
+}
+
+@code {
+    private DashboardSummary? _resumen;
+    private IReadOnlyList<ServerSummary> _servidores = [];
+    private string? _error;
+    private bool _cargando = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var resumen = await Api.GetDashboardSummaryAsync(CancellationToken.None);
+        var servidores = await Api.GetServersAsync(CancellationToken.None);
+
+        _resumen = resumen.Value;
+        _servidores = servidores.Value ?? [];
+        _error = resumen.ErrorMessage ?? servidores.ErrorMessage;
+        _cargando = false;
+    }
+
+    private int Correctas => Math.Max((_resumen?.ExecutionsLast24Hours ?? 0) - (_resumen?.FailedLast24Hours ?? 0), 0);
+
+    // Sin ejecuciones no hay tasa que enseñar: el arco se queda vacío en lugar de fingir un 100%.
+    private double FraccionCorrectas => NumberFormat.Fraction(Correctas, _resumen?.ExecutionsLast24Hours ?? 0);
+}

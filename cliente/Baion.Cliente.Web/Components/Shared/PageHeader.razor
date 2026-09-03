@@ -1,0 +1,42 @@
+@* Hero de sección: eyebrow en gris → título display → y a la derecha, alineados a la línea base
+   inferior, los controles. Un solo display por pantalla. *@
+
+<div class="mb-10 flex flex-wrap items-end justify-between gap-x-8 gap-y-6">
+    <div class="min-w-0">
+        @if (!string.IsNullOrWhiteSpace(Seccion))
+        {
+            <p class="text-label text-muted">@Seccion</p>
+        }
+
+        <h1 class="mt-3 text-display-sm text-ink md:text-display">@Titulo</h1>
+
+        @if (!string.IsNullOrWhiteSpace(Descripcion))
+        {
+            <p class="mt-5 max-w-[62ch] text-body text-ink-2">@Descripcion</p>
+        }
+    </div>
+
+    @if (Acciones is not null)
+    {
+        <div class="flex flex-wrap items-center gap-2">@Acciones</div>
+    }
+</div>
+
+@code {
+    /// <summary>Eyebrow: una o dos palabras que sitúan la página dentro del producto.</summary>
+    [Parameter]
+    public string? Seccion { get; set; }
+
+    [Parameter, EditorRequired]
+    public string Titulo { get; set; } = string.Empty;
+
+    /// <summary>
+    /// El sistema confía en que el título basta, así que esto no es un subtítulo decorativo: se usa
+    /// solo cuando la página necesita explicar algo que no se deduce de su nombre.
+    /// </summary>
+    [Parameter]
+    public string? Descripcion { get; set; }
+
+    [Parameter]
+    public RenderFragment? Acciones { get; set; }
+}

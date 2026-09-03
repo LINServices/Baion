@@ -1,0 +1,246 @@
+@page "/servidores/enrolar"
+@attribute [Authorize]
+
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.Extensions.Options
+
+@inject IBaionApiClient Api
+@inject IOptions<BaionApiOptions> ApiOptions
+
+<PageTitle>Enrolar servidor · Baion</PageTitle>
+
+<PageHeader Seccion="Infraestructura" Titulo="Enrolar un servidor"
+            Descripcion="Baion nunca se conecta a tus máquinas: es el agente quien marca hacia fuera. Aquí se emite el token y se prepara el comando; instalarlo hay que hacerlo en la máquina.">
+    <Acciones>
+        <a class="baion-button-ghost" href="/servidores">
+            <Icon Nombre="chevron-left" Tamano="14" />
+            Volver a servidores
+        </a>
+    </Acciones>
+</PageHeader>
+
+<AlertMessage Mensaje="@_error" />
+
+@if (_emitido is not null)
+{
+    <div class="mb-3">
+        <PanelCard Icono="key-round" Titulo="Token emitido" Ancha="true">
+            <p class="flex items-start gap-2 text-body text-ink-2">
+                <span class="mt-px shrink-0 text-warn" aria-hidden="true"><Icon Nombre="circle-alert" Tamano="14" /></span>
+                Cópialo ahora. Solo se guarda su hash, así que al salir de esta página no hay forma de volver a verlo.
+            </p>
+
+            <pre class="baion-code mt-4 select-all">@_emitido.Token</pre>
+
+            <p class="mt-6 text-label text-muted">Instalar en Linux</p>
+            <pre class="baion-code mt-2 select-all">sudo ./install.sh --orchestrator @SocketUri --token @_emitido.Token</pre>
+
+            <p class="mt-5 text-label text-muted">Instalar en Windows</p>
+            <pre class="baion-code mt-2 select-all">.\Install-BaionAgent.ps1 -Orchestrator @SocketUri -Token @_emitido.Token</pre>
+
+            <p class="mt-6 max-w-[62ch] text-body text-ink-2">
+                Los instaladores están en <code class="font-mono">deploy/linux/</code> y <code class="font-mono">deploy/windows/</code>.
+                El agente aparecerá en la lista de servidores en cuanto se enrole; a partir de ahí usa su propia
+                credencial y este token deja de hacerle falta.
+            </p>
+        </PanelCard>
+    </div>
+}
+
+<div class="grid gap-3 lg:grid-cols-3">
+    <div class="lg:col-span-1">
+        <PanelCard Icono="key-round" Titulo="Emitir un token">
+            <EditForm Model="_entrada" OnValidSubmit="EmitirAsync">
+                <DataAnnotationsValidator />
+
+                <div class="space-y-5">
+                    <div>
+                        <label class="baion-label" for="nombre">Nombre</label>
+                        <InputText id="nombre" @bind-Value="_entrada.Name" class="baion-input mt-2" placeholder="Lote producción" />
+                        <ValidationMessage For="() => _entrada.Name" class="mt-2 text-label text-danger" />
+                        <p class="mt-2 text-label text-muted">Solo sirve para reconocerlo después en esta lista.</p>
+                    </div>
+
+                    <div>
+                        <label class="baion-label" for="tipo">Tipo de servidor</label>
+                        <SelectShell Class="mt-2">
+                            <InputSelect id="tipo" @bind-Value="_entrada.DefaultServerKind" class="baion-select">
+                                <option value="vm">Máquina virtual</option>
+                                <option value="vps">VPS</option>
+                                <option value="bareMetal">Bare metal</option>
+                            </InputSelect>
+                        </SelectShell>
+                    </div>
+
+                    <div>
+                        <label class="baion-label" for="usos">Máximo de enrolamientos</label>
+                        <InputNumber id="usos" @bind-Value="_entrada.MaxUses" class="baion-input mt-2 tabular-nums" placeholder="Sin límite" />
+                        <ValidationMessage For="() => _entrada.MaxUses" class="mt-2 text-label text-danger" />
+                        <p class="mt-2 text-label text-muted">Vacío no pone tope. Uno por máquina es lo más seguro.</p>
+                    </div>
+
+                    <div>
+                        <label class="baion-label" for="caduca">Caduca en (días)</label>
+                        <InputNumber id="caduca" @bind-Value="_entrada.ExpiresInDays" class="baion-input mt-2 tabular-nums" placeholder="Sin caducidad" />
+                        <ValidationMessage For="() => _entrada.ExpiresInDays" class="mt-2 text-label text-danger" />
+                    </div>
+
+                    <button type="submit" class="baion-button w-full" disabled="@_emitiendo">
+                        @(_emitiendo ? "Emitiendo…" : "Emitir token")
+                    </button>
+                </div>
+            </EditForm>
+        </PanelCard>
+    </div>
+
+    <div class="lg:col-span-2">
+        <h2 class="mb-4 text-heading text-ink">Tokens emitidos</h2>
+
+        @if (_tokens.Count == 0)
+        {
+            <EmptyState Icono="key-round"
+                        Titulo="Ningún token emitido"
+                        Descripcion="Emite uno para poder instalar el agente en una máquina." />
+        }
+        else
+        {
+            <div class="baion-card overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="baion-table">
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Estado</th>
+                                <th class="text-right">Usos</th>
+                                <th>Caduca</th>
+                                <th class="text-right">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var token in _tokens)
+                            {
+                                <tr>
+                                    <td>
+                                        <div class="text-title text-ink">@token.Name</div>
+                                        <div class="mt-1 text-label text-muted">Creado @TimeFormat.Relative(token.CreatedAt)</div>
+                                    </td>
+                                    <td>
+                                        <span class="baion-chip @EstadoClase(token)">
+                                            <span class="baion-chip-dot @EstadoPunto(token)" aria-hidden="true"></span>
+                                            @Estado(token)
+                                        </span>
+                                    </td>
+                                    <td class="text-right tabular-nums">@token.UseCount@(token.MaxUses is int tope ? $" / {tope}" : "")</td>
+                                    <td class="text-muted">@(token.ExpiresAt is null ? "Sin caducidad" : TimeFormat.Absolute(token.ExpiresAt))</td>
+                                    <td class="text-right">
+                                        @if (token.RevokedAt is null)
+                                        {
+                                            <button type="button" class="baion-button-danger" @onclick="() => RevocarAsync(token.Id)" disabled="@_revocando">Revocar</button>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private readonly EntradaToken _entrada = new();
+
+    private IReadOnlyList<EnrollmentTokenSummary> _tokens = [];
+    private EnrollmentTokenIssued? _emitido;
+    private string? _error;
+    private bool _emitiendo;
+    private bool _revocando;
+
+    /// <summary>El agente habla WebSocket, no HTTP: se deriva del mismo host que usa el panel para la API.</summary>
+    private string SocketUri => ApiOptions.Value.BaseAddress
+        .Replace("https://", "wss://", StringComparison.OrdinalIgnoreCase)
+        .Replace("http://", "ws://", StringComparison.OrdinalIgnoreCase)
+        .TrimEnd('/');
+
+    protected override async Task OnInitializedAsync() => await CargarAsync();
+
+    private async Task CargarAsync()
+    {
+        var resultado = await Api.GetEnrollmentTokensAsync(CancellationToken.None);
+
+        _tokens = resultado.Value ?? [];
+        _error = resultado.ErrorMessage;
+    }
+
+    private async Task EmitirAsync()
+    {
+        _emitiendo = true;
+        _error = null;
+
+        var caduca = _entrada.ExpiresInDays is int dias ? DateTimeOffset.UtcNow.AddDays(dias) : (DateTimeOffset?)null;
+        var peticion = new Models.CreateEnrollmentTokenRequest(_entrada.Name, _entrada.DefaultServerKind, caduca, _entrada.MaxUses);
+        var resultado = await Api.CreateEnrollmentTokenAsync(peticion, CancellationToken.None);
+
+        _emitiendo = false;
+
+        if (resultado is not { IsSuccess: true, Value: Models.EnrollmentTokenIssued emitido })
+        {
+            _error = resultado.ErrorMessage;
+            return;
+        }
+
+        _emitido = emitido;
+        await CargarAsync();
+    }
+
+    private async Task RevocarAsync(Guid tokenId)
+    {
+        _revocando = true;
+        _error = null;
+
+        var resultado = await Api.RevokeEnrollmentTokenAsync(tokenId, CancellationToken.None);
+
+        _revocando = false;
+        _error = resultado.ErrorMessage;
+
+        await CargarAsync();
+    }
+
+    private static string Estado(EnrollmentTokenSummary token) => token switch
+    {
+        { RevokedAt: not null } => "Revocado",
+        { IsUsable: false } => "Agotado o caducado",
+        _ => "Activo"
+    };
+
+    // Un token utilizable es «lo activo», y por eso es lo único que lleva el acento aquí.
+    private static string EstadoClase(EnrollmentTokenSummary token) => token switch
+    {
+        { RevokedAt: not null } => "baion-chip-danger",
+        { IsUsable: false } => string.Empty,
+        _ => "baion-chip-current"
+    };
+
+    private static string EstadoPunto(EnrollmentTokenSummary token) => token switch
+    {
+        { RevokedAt: not null } => "bg-danger",
+        { IsUsable: false } => "border border-ghost",
+        _ => "bg-current-500"
+    };
+
+    private sealed class EntradaToken
+    {
+        [Required(ErrorMessage = "Indica un nombre.")]
+        [StringLength(200, ErrorMessage = "El nombre no puede pasar de 200 caracteres.")]
+        public string Name { get; set; } = string.Empty;
+
+        public string DefaultServerKind { get; set; } = "vps";
+
+        [Range(1, 10_000, ErrorMessage = "Debe ser al menos 1.")]
+        public int? MaxUses { get; set; } = 1;
+
+        [Range(1, 3_650, ErrorMessage = "Debe estar entre 1 y 3650 días.")]
+        public int? ExpiresInDays { get; set; } = 7;
+    }
+}

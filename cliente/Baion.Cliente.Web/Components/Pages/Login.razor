@@ -1,0 +1,122 @@
+@page "/login"
+@layout EmptyLayout
+@attribute [AllowAnonymous]
+@attribute [ExcludeFromInteractiveRouting]
+
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Authentication.Cookies
+
+@inject IBaionApiClient Api
+@inject NavigationManager Navigation
+
+<PageTitle>Entrar · Baion</PageTitle>
+
+<div class="flex min-h-screen items-center justify-center bg-canvas p-4">
+    <div class="w-full max-w-sm">
+        <div class="mb-8 flex justify-center">
+            <BrandMark Tamano="28" ConNombre="true" />
+        </div>
+
+        <div class="baion-card p-6">
+            <p class="text-label text-muted">Orquestador de servidores</p>
+            <h1 class="mb-8 mt-2 text-display-sm text-ink">Entrar</h1>
+
+            <AlertMessage Mensaje="@_error" />
+
+            <EditForm Model="Input!" FormName="login" OnValidSubmit="EntrarAsync" method="post" class="space-y-5">
+                <DataAnnotationsValidator />
+
+                <div>
+                    <label class="baion-label" for="tenant">Organización</label>
+                    <InputText id="tenant" @bind-Value="Input!.TenantSlug" class="baion-input mt-2" placeholder="mi-organizacion" autocomplete="organization" />
+                    <ValidationMessage For="() => Input!.TenantSlug" class="mt-2 text-label text-danger" />
+                </div>
+
+                <div>
+                    <label class="baion-label" for="email">Correo</label>
+                    <InputText id="email" @bind-Value="Input!.Email" class="baion-input mt-2" placeholder="tu@correo.com" autocomplete="username" />
+                    <ValidationMessage For="() => Input!.Email" class="mt-2 text-label text-danger" />
+                </div>
+
+                <div>
+                    <label class="baion-label" for="password">Contraseña</label>
+                    <InputText id="password" type="password" @bind-Value="Input!.Password" class="baion-input mt-2" autocomplete="current-password" />
+                    <ValidationMessage For="() => Input!.Password" class="mt-2 text-label text-danger" />
+                </div>
+
+                <button type="submit" class="baion-button w-full">Entrar</button>
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string? _error;
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromForm]
+    private LoginInput? Input { get; set; }
+
+    protected override void OnInitialized() => Input ??= new LoginInput();
+
+    [SupplyParameterFromQuery(Name = "volverA")]
+    private string? VolverA { get; set; }
+
+    private async Task EntrarAsync()
+    {
+        var resultado = await Api.LoginAsync(new Models.LoginRequest(Input!.TenantSlug, Input.Email, Input.Password), HttpContext.RequestAborted);
+
+        if (resultado is not { IsSuccess: true, Value: Models.AuthenticationResult autenticacion })
+        {
+            _error = resultado.ErrorMessage;
+            return;
+        }
+
+        await FirmarCookieAsync(autenticacion);
+
+        // forceLoad para que la nueva cookie llegue en una petición limpia y el circuito nazca autenticado.
+        Navigation.NavigateTo(string.IsNullOrWhiteSpace(VolverA) ? "/" : $"/{VolverA}", forceLoad: true);
+    }
+
+    /// <summary>
+    /// El token de la API se guarda como un claim dentro de la cookie de sesión, que va cifrada y
+    /// HttpOnly. Así el navegador nunca lo ve y el circuito de Blazor puede leerlo del usuario.
+    /// </summary>
+    private async Task FirmarCookieAsync(Models.AuthenticationResult autenticacion)
+    {
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.NameIdentifier, autenticacion.UserId.ToString()),
+            new(ClaimTypes.Name, autenticacion.Email),
+            new(BaionClaims.AccessToken, autenticacion.AccessToken),
+            new(BaionClaims.TenantId, autenticacion.TenantId.ToString()),
+            new(BaionClaims.ExpiresAt, autenticacion.ExpiresAt.ToString("O"))
+        };
+
+        claims.AddRange(autenticacion.Roles.Select(rol => new Claim(ClaimTypes.Role, rol)));
+
+        var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+
+        // La cookie no sobrevive al token: si el token caduca antes, la sesión deja de servir de nada.
+        var propiedades = new AuthenticationProperties { IsPersistent = true, ExpiresUtc = autenticacion.ExpiresAt };
+
+        await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity), propiedades);
+    }
+
+    /// <summary>Datos del formulario, con la validación mínima que evita ida y vuelta al servidor.</summary>
+    private sealed class LoginInput
+    {
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Indica la organización.")]
+        public string TenantSlug { get; set; } = string.Empty;
+
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Indica tu correo.")]
+        [System.ComponentModel.DataAnnotations.EmailAddress(ErrorMessage = "El correo no es válido.")]
+        public string Email { get; set; } = string.Empty;
+
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Indica tu contraseña.")]
+        public string Password { get; set; } = string.Empty;
+    }
+}

@@ -1,0 +1,101 @@
+name: Release del agente
+
+# Se dispara al empujar un tag de versión (v1.2.3). El nombre del tag es el de la release.
+on:
+  push:
+    tags:
+      - "v*"
+
+# El job de release necesita permiso de escritura para crear la GitHub Release.
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Publicar ${{ matrix.rid }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Cada RID se empaqueta con el script de instalación de su carpeta en deploy/.
+          - rid: win-x64
+            deploy_dir: windows
+          - rid: win-x86
+            deploy_dir: windows
+          - rid: linux-x64
+            deploy_dir: linux
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Instalar el SDK de .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      # El agente no referencia ningún paquete LIN.*/Global.*/Http.Utils, así que el
+      # package source mapping de nuget.config nunca consulta el feed interno "LI" y
+      # el restore funciona sin credenciales.
+      - name: Restaurar
+        run: dotnet restore src/Agent/Baion.Agent.Host/Baion.Agent.Host.csproj
+
+      - name: Preparar la carpeta de despliegue
+        run: |
+          set -euo pipefail
+          stage="baion-agent-${{ matrix.rid }}"
+          rm -rf "$stage"
+          mkdir -p "$stage"
+          # Copia el/los script(s) de instalación de deploy/<os>/, sin el publish/ versionado.
+          rsync -a --exclude 'publish' "deploy/${{ matrix.deploy_dir }}/" "$stage/"
+
+      - name: Publicar (self-contained)
+        run: >
+          dotnet publish src/Agent/Baion.Agent.Host/Baion.Agent.Host.csproj
+          --configuration Release
+          --runtime ${{ matrix.rid }}
+          --self-contained true
+          --no-restore
+          --output "baion-agent-${{ matrix.rid }}/publish"
+
+      - name: Marcar ejecutables (Linux)
+        if: startsWith(matrix.rid, 'linux')
+        run: |
+          set -euo pipefail
+          stage="baion-agent-${{ matrix.rid }}"
+          chmod +x "$stage/publish/Baion.Agent.Host"
+          chmod +x "$stage/install.sh"
+
+      - name: Empaquetar el zip
+        run: |
+          set -euo pipefail
+          stage="baion-agent-${{ matrix.rid }}"
+          zip -r "$stage.zip" "$stage"
+
+      - name: Subir el artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: baion-agent-${{ matrix.rid }}
+          path: baion-agent-${{ matrix.rid }}.zip
+          if-no-files-found: error
+
+  release:
+    name: Publicar la GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Descargar los artefactos
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Crear la release y adjuntar los zips
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*.zip
+          generate_release_notes: true
+          fail_on_unmatched_files: true

@@ -1,0 +1,43 @@
+@page "/scripts/nuevo"
+@attribute [Authorize]
+
+@inject IBaionApiClient Api
+@inject NavigationManager Navigation
+
+<PageTitle>Nuevo script · Baion</PageTitle>
+
+<PageHeader Seccion="Catálogo" Titulo="Nuevo script"
+            Descripcion="El contenido se guarda tal cual y el orquestador calcula su checksum.">
+    <Acciones>
+        <a class="baion-button-ghost" href="/scripts">Cancelar</a>
+    </Acciones>
+</PageHeader>
+
+<ScriptForm Guardando="_guardando" ErrorGeneral="@_error" ErrorCodigo="@_codigo" OnGuardar="GuardarAsync" />
+
+@code {
+    private string? _error;
+    private string? _codigo;
+    private bool _guardando;
+
+    private async Task GuardarAsync(ScriptFormEntrada entrada)
+    {
+        _guardando = true;
+        _error = null;
+        _codigo = null;
+
+        var peticion = new Models.CreateScriptRequest(entrada.Name, string.IsNullOrWhiteSpace(entrada.Description) ? null : entrada.Description, entrada.Content, entrada.Runtime, entrada.DefaultTimeoutSeconds);
+        var resultado = await Api.CreateScriptAsync(peticion, CancellationToken.None);
+
+        _guardando = false;
+
+        if (resultado is { IsSuccess: true, Value: Models.ScriptDetail creado })
+        {
+            Navigation.NavigateTo($"/scripts/{creado.Id}");
+            return;
+        }
+
+        _error = resultado.ErrorMessage;
+        _codigo = resultado.ErrorCode;
+    }
+}

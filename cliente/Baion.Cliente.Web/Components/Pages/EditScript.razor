@@ -1,0 +1,88 @@
+@page "/scripts/{ScriptId:guid}/editar"
+@attribute [Authorize]
+
+@inject IBaionApiClient Api
+@inject NavigationManager Navigation
+
+<PageTitle>@Titulo · Baion</PageTitle>
+
+<PageHeader Seccion="Script" Titulo="@Titulo"
+            Descripcion="Cambiar el contenido crea una versión nueva; tocar solo el nombre, la descripción, el intérprete o el timeout deja la versión igual.">
+    <Acciones>
+        <a class="baion-button-ghost" href="@Volver">
+            <Icon Nombre="chevron-left" Tamano="14" />
+            Volver al script
+        </a>
+    </Acciones>
+</PageHeader>
+
+@if (_cargando)
+{
+    <GhostLoader Descripcion="Cargando el script…" />
+}
+else if (_script is null)
+{
+    <EmptyState Icono="terminal"
+                Titulo="No se encontró el script"
+                Descripcion="Puede que se haya eliminado del catálogo o que el enlace esté equivocado.">
+        <Accion>
+            <a class="baion-button" href="/scripts">Ir al catálogo</a>
+        </Accion>
+    </EmptyState>
+}
+else
+{
+    <ScriptForm Original="_script" Guardando="_guardando" ErrorGeneral="@_error" ErrorCodigo="@_codigo" OnGuardar="GuardarAsync" />
+}
+
+@code {
+    /// <summary>Identificador del script; llega en la ruta.</summary>
+    [Parameter]
+    public Guid ScriptId { get; set; }
+
+    private Models.ScriptDetail? _script;
+    private string? _error;
+    private string? _codigo;
+    private bool _cargando = true;
+    private bool _guardando;
+
+    private string Titulo => _script?.Name ?? "Editar script";
+
+    private string Volver => _script is null ? "/scripts" : $"/scripts/{_script.Id}";
+
+    // Igual que ScriptDetail: en OnParametersSetAsync porque saltar de un script a otro reutiliza el componente.
+    protected override async Task OnParametersSetAsync()
+    {
+        _cargando = true;
+        _error = null;
+        _codigo = null;
+
+        var resultado = await Api.GetScriptAsync(ScriptId, CancellationToken.None);
+
+        _script = resultado.Value;
+        _error = resultado.ErrorMessage;
+        _cargando = false;
+    }
+
+    private async Task GuardarAsync(ScriptFormEntrada entrada)
+    {
+        _guardando = true;
+        _error = null;
+        _codigo = null;
+
+        var peticion = new Models.UpdateScriptRequest(entrada.Name, string.IsNullOrWhiteSpace(entrada.Description) ? null : entrada.Description, entrada.Content, entrada.Runtime, entrada.DefaultTimeoutSeconds);
+        var resultado = await Api.UpdateScriptAsync(ScriptId, peticion, CancellationToken.None);
+
+        _guardando = false;
+
+        if (resultado.IsSuccess)
+        {
+            // El detalle recarga desde la API y ahí se ve la versión real: sube solo si cambió el contenido.
+            Navigation.NavigateTo($"/scripts/{ScriptId}");
+            return;
+        }
+
+        _error = resultado.ErrorMessage;
+        _codigo = resultado.ErrorCode;
+    }
+}

@@ -1,0 +1,42 @@
+@* Barra de progreso segmentada. De izquierda a derecha: lo logrado en el acento, lo que está en
+   curso en negro, hueco, y a la derecha la zona fantasma con lo pendiente dibujado en líneas. *@
+
+<div class="flex h-2 items-stretch gap-px overflow-hidden rounded-bar bg-track"
+     role="img" aria-label="@Descripcion">
+    @if (Logrado > 0)
+    {
+        <span class="rounded-bar bg-current-500" style="width: @Ancho(Logrado)"></span>
+    }
+    @if (EnCurso > 0)
+    {
+        <span class="rounded-bar bg-ink" style="width: @Ancho(EnCurso)"></span>
+    }
+    <span class="flex-1"></span>
+    @if (Pendiente > 0)
+    {
+        <span class="bg-ghost-ticks" style="width: @Ancho(Pendiente)"></span>
+    }
+</div>
+
+@code {
+    /// <summary>Fracción de 0 a 1 ya conseguida. Es lo único de la barra que lleva el acento.</summary>
+    [Parameter]
+    public double Logrado { get; set; }
+
+    /// <summary>Fracción de 0 a 1 en marcha ahora mismo.</summary>
+    [Parameter]
+    public double EnCurso { get; set; }
+
+    /// <summary>Fracción de 0 a 1 que todavía no ha ocurrido: se dibuja con ticks, nunca en gris sólido.</summary>
+    [Parameter]
+    public double Pendiente { get; set; }
+
+    /// <summary>Lo que la barra dice, para quien no la ve.</summary>
+    [Parameter, EditorRequired]
+    public string Descripcion { get; set; } = string.Empty;
+
+    // Los porcentajes van al atributo style, así que se formatean en invariante: una coma decimal
+    // ahí no es un ancho, es CSS roto.
+    private static string Ancho(double fraccion) => string.Format(
+        System.Globalization.CultureInfo.InvariantCulture, "{0:0.##}%", Math.Clamp(fraccion, 0, 1) * 100);
+}

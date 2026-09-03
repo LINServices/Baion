@@ -1,0 +1,49 @@
+# === Compilación ===
+bin/
+obj/
+artifacts/
+publish/
+[Pp]ublish/
+*.binlog
+
+# === Visual Studio / Rider / VS Code ===
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*_i.c
+*_p.c
+*.rsp
+
+# === Test / cobertura ===
+TestResults/
+[Tt]est[Rr]esult*/
+coverage*.json
+coverage*.xml
+coverage*.info
+*.coverage
+*.coveragexml
+
+# === Node / Tailwind (cliente/Baion.Cliente.Web) ===
+node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# === Configuración y secretos locales ===
+appsettings.Local.json
+appsettings.*.Local.json
+*.db
+*.db-shm
+*.db-wal
+secrets.json
+
+# === Estado del agente en desarrollo ===
+.agent-state/
+
+# === Sistema operativo ===
+.DS_Store
+Thumbs.db
+desktop.ini

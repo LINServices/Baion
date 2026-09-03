@@ -1,0 +1,32 @@
+[Unit]
+Description=Baion Agent
+Documentation=https://github.com/lin-cloud/baion
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+# El host llama a AddSystemd(), así que notifica su arranque y sus latidos a systemd.
+Type=notify
+ExecStart=/opt/baion-agent/Baion.Agent.Host
+WorkingDirectory=/opt/baion-agent
+
+# Reconecta solo, pero si el proceso muere systemd lo levanta igualmente.
+Restart=always
+RestartSec=5
+
+# Crea y mantiene /var/lib/baion-agent, donde el agente guarda su credencial.
+StateDirectory=baion-agent
+StateDirectoryMode=0700
+
+Environment=DOTNET_ENVIRONMENT=Production
+
+# El agente ejecuta scripts de administración en la máquina, así que corre como root a propósito.
+# Endurecerlo con ProtectSystem o PrivateTmp rompería justamente aquello para lo que se instala.
+NoNewPrivileges=false
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=baion-agent
+
+[Install]
+WantedBy=multi-user.target

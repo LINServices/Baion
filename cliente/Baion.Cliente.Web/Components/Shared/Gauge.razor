@@ -1,0 +1,77 @@
+@* Gauge semicircular: arco de 180°, riel en track, progreso en negro y un punto del acento en la
+   punta. El valor va centrado bajo el arco; las dos cifras de contexto, encima y a los extremos. *@
+
+<div>
+    @if (Izquierda is not null || Derecha is not null)
+    {
+        <div class="flex items-start justify-between">
+            @Izquierda
+            @Derecha
+        </div>
+    }
+
+    <div class="relative mt-4">
+        <svg viewBox="0 0 200 118" class="w-full" role="img" aria-label="@Descripcion">
+            <path d="M14 100 A86 86 0 0 1 186 100" fill="none" stroke="var(--gim-track)"
+                  stroke-width="10" stroke-linecap="round" />
+            <path d="M14 100 A86 86 0 0 1 186 100" fill="none" stroke="var(--gim-ink)"
+                  stroke-width="10" stroke-linecap="round"
+                  stroke-dasharray="@LongitudArco" stroke-dashoffset="@Desplazamiento" />
+            @if (Fraccion > 0)
+            {
+                <circle cx="@PuntoX" cy="@PuntoY" r="5" class="fill-current-500" />
+            }
+        </svg>
+
+        <div class="absolute inset-x-0 bottom-0 text-center">
+            <MetricValue Valor="@Valor" Unidad="@Unidad" Compacto="true" />
+            <p class="mt-1.5 text-label text-muted">@Etiqueta</p>
+        </div>
+    </div>
+</div>
+
+@code {
+    /// <summary>Fracción de 0 a 1 que llena el arco.</summary>
+    [Parameter]
+    public double Fraccion { get; set; }
+
+    [Parameter, EditorRequired]
+    public string Valor { get; set; } = string.Empty;
+
+    [Parameter]
+    public string? Unidad { get; set; }
+
+    [Parameter, EditorRequired]
+    public string Etiqueta { get; set; } = string.Empty;
+
+    /// <summary>Lo que el arco dice, para quien no lo ve.</summary>
+    [Parameter, EditorRequired]
+    public string Descripcion { get; set; } = string.Empty;
+
+    /// <summary>Cifra de contexto sobre el extremo izquierdo del arco.</summary>
+    [Parameter]
+    public RenderFragment? Izquierda { get; set; }
+
+    /// <summary>Cifra de contexto sobre el extremo derecho del arco.</summary>
+    [Parameter]
+    public RenderFragment? Derecha { get; set; }
+
+    private double Progreso => Math.Clamp(Fraccion, 0, 1);
+
+    // Media circunferencia del radio con el que está trazado el arco del marcado.
+    private static readonly double Arco = Math.PI * 86;
+
+    private string LongitudArco => Coordenada(Arco);
+
+    private string Desplazamiento => Coordenada(Arco * (1 - Progreso));
+
+    // El arco arranca en 180° y termina en 0°, así que la punta avanza en sentido antihorario.
+    private double Angulo => Math.PI * (1 - Progreso);
+
+    private string PuntoX => Coordenada(100 + (86 * Math.Cos(Angulo)));
+
+    private string PuntoY => Coordenada(100 - (86 * Math.Sin(Angulo)));
+
+    // Coordenadas y longitudes de SVG en invariante: una coma decimal ahí rompe el atributo.
+    private static string Coordenada(double valor) => valor.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+}

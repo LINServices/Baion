@@ -1,0 +1,31 @@
+@page "/Error"
+@using System.Diagnostics
+
+<PageTitle>Error · Baion</PageTitle>
+
+<PageHeader Seccion="Error" Titulo="Algo se rompió"
+            Descripcion="La petición no llegó a completarse. Vuelve a intentarlo; si sigue pasando, pasa el identificador a quien mantenga el orquestador." />
+
+<div class="baion-card p-6">
+    <dl class="grid gap-6 sm:grid-cols-2">
+        <DetailField Etiqueta="Identificador de la petición">
+            <span class="break-all font-mono text-label text-ink-2">@(RequestId ?? "—")</span>
+        </DetailField>
+        <DetailField Etiqueta="Qué hacer">
+            <span class="text-body text-ink-2">Reintentar la acción, o volver al panel y repetirla desde ahí.</span>
+        </DetailField>
+    </dl>
+
+    <div class="mt-6">
+        <a class="baion-button" href="/">Volver al panel</a>
+    </div>
+</div>
+
+@code {
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+
+    private string? RequestId { get; set; }
+
+    protected override void OnInitialized() => RequestId = Activity.Current?.Id ?? HttpContext?.TraceIdentifier;
+}

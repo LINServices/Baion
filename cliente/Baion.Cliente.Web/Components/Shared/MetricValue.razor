@@ -1,0 +1,25 @@
+@* Dato protagonista de una tarjeta. Los números mandan y las etiquetas susurran: aquí no hay
+   tamaños intermedios, o la cifra es enorme o es una etiqueta de 11px. *@
+
+<p class="@Tamano text-center tabular-nums">
+    @Valor@if (!string.IsNullOrEmpty(Unidad))
+    {
+        <sup class="baion-unit">@Unidad</sup>
+    }
+</p>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Valor { get; set; } = string.Empty;
+
+    /// <summary>Va en superíndice y a opacidad plena: «%», «s», «h»…</summary>
+    [Parameter]
+    public string? Unidad { get; set; }
+
+    /// <summary>Reduce el dato al tamaño de tarjeta secundaria; por defecto es el KPI protagonista.</summary>
+    [Parameter]
+    public bool Compacto { get; set; }
+
+    // Por debajo de 768px el KPI protagonista baja a 34px, que es el tamaño de la tarjeta secundaria.
+    private string Tamano => Compacto ? "text-metric-lg" : "text-metric-lg md:text-metric-xl";
+}

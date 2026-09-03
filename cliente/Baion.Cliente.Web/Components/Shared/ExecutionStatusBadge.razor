@@ -1,0 +1,40 @@
+<span class="baion-chip @Clases">
+    <span class="baion-chip-dot @ClasePunto @(EnCurso ? "animate-pulse" : string.Empty)" aria-hidden="true"></span>
+    @Texto
+</span>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Estado { get; set; } = string.Empty;
+
+    private bool EnCurso => Estado is "dispatched" or "running";
+
+    private string Texto => Estado switch
+    {
+        "pending" => "Pendiente",
+        "dispatched" => "Enviada",
+        "running" => "En curso",
+        "succeeded" => "Correcta",
+        "failed" => "Fallida",
+        "timedOut" => "Expirada",
+        "canceled" => "Cancelada",
+        _ => Estado
+    };
+
+    // El acento marca lo logrado, y aquí lo logrado es exactamente una cosa: que el script terminó bien.
+    private string Clases => Estado switch
+    {
+        "succeeded" => "baion-chip-current",
+        "failed" or "timedOut" => "baion-chip-danger",
+        _ => string.Empty
+    };
+
+    // Negro para lo que está pasando ahora, fantasma para lo que aún no ha pasado.
+    private string ClasePunto => Estado switch
+    {
+        "succeeded" => "bg-current-500",
+        "dispatched" or "running" => "bg-ink",
+        "failed" or "timedOut" => "bg-danger",
+        _ => "border border-ghost"
+    };
+}

@@ -1,0 +1,125 @@
+@page "/scripts"
+@attribute [Authorize]
+
+@inject IBaionApiClient Api
+@inject NavigationManager Navigation
+
+<PageTitle>Scripts · Baion</PageTitle>
+
+<PageHeader Seccion="Catálogo" Titulo="Scripts">
+    <Acciones>
+        <SearchPill @bind-Valor="_busqueda" OnBuscar="BuscarAsync" Placeholder="Nombre del script" />
+        <button type="button" class="baion-button-icon" title="Actualizar" aria-label="Actualizar"
+                disabled="@_cargando" @onclick="CargarAsync">
+            <Icon Nombre="refresh-cw" Tamano="20" />
+        </button>
+        <a class="baion-button" href="/scripts/nuevo">
+            <Icon Nombre="plus" Tamano="14" />
+            Nuevo script
+        </a>
+    </Acciones>
+</PageHeader>
+
+<AlertMessage Mensaje="@_error" />
+
+@if (_cargando && _resultado is null)
+{
+    <GhostLoader Descripcion="Cargando el catálogo de scripts…" />
+}
+else if (Listado.Count == 0)
+{
+    <EmptyState Icono="terminal"
+                Titulo="No hay scripts que mostrar"
+                Descripcion="Sube un script al catálogo o prueba con otro texto de búsqueda.">
+        <Accion>
+            <a class="baion-button" href="/scripts/nuevo">
+                <Icon Nombre="plus" Tamano="14" />
+                Nuevo script
+            </a>
+        </Accion>
+    </EmptyState>
+}
+else
+{
+    <div class="baion-card overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="baion-table">
+                <thead>
+                    <tr>
+                        <th>Script</th>
+                        <th>Intérprete</th>
+                        <th class="text-right">Versión</th>
+                        <th class="text-right">Tiempo máximo</th>
+                        <th>Estado</th>
+                        <th>Actualizado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var script in Listado)
+                    {
+                        <tr class="cursor-pointer" @onclick="() => Abrir(script.Id)">
+                            <td>
+                                <a class="text-title text-ink" href="/scripts/@script.Id">@script.Name</a>
+                                @if (!string.IsNullOrWhiteSpace(script.Description))
+                                {
+                                    <div class="mt-1 max-w-[62ch] truncate text-label text-muted">@script.Description</div>
+                                }
+                            </td>
+                            <td><RuntimeBadge Runtime="@script.Runtime" /></td>
+                            <td class="text-right tabular-nums">@($"v{script.Version}")</td>
+                            <td class="text-right tabular-nums">@script.DefaultTimeoutSeconds s</td>
+                            <td><ActiveBadge Activo="script.IsActive" /></td>
+                            <td class="text-muted" title="@TimeFormat.Absolute(script.UpdatedAt)">@TimeFormat.Relative(script.UpdatedAt)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <Pagination Pagina="@Pagina" TamanoPagina="TamanoPagina" TotalElementos="@(_resultado?.TotalCount ?? 0)"
+                TotalPaginas="@(_resultado?.TotalPages ?? 1)" HayAnterior="@(_resultado?.HasPrevious ?? false)"
+                HaySiguiente="@(_resultado?.HasNext ?? false)" OnCambioPagina="CambiarPaginaAsync" />
+}
+
+@code {
+    private PagedResult<ScriptListItem>? _resultado;
+    private string? _busqueda;
+    private string? _error;
+    private bool _cargando = true;
+    private int _pagina = 1;
+
+    protected override async Task OnInitializedAsync() => await CargarAsync();
+
+    private IReadOnlyList<ScriptListItem> Listado => _resultado?.Items ?? [];
+
+    private int Pagina => _resultado?.Page ?? _pagina;
+
+    private async Task CargarAsync()
+    {
+        _cargando = true;
+
+        var resultado = await Api.GetScriptsAsync(_busqueda, _pagina, TamanoPagina, CancellationToken.None);
+
+        _resultado = resultado.Value;
+        _error = resultado.ErrorMessage;
+        _cargando = false;
+    }
+
+    /// <summary>Una búsqueda nueva empieza por la primera página; la que estuviera abierta ya no aplica.</summary>
+    private async Task BuscarAsync()
+    {
+        _pagina = 1;
+        await CargarAsync();
+    }
+
+    private async Task CambiarPaginaAsync(int pagina)
+    {
+        _pagina = pagina;
+        await CargarAsync();
+    }
+
+    private void Abrir(Guid scriptId) => Navigation.NavigateTo($"/scripts/{scriptId}");
+
+    private const int TamanoPagina = 25;
+}

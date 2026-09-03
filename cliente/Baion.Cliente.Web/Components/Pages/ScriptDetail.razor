@@ -1,0 +1,122 @@
+@page "/scripts/{ScriptId:guid}"
+@attribute [Authorize]
+
+@inject IBaionApiClient Api
+
+<PageTitle>@Nombre · Baion</PageTitle>
+
+<PageHeader Seccion="Script" Titulo="@Nombre" Descripcion="@_script?.Description">
+    <Acciones>
+        <a class="baion-button-ghost" href="/scripts">
+            <Icon Nombre="chevron-left" Tamano="14" />
+            Volver al catálogo
+        </a>
+        @if (_script is not null && !_mostrandoEjecucion)
+        {
+            <a class="baion-button-ghost" href="@($"/scripts/{_script.Id}/editar")">
+                <Icon Nombre="sliders-horizontal" Tamano="14" />
+                Editar
+            </a>
+            <button type="button" class="baion-button" @onclick="() => _mostrandoEjecucion = true">
+                <Icon Nombre="play" Tamano="14" />
+                Ejecutar
+            </button>
+        }
+    </Acciones>
+</PageHeader>
+
+<AlertMessage Mensaje="@_error" />
+
+@if (_mostrandoEjecucion && _script is not null)
+{
+    <div class="mb-3">
+        <DispatchScriptForm ScriptId="_script.Id"
+                            Runtime="@_script.Runtime"
+                            DefaultTimeoutSeconds="_script.DefaultTimeoutSeconds"
+                            Cerrado="() => _mostrandoEjecucion = false" />
+    </div>
+}
+
+@if (_cargando)
+{
+    <GhostLoader Descripcion="Cargando el script…" />
+}
+else if (_script is null)
+{
+    <EmptyState Icono="terminal"
+                Titulo="No se encontró el script"
+                Descripcion="Puede que se haya eliminado del catálogo o que el enlace esté equivocado.">
+        <Accion>
+            <a class="baion-button" href="/scripts">Ir al catálogo</a>
+        </Accion>
+    </EmptyState>
+}
+else
+{
+    <div class="baion-card p-6">
+        <dl class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            <DetailField Etiqueta="Intérprete">
+                <RuntimeBadge Runtime="@_script.Runtime" />
+            </DetailField>
+            <DetailField Etiqueta="Versión">
+                <span class="tabular-nums">@($"v{_script.Version}")</span>
+            </DetailField>
+            <DetailField Etiqueta="Tiempo máximo">
+                <span class="tabular-nums">@_script.DefaultTimeoutSeconds s</span>
+            </DetailField>
+            <DetailField Etiqueta="Estado">
+                <ActiveBadge Activo="_script.IsActive" />
+            </DetailField>
+            <DetailField Etiqueta="Creado">
+                <span title="@TimeFormat.Absolute(_script.CreatedAt)">@TimeFormat.Relative(_script.CreatedAt)</span>
+            </DetailField>
+            <DetailField Etiqueta="Actualizado">
+                <span title="@TimeFormat.Absolute(_script.UpdatedAt)">@TimeFormat.Relative(_script.UpdatedAt)</span>
+            </DetailField>
+            <div class="sm:col-span-2">
+                <dt class="text-label text-muted">Checksum</dt>
+                <dd class="mt-2 break-all font-mono text-label text-ink-2">@_script.Checksum</dd>
+            </div>
+        </dl>
+    </div>
+
+    <div class="mt-3">
+        <PanelCard Icono="file-code" Titulo="Contenido" Ancha="true">
+            <Accion>
+                <span class="text-label tabular-nums text-muted">@Lineas(_script.Content)</span>
+            </Accion>
+            <ChildContent>
+                <pre class="baion-code">@_script.Content</pre>
+            </ChildContent>
+        </PanelCard>
+    </div>
+}
+
+@code {
+    private bool _mostrandoEjecucion;
+
+    private Models.ScriptDetail? _script;
+    private string? _error;
+    private bool _cargando = true;
+
+    private string Nombre => _script?.Name ?? "Script";
+
+    /// <summary>Identificador del script; llega en la ruta.</summary>
+    [Parameter]
+    public Guid ScriptId { get; set; }
+
+    // Va en OnParametersSetAsync y no en OnInitializedAsync porque saltar de un script a otro
+    // reutiliza el componente y solo cambia el parámetro.
+    protected override async Task OnParametersSetAsync()
+    {
+        _cargando = true;
+
+        var resultado = await Api.GetScriptAsync(ScriptId, CancellationToken.None);
+
+        _script = resultado.Value;
+        _error = resultado.ErrorMessage;
+        _cargando = false;
+    }
+
+    private static string Lineas(string contenido) => contenido.Length == 0 ? "vacío" : $"{contenido.Split('\n').Length} líneas";
+}

@@ -1,0 +1,345 @@
+@page "/servidores/{ServerId:guid}"
+@attribute [Authorize]
+
+@inject IBaionApiClient Api
+
+<PageTitle>@Nombre · Baion</PageTitle>
+
+<PageHeader Seccion="Servidor" Titulo="@Nombre">
+    <Acciones>
+        <SelectShell Class="w-40">
+            <select class="baion-select" aria-label="Periodo del histórico" @bind="_periodo" @bind:after="CambiarPeriodoAsync">
+                <option value="24h">Últimas 24 h</option>
+                <option value="7d">Últimos 7 días</option>
+                <option value="30d">Últimos 30 días</option>
+                <option value="todo">Todo el histórico</option>
+            </select>
+        </SelectShell>
+
+        <button type="button" class="baion-button-icon" title="Actualizar" aria-label="Actualizar"
+                disabled="@(_cargando || _ocupado)" @onclick="RecargarAsync">
+            <Icon Nombre="refresh-cw" Tamano="20" />
+        </button>
+
+        <a class="baion-button-ghost" href="/servidores">
+            <Icon Nombre="chevron-left" Tamano="14" />
+            Volver
+        </a>
+    </Acciones>
+</PageHeader>
+
+<AlertMessage Mensaje="@_error" />
+
+@if (_cargando)
+{
+    <GhostLoader Filas="4" Descripcion="Cargando el servidor…" />
+}
+else if (_detalle is null)
+{
+    <EmptyState Icono="server"
+                Titulo="No se encontró el servidor"
+                Descripcion="Puede que se haya desenrolado o que el enlace esté equivocado.">
+        <Accion>
+            <a class="baion-button" href="/servidores">Ir a la lista</a>
+        </Accion>
+    </EmptyState>
+}
+else
+{
+    <div class="baion-card p-6">
+        <dl class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            <DetailField Etiqueta="Estado">
+                <StatusBadge Estado="@_detalle.Server.Status" />
+            </DetailField>
+            <DetailField Etiqueta="Plataforma">
+                @ScriptRuntimes.PlatformLabel(_detalle.Server.Platform)
+            </DetailField>
+            <DetailField Etiqueta="Tipo">
+                @TipoServidor(_detalle.Server.Kind)
+            </DetailField>
+            <DetailField Etiqueta="Ejecuciones concurrentes">
+                <span class="tabular-nums">@NumberFormat.Count(_detalle.Server.MaxConcurrentExecutions)</span>
+            </DetailField>
+            <DetailField Etiqueta="Hostname">
+                <span class="break-all font-mono text-label text-ink-2">@_detalle.Server.Hostname</span>
+            </DetailField>
+            <DetailField Etiqueta="Agente">
+                <span class="font-mono text-label text-ink-2">@(_detalle.Server.AgentVersion ?? "—")</span>
+            </DetailField>
+            <DetailField Etiqueta="Runtime">
+                <span class="font-mono text-label text-ink-2">@(_detalle.Server.RuntimeIdentifier ?? "—")</span>
+            </DetailField>
+            <DetailField Etiqueta="Instancia">
+                <span class="break-all font-mono text-label text-ink-2">@(_detalle.Server.OrchestratorInstanceId ?? "—")</span>
+            </DetailField>
+            <DetailField Etiqueta="Conectado desde">
+                <span title="@TimeFormat.Absolute(_detalle.Server.ConnectedAt)">@TimeFormat.Relative(_detalle.Server.ConnectedAt)</span>
+            </DetailField>
+            <DetailField Etiqueta="Última señal">
+                <span title="@TimeFormat.Absolute(_detalle.Server.LastSeenAt)">@TimeFormat.Relative(_detalle.Server.LastSeenAt)</span>
+            </DetailField>
+        </dl>
+    </div>
+
+    @if (_detalle.LastMetrics is null)
+    {
+        <div class="mt-3">
+            <EmptyState Icono="gauge"
+                        Titulo="Este servidor todavía no ha reportado métricas"
+                        Descripcion="En cuanto el agente envíe su primera muestra aparecerán aquí la CPU, la memoria y los discos." />
+        </div>
+    }
+    else
+    {
+        <section class="mt-10">
+            <h2 class="mb-4 text-heading text-ink">Estado actual</h2>
+
+            <div class="grid gap-3 lg:grid-cols-3">
+                <PanelCard Icono="cpu" Titulo="CPU" Ancha="true">
+                    <Gauge Fraccion="@NumberFormat.Ratio(_detalle.LastMetrics.CpuUsagePercent, 100)"
+                           Valor="@NumberFormat.Percent(_detalle.LastMetrics.CpuUsagePercent)"
+                           Unidad="%"
+                           Etiqueta="Uso de CPU"
+                           Descripcion="@($"CPU al {NumberFormat.Percent(_detalle.LastMetrics.CpuUsagePercent)} %")">
+                        <Izquierda>
+                            <StatPair Valor="@NumberFormat.Count(_detalle.LastMetrics.CpuCoreCount)" Etiqueta="Núcleos" />
+                        </Izquierda>
+                        <Derecha>
+                            <StatPair Valor="@CargaTexto" Etiqueta="Carga 1m" Derecha="true" />
+                        </Derecha>
+                    </Gauge>
+                </PanelCard>
+
+                <PanelCard Icono="memory-stick" Titulo="Memoria">
+                    <MetricValue Valor="@NumberFormat.Bytes(_detalle.LastMetrics.MemoryUsedBytes)" Compacto="true" />
+                    <p class="mt-1.5 text-center text-label text-muted">de @NumberFormat.Bytes(_detalle.LastMetrics.MemoryTotalBytes) en uso</p>
+
+                    <div class="mt-6">
+                        <SegmentedBar EnCurso="@NumberFormat.Ratio(_detalle.LastMetrics.MemoryUsedBytes, _detalle.LastMetrics.MemoryTotalBytes)"
+                                      Pendiente="@NumberFormat.Ratio(_detalle.LastMetrics.MemoryAvailableBytes, _detalle.LastMetrics.MemoryTotalBytes)"
+                                      Descripcion="@($"Memoria: {NumberFormat.Percent(_detalle.LastMetrics.MemoryUsagePercent)} % en uso")" />
+                    </div>
+
+                    <div class="mt-6 space-y-3">
+                        <DataBullet Etiqueta="En uso" Valor="@($"{NumberFormat.Percent(_detalle.LastMetrics.MemoryUsagePercent)} %")" />
+                        <DataBullet Etiqueta="Disponible" Valor="@NumberFormat.Bytes(_detalle.LastMetrics.MemoryAvailableBytes)" />
+                    </div>
+                </PanelCard>
+
+                <PanelCard Icono="gauge" Titulo="Sistema">
+                    <MetricValue Valor="@CargaTexto" Compacto="true" />
+                    <p class="mt-1.5 text-center text-label text-muted">Carga media · 1 min</p>
+
+                    <div class="mt-6 space-y-3">
+                        <DataBullet Etiqueta="Núcleos de CPU" Valor="@NumberFormat.Count(_detalle.LastMetrics.CpuCoreCount)" />
+                        <DataBullet Etiqueta="Memoria total" Valor="@NumberFormat.Bytes(_detalle.LastMetrics.MemoryTotalBytes)" />
+                        <DataBullet Etiqueta="Última muestra" Valor="@TimeFormat.Relative(UltimaMuestra)" />
+                    </div>
+                </PanelCard>
+            </div>
+        </section>
+
+        <section class="mt-10">
+            <h2 class="mb-4 text-heading text-ink">Volúmenes</h2>
+
+            <PanelCard Icono="hard-drive" Titulo="Discos" Ancha="true">
+                <ChildContent>
+                    @if (Reciente is null)
+                    {
+                        <p class="text-body text-muted">No hay ninguna muestra dentro del periodo elegido; amplía el rango para ver el estado de los volúmenes.</p>
+                    }
+                    else if (Reciente.Disks.Count == 0)
+                    {
+                        <p class="text-body text-muted">La última muestra no incluye información de volúmenes.</p>
+                    }
+                    else
+                    {
+                        <div class="space-y-6">
+                            @foreach (var disco in Reciente.Disks)
+                            {
+                                <div>
+                                    <div class="flex items-baseline justify-between gap-4">
+                                        <div class="min-w-0">
+                                            <span class="text-title text-ink">@disco.MountPoint</span>
+                                            <span class="ml-2 font-mono text-label text-muted">@disco.Name</span>
+                                        </div>
+                                        <span class="shrink-0 text-value tabular-nums text-ink-2">
+                                            @NumberFormat.Bytes(disco.UsedBytes) / @NumberFormat.Bytes(disco.TotalBytes)
+                                        </span>
+                                    </div>
+                                    <div class="mt-2 flex items-center gap-3">
+                                        <div class="flex-1">
+                                            <SegmentedBar EnCurso="@NumberFormat.Ratio(disco.UsedBytes, disco.TotalBytes)"
+                                                          Pendiente="@NumberFormat.Ratio(disco.AvailableBytes, disco.TotalBytes)"
+                                                          Descripcion="@($"{disco.MountPoint}: {NumberFormat.Percent(disco.UsagePercent)} % ocupado")" />
+                                        </div>
+                                        <span class="w-14 shrink-0 text-right text-label tabular-nums text-muted">@NumberFormat.Percent(disco.UsagePercent) %</span>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </ChildContent>
+            </PanelCard>
+        </section>
+
+        <section class="mt-10">
+            <h2 class="mb-4 text-heading text-ink">Histórico</h2>
+
+            @if (Muestras.Count == 0)
+            {
+                <EmptyState Icono="history"
+                            Titulo="No hay muestras en este periodo"
+                            Descripcion="Amplía el periodo en el selector de arriba para ver más historial." />
+            }
+            else
+            {
+                <div class="baion-card overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="baion-table">
+                            <thead>
+                                <tr>
+                                    <th>Momento</th>
+                                    <th class="text-right">CPU</th>
+                                    <th class="text-right">Memoria</th>
+                                    <th class="text-right">Carga 1m</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var muestra in Muestras)
+                                {
+                                    <tr>
+                                        <td class="text-muted" title="@TimeFormat.Absolute(muestra.CapturedAt)">@TimeFormat.Relative(muestra.CapturedAt)</td>
+                                        <td class="text-right tabular-nums text-ink-2">@NumberFormat.Percent(muestra.CpuUsagePercent) %</td>
+                                        <td class="text-right tabular-nums text-ink-2">@NumberFormat.Percent(muestra.MemoryUsagePercent) %</td>
+                                        <td class="text-right tabular-nums text-ink-2">
+                                            @if (muestra.LoadAverage1m is double carga)
+                                            {
+                                                @NumberFormat.Fixed(carga)
+                                            }
+                                            else
+                                            {
+                                                <span class="inline-block h-2 w-10 rounded-bar bg-ghost-ticks align-middle" aria-label="Sin dato de carga"></span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <Pagination Pagina="@Pagina" TamanoPagina="TamanoPagina" TotalElementos="@(_historico?.TotalCount ?? 0)"
+                            TotalPaginas="@(_historico?.TotalPages ?? 1)" HayAnterior="@(_historico?.HasPrevious ?? false)"
+                            HaySiguiente="@(_historico?.HasNext ?? false)" OnCambioPagina="CambiarPaginaAsync" />
+            }
+        </section>
+    }
+}
+
+@code {
+    /// <summary>Identificador del servidor; llega en la ruta.</summary>
+    [Parameter]
+    public Guid ServerId { get; set; }
+
+    private Models.ServerDetail? _detalle;
+    private PagedResult<MetricReading>? _historico;
+    private string _periodo = "7d";
+    private string? _error;
+    private bool _cargando = true;
+    private bool _ocupado;
+    private int _pagina = 1;
+
+    private string Nombre => _detalle?.Server.Name ?? "Servidor";
+
+    private IReadOnlyList<MetricReading> Muestras => _historico?.Items ?? [];
+
+    private int Pagina => _historico?.Page ?? _pagina;
+
+    /// <summary>Muestra más reciente dentro del periodo elegido: la única fuente de discos y carga.</summary>
+    private MetricReading? Reciente => Muestras.Count > 0 ? Muestras[0] : null;
+
+    private DateTimeOffset? UltimaMuestra => Reciente?.CapturedAt ?? _detalle?.LastMetrics?.CapturedAt;
+
+    // La carga media solo viaja en el histórico; sin muestra reciente no hay nada que enseñar, y en
+    // Windows el propio agente la deja en null porque no existe ese concepto.
+    private string CargaTexto => Reciente?.LoadAverage1m is double carga ? NumberFormat.Fixed(carga) : "—";
+
+    // Saltar de un servidor a otro reutiliza el componente y solo cambia el parámetro de ruta.
+    protected override async Task OnParametersSetAsync()
+    {
+        _cargando = true;
+        _error = null;
+        _pagina = 1;
+        _historico = null;
+
+        var detalle = await Api.GetServerAsync(ServerId, CancellationToken.None);
+        _detalle = detalle.Value;
+        _error = detalle.ErrorMessage;
+
+        await CargarHistoricoAsync();
+
+        _cargando = false;
+    }
+
+    private async Task RecargarAsync()
+    {
+        _error = null;
+        _pagina = 1;
+
+        var detalle = await Api.GetServerAsync(ServerId, CancellationToken.None);
+        _detalle = detalle.Value;
+        _error = detalle.ErrorMessage;
+
+        await CargarHistoricoAsync();
+    }
+
+    /// <summary>Cambiar el periodo invalida la página en la que estuviéramos.</summary>
+    private async Task CambiarPeriodoAsync()
+    {
+        _pagina = 1;
+        _error = null;
+        await CargarHistoricoAsync();
+    }
+
+    private async Task CambiarPaginaAsync(int pagina)
+    {
+        _pagina = pagina;
+        await CargarHistoricoAsync();
+    }
+
+    private async Task CargarHistoricoAsync()
+    {
+        _ocupado = true;
+
+        var historico = await Api.GetServerMetricsAsync(ServerId, Desde, until: null, _pagina, TamanoPagina, CancellationToken.None);
+
+        _historico = historico.Value;
+
+        // Un fallo del histórico no borra la ficha, pero sí se avisa; el de la ficha manda si lo hubo.
+        if (historico.ErrorMessage is not null)
+        {
+            _error = historico.ErrorMessage;
+        }
+
+        _ocupado = false;
+    }
+
+    private DateTimeOffset? Desde => _periodo switch
+    {
+        "24h" => DateTimeOffset.UtcNow.AddHours(-24),
+        "7d" => DateTimeOffset.UtcNow.AddDays(-7),
+        "30d" => DateTimeOffset.UtcNow.AddDays(-30),
+        _ => null
+    };
+
+    private static string TipoServidor(string kind) => kind switch
+    {
+        "vm" => "Máquina virtual",
+        "vps" => "VPS",
+        "bareMetal" => "Bare metal",
+        _ => kind
+    };
+
+    private const int TamanoPagina = 20;
+}

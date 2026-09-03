@@ -1,0 +1,104 @@
+@if (Servidores.Count == 0)
+{
+    <EmptyState Icono="server"
+                Titulo="Todavía no hay servidores"
+                Descripcion="Instala el agente en una máquina con un token de instalación y aparecerá aquí en cuanto se enrole.">
+        <Accion>
+            <a class="baion-button" href="/servidores/enrolar">
+                <Icon Nombre="plus" Tamano="14" />
+                Enrolar servidor
+            </a>
+        </Accion>
+    </EmptyState>
+}
+else
+{
+    <div class="baion-card overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="baion-table">
+                <thead>
+                    <tr>
+                        <th>Servidor</th>
+                        <th>Estado</th>
+                        <th>Plataforma</th>
+                        <th>Agente</th>
+                        <th>Última señal</th>
+                        @if (HayAcciones)
+                        {
+                            <th class="text-right">Acciones</th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var servidor in Servidores)
+                    {
+                        <tr>
+                            <td>
+                                <a class="text-title text-ink hover:underline" href="/servidores/@servidor.Id">@servidor.Name</a>
+                                <div class="mt-1 text-label text-muted">@servidor.Hostname</div>
+                            </td>
+                            <td><StatusBadge Estado="@servidor.Status" /></td>
+                            <td>
+                                <div class="text-body text-ink-2">@Plataforma(servidor.Platform)</div>
+                                <div class="mt-1 font-mono text-label text-muted">@servidor.RuntimeIdentifier</div>
+                            </td>
+                            <td class="font-mono text-label">@(servidor.AgentVersion ?? "—")</td>
+                            <td class="text-muted" title="@TimeFormat.Absolute(servidor.LastSeenAt)">@TimeFormat.Relative(servidor.LastSeenAt)</td>
+                            @if (HayAcciones)
+                            {
+                                <td class="whitespace-nowrap text-right">
+                                    @if (_confirmando == servidor.Id)
+                                    {
+                                        <div class="flex items-center justify-end gap-2">
+                                            <span class="text-label text-muted">Se corta la conexión del agente. ¿Seguro?</span>
+                                            <button type="button" class="baion-button-danger" disabled="@EstaOcupado(servidor)" @onclick="() => DesactivarAsync(servidor)">Sí, desactivar</button>
+                                            <button type="button" class="baion-button-ghost" @onclick="() => _confirmando = null">Cancelar</button>
+                                        </div>
+                                    }
+                                    else if (servidor.Status == "disabled")
+                                    {
+                                        <button type="button" class="baion-button-ghost" disabled="@EstaOcupado(servidor)" @onclick="() => AlReactivar.InvokeAsync(servidor)">Reactivar</button>
+                                    }
+                                    else
+                                    {
+                                        <button type="button" class="baion-button-ghost" disabled="@EstaOcupado(servidor)" @onclick="() => _confirmando = servidor.Id">Desactivar</button>
+                                    }
+                                </td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public IReadOnlyList<ServerSummary> Servidores { get; set; } = [];
+
+    /// <summary>Sin manejador no se pinta la columna: el panel de inicio muestra la misma tabla en solo lectura.</summary>
+    [Parameter]
+    public EventCallback<ServerSummary> AlDesactivar { get; set; }
+
+    [Parameter]
+    public EventCallback<ServerSummary> AlReactivar { get; set; }
+
+    /// <summary>Servidor cuya llamada sigue en curso; sus botones quedan bloqueados mientras tanto.</summary>
+    [Parameter]
+    public Guid? Ocupado { get; set; }
+
+    private Guid? _confirmando;
+
+    private bool HayAcciones => AlDesactivar.HasDelegate;
+
+    private bool EstaOcupado(ServerSummary servidor) => Ocupado == servidor.Id;
+
+    private async Task DesactivarAsync(ServerSummary servidor)
+    {
+        _confirmando = null;
+        await AlDesactivar.InvokeAsync(servidor);
+    }
+
+    private static string Plataforma(string plataforma) => ScriptRuntimes.PlatformLabel(plataforma);
+}

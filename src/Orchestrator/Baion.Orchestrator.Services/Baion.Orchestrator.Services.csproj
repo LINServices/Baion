@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Baion.Orchestrator.Persistence\Baion.Orchestrator.Persistence.csproj" />
+    <ProjectReference Include="..\Baion.Orchestrator.Identity\Baion.Orchestrator.Identity.csproj" />
+    <ProjectReference Include="..\Baion.Orchestrator.Messaging\Baion.Orchestrator.Messaging.csproj" />
+    <ProjectReference Include="..\Baion.Orchestrator.Extensions\Baion.Orchestrator.Extensions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Cronos" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
+  </ItemGroup>
+
+
+</Project>

@@ -1,0 +1,22 @@
+@* Par dato/etiqueta. La etiqueta siempre debajo de su valor, y nunca más de dos pares por lado. *@
+
+<div class="@(Derecha ? "text-right" : string.Empty)">
+    <p class="text-value tabular-nums @(Alerta ? "text-danger" : "text-ink")">@Valor</p>
+    <p class="text-label text-muted">@Etiqueta</p>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Valor { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public string Etiqueta { get; set; } = string.Empty;
+
+    /// <summary>Los pares del extremo derecho se alinean a la derecha.</summary>
+    [Parameter]
+    public bool Derecha { get; set; }
+
+    /// <summary>Tiñe la cifra de rojo. Solo para lo que exige atención; el resto va en ink.</summary>
+    [Parameter]
+    public bool Alerta { get; set; }
+}
