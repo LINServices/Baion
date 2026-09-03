@@ -1,0 +1,82 @@
+name: Deploy orchestrator
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+env:
+  PROJECT_PATH: "src/Orchestrator/Baion.Orchestrator.Presentacion/Baion.Orchestrator.Presentacion.csproj"
+  PUBLISH_DIR: "publish"
+  RUNTIME_ID: "win-x64"
+
+jobs:
+  build-run-csx-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # --------------------
+      # Checkout
+      # --------------------
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # --------------------
+      # Setup .NET
+      # --------------------
+      - name: Setup .NET 10 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      # --------------------
+      # Cache NuGet
+      # --------------------
+      - name: Cache NuGet
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/packages.lock.json', '**/*.csproj') }}
+          restore-keys: |
+            nuget-${{ runner.os }}-
+
+      # ====================
+      # 1️⃣ COMPILE
+      # ====================
+      - name: Clean
+        run: dotnet clean "$PROJECT_PATH" -c Release
+
+      - name: Restore
+        run: dotnet restore "$PROJECT_PATH" -r $RUNTIME_ID
+
+      - name: Build
+        run: dotnet build "$PROJECT_PATH" -c Release -f net10.0 -r $RUNTIME_ID --no-restore
+
+      - name: Publish
+        run: |
+          dotnet publish "$PROJECT_PATH" \
+            -c Release \
+            -f net10.0 \
+            -r $RUNTIME_ID \
+            --self-contained false \
+            --no-build \
+            -p:PublishSingleFile=false \
+            -p:GenerateRuntimeConfigurationFiles=true \
+            -p:DebugType=None \
+            -p:DebugSymbols=false \
+            -o "$PUBLISH_DIR"
+
+      - name: Zip Published Files
+        run: |
+          cd "$PUBLISH_DIR"
+          zip -r ../app.zip . 
+
+      - name: Upload ZIP a LIN Cloud IIS Push
+        env:
+          SITE_NAME: baion
+        run: |
+          curl -X POST \
+            "https://iispush.linplatform.com/api/Sites/${SITE_NAME}/deploy" \
+            -H "accept: text/plain" \
+            -H "Content-Type: multipart/form-data" \
+            -F "file=@app.zip"
