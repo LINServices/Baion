@@ -1,10 +1,22 @@
 name: Release del agente
 
-# Se dispara al empujar un tag de versión (v1.2.3). El nombre del tag es el de la release.
+# Se dispara al empujar un tag de versión (v1.2.3): el nombre del tag es el de la release.
+# También se puede lanzar a mano desde la pestaña Actions, indicando la versión.
 on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Tag/versión de la release (p. ej. v1.2.3). Se crea si no existe."
+        required: true
+        type: string
+      prerelease:
+        description: "Marcar la release como prerelease."
+        required: false
+        type: boolean
+        default: true
 
 # El job de release necesita permiso de escritura para crear la GitHub Release.
 permissions:
@@ -96,6 +108,10 @@ jobs:
       - name: Crear la release y adjuntar los zips
         uses: softprops/action-gh-release@v2
         with:
+          # En push de tag lo toma de github.ref; en ejecución manual, del input.
+          tag_name: ${{ inputs.version || github.ref_name }}
+          name: ${{ inputs.version || github.ref_name }}
+          prerelease: ${{ inputs.prerelease || false }}
           files: artifacts/*.zip
           generate_release_notes: true
           fail_on_unmatched_files: true
