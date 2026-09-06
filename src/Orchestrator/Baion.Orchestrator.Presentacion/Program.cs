@@ -21,6 +21,9 @@ builder.Services
 
 var app = builder.Build();
 
+var service = app.Services.CreateScope().ServiceProvider.GetRequiredService<BaionDbContext>();
+var created = await service.Database.EnsureCreatedAsync();
+
 app.UseLINHttp(useGateway: true);
 app.UseWebSockets();
 app.UseAuthentication();
