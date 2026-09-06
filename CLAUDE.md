@@ -162,12 +162,27 @@ Para evitar ciclos entre capas, `Baion.Orchestrator.Messaging` **declara** `ILoc
 
 ### Panel
 
-Blazor Web App con render mode `InteractiveServer`. La sesión va en una **cookie cifrada y HttpOnly que
-lleva dentro el JWT de la API**, así que el navegador nunca lo ve. El login es una página **SSR estática**
-(`[ExcludeFromInteractiveRouting]`) porque firmar la cookie necesita el `HttpContext`.
+**Blazor WebAssembly standalone** (`Microsoft.NET.Sdk.BlazorWebAssembly`): compila a un sitio estático que
+se sirve desde cualquier CDN o hosting de ficheros, sin proceso servidor propio. El host es
+`wwwroot/index.html`; el arranque, `Program.cs` con `WebAssemblyHostBuilder`.
 
-El token se adjunta **petición a petición** en `BaionApiClient`, no con un `DelegatingHandler`: los
-manejadores de `IHttpClientFactory` viven en otro ámbito y desde ahí no se ve el usuario del circuito.
+- **La sesión vive en el navegador.** `BaionAuthenticationStateProvider` (un `AuthenticationStateProvider`
+  que también implementa `IBaionSession`) guarda el `AuthenticationResult` completo —JWT incluido— en
+  `localStorage`, clave `baion.session`. El token **es accesible desde JS**; solo se envía al orquestador,
+  nunca a un tercero. Caduca solo: si `ExpiresAt` ya pasó, se descarta y la sesión vuelve a anónima.
+- **Login y logout son llamadas de cliente.** `Login.razor` hace `Api.LoginAsync(...)` y, si va bien,
+  `Sesion.IniciarSesionAsync(...)`; ya no hay página SSR, ni `HttpContext`, ni `SignInAsync`, ni
+  antiforgery. El logout es `Sesion.CerrarSesionAsync()` + navegación a `/login`.
+- El token se adjunta **petición a petición** en `BaionApiClient` leyendo el claim `baion:access_token`
+  vía `IAccessTokenProvider`.
+- **El orquestador debe permitir el origen del panel por CORS.** Política `panel` en
+  `ServiceCollectionExtensions.PanelCorsPolicy`, orígenes en `Cors:AllowedOrigins` (lista vacía = ninguna
+  llamada cruzada). Local: `http://localhost:5100`. El panel autentica con cabecera `Authorization`, no con
+  cookie, así que la política no necesita `AllowCredentials`.
+- `wwwroot/appsettings.json` lleva `BaionApi:BaseAddress` (URL del orquestador). El
+  `appsettings.Development.json` apunta a `http://localhost:5199` y **no se publica**
+  (`CopyToPublishDirectory="Never"`). Sin comentarios `//` en estos JSON: los carga el runtime de WASM por
+  HTTP, no el lector de ASP.NET Core.
 
 Tailwind 4 se compila en un target de MSBuild antes de recoger los estáticos. `-p:RunTailwind=false`
 compila sin Node.

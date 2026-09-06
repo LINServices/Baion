@@ -1,6 +1,9 @@
 @* Una sola fila de 56px, sin borde inferior: la separación con el contenido la da el espacio.
    Orden del sistema: marca · navegación · acciones · identidad. *@
 
+@inject IBaionSession Sesion
+@inject NavigationManager Navigation
+
 <header class="flex h-14 shrink-0 items-center gap-4 md:gap-6">
     <a class="flex size-9 shrink-0 items-center justify-center" href="/" aria-label="Baion, inicio">
        <img class="h-5 w-5" src="./favicon.png" />
@@ -18,12 +21,9 @@
 
     <AuthorizeView>
         <Authorized>
-            <form class="shrink-0" method="post" action="/logout">
-                <AntiforgeryToken />
-                <button type="submit" class="baion-button-icon" title="Cerrar sesión" aria-label="Cerrar sesión">
-                    <Icon Nombre="log-out" Tamano="20" />
-                </button>
-            </form>
+            <button type="button" class="baion-button-icon shrink-0" title="Cerrar sesión" aria-label="Cerrar sesión" @onclick="CerrarSesionAsync">
+                <Icon Nombre="log-out" Tamano="20" />
+            </button>
 
             <div class="flex shrink-0 items-center gap-3">
                 <span class="text-title flex size-9 items-center justify-center rounded-full border border-line bg-surface-alt text-ink-2"
@@ -41,6 +41,12 @@
 </header>
 
 @code {
+    private async Task CerrarSesionAsync()
+    {
+        await Sesion.CerrarSesionAsync();
+        Navigation.NavigateTo("/login");
+    }
+
     private record Enlace(string Href, string Texto, NavLinkMatch Match);
 
     private static readonly Enlace[] Enlaces =

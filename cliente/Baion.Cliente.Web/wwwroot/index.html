@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="/" />
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <!-- Los neutros se invierten con prefers-color-scheme; esto hace que el navegador pinte el fondo
+         y las barras de scroll del lado correcto antes de que llegue la hoja de estilos. -->
+    <meta name="color-scheme" content="light dark" />
+    <title>Baion</title>
+    <!-- Gilroy va autoalojada y se descubre desde app.css: no hay ninguna fuente de un CDN.
+         No hay hoja de estilos de ámbito de componente (.razor.css); si se añade alguna, enlazar
+         aquí "Baion.Cliente.Web.styles.css". -->
+    <link rel="stylesheet" href="css/app.css" />
+    <style>
+        /* El único estilo fuera de app.css: el aviso de error del runtime, que se pinta antes de que
+           Blazor esté vivo y por eso no puede depender de sus clases. */
+        #blazor-error-ui {
+            position: fixed;
+            inset: auto 0 0 0;
+            display: none;
+            padding: 0.75rem 1.25rem;
+            background: #b91c1c;
+            color: #fff;
+            font: 500 0.875rem/1.4 system-ui, sans-serif;
+            z-index: 1000;
+        }
+
+        #blazor-error-ui a,
+        #blazor-error-ui .dismiss {
+            color: #fff;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <div style="display:flex;min-height:100vh;align-items:center;justify-content:center;font:400 0.875rem system-ui,sans-serif;color:#71717a">
+            Cargando el panel…
+        </div>
+    </div>
+
+    <div id="blazor-error-ui">
+        Se produjo un error inesperado.
+        <a href="." class="reload">Recargar</a>
+        <span class="dismiss">🗙</span>
+    </div>
+
+    <script src="_framework/blazor.webassembly.js"></script>
+</body>
+
+</html>

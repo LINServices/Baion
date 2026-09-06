@@ -4,43 +4,31 @@ using Baion.Cliente.Web;
 using Baion.Cliente.Web.Components;
 using Baion.Cliente.Web.Services;
 using Baion.Cliente.Web.Services.Implementations;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Components.Web;
+using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 
-var builder = WebApplication.CreateBuilder(args);
+var builder = WebAssemblyHostBuilder.CreateDefault(args);
 
-builder.Services.AddRazorComponents().AddInteractiveServerComponents();
+builder.RootComponents.Add<Routes>("#app");
+builder.RootComponents.Add<HeadOutlet>("head::after");
 
 builder.Services.AddOptions<BaionApiOptions>().Bind(builder.Configuration.GetSection(BaionApiOptions.SectionName));
 
-// El panel guarda su sesión en una cookie cifrada y HttpOnly; dentro viaja el token de la API.
-builder.Services
-    .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-    .AddCookie(options =>
-    {
-        options.Cookie.Name = "baion.session";
-        options.Cookie.HttpOnly = true;
-        options.Cookie.SameSite = SameSiteMode.Strict;
-        options.LoginPath = "/login";
-        options.LogoutPath = "/logout";
-        options.AccessDeniedPath = "/login";
-        options.ExpireTimeSpan = TimeSpan.FromHours(8);
-        options.SlidingExpiration = true;
-    });
-
-builder.Services.AddAuthorization();
+// La sesión vive en el navegador (localStorage): al ser WebAssembly no hay servidor donde guardarla.
+builder.Services.AddAuthorizationCore();
 builder.Services.AddCascadingAuthenticationState();
-
+builder.Services.AddScoped<BaionAuthenticationStateProvider>();
+builder.Services.AddScoped<AuthenticationStateProvider>(provider => provider.GetRequiredService<BaionAuthenticationStateProvider>());
+builder.Services.AddScoped<IBaionSession>(provider => provider.GetRequiredService<BaionAuthenticationStateProvider>());
 builder.Services.AddScoped<IAccessTokenProvider, AccessTokenProvider>();
 
 builder.Services.AddHttpClient<IBaionApiClient, BaionApiClient>((provider, client) =>
 {
-    var settings = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<BaionApiOptions>>().Value;
+    var settings = provider.GetRequiredService<IOptions<BaionApiOptions>>().Value;
 
     if (string.IsNullOrWhiteSpace(settings.BaseAddress))
     {
@@ -51,28 +39,4 @@ builder.Services.AddHttpClient<IBaionApiClient, BaionApiClient>((provider, clien
     client.Timeout = TimeSpan.FromSeconds(Math.Max(settings.TimeoutSeconds, 1));
 });
 
-var app = builder.Build();
-
-if (!app.Environment.IsDevelopment())
-{
-    app.UseExceptionHandler("/Error", createScopeForErrors: true);
-}
-
-app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
-app.UseAntiforgery();
-
-app.UseAuthentication();
-app.UseAuthorization();
-
-app.MapStaticAssets();
-app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
-
-// Cerrar sesión es una operación de la petición, no del circuito: necesita el HttpContext para
-// borrar la cookie, así que va como endpoint y no como componente.
-app.MapPost("/logout", async (HttpContext context) =>
-{
-    await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-    return Results.Redirect("/login");
-});
-
-app.Run();
+await builder.Build().RunAsync();

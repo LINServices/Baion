@@ -5,8 +5,8 @@ using Microsoft.AspNetCore.Components.Authorization;
 namespace Baion.Cliente.Web.Services.Implementations;
 
 /// <summary>
-/// Saca el token de los claims del usuario del circuito. Se lee de ahí y no del <c>HttpContext</c> porque
-/// un circuito de Blazor vive mucho más que la petición que lo creó.
+/// Saca el token de los claims del usuario autenticado, que <see cref="BaionAuthenticationStateProvider"/>
+/// arma a partir de la sesión guardada en el navegador.
 /// </summary>
 internal class AccessTokenProvider(AuthenticationStateProvider authenticationStateProvider) : IAccessTokenProvider
 {

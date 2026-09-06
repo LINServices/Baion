@@ -1,11 +1,11 @@
 namespace Baion.Cliente.Web.Services;
 
-/// <summary>Claims que el panel guarda en su cookie de sesión.</summary>
+/// <summary>Claims con los que el panel arma la identidad del usuario a partir de la sesión guardada.</summary>
 public static class BaionClaims
 {
     /// <summary>
-    /// Token de acceso de la API. Viaja dentro de la cookie de autenticación, que va cifrada y marcada
-    /// como HttpOnly: nunca llega al JavaScript del navegador.
+    /// Token de acceso de la API. En WebAssembly la sesión vive en el navegador, así que este valor es
+    /// accesible desde el propio panel; nunca se envía a un tercero que no sea el orquestador.
     /// </summary>
     public const string AccessToken = "baion:access_token";
 

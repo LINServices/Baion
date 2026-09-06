@@ -5,6 +5,6 @@
     protected override void OnInitialized()
     {
         var destino = Uri.EscapeDataString(Navigation.ToBaseRelativePath(Navigation.Uri));
-        Navigation.NavigateTo($"login?volverA={destino}", forceLoad: true);
+        Navigation.NavigateTo($"login?volverA={destino}");
     }
 }
