@@ -42,6 +42,18 @@ public interface IBaionApiClient
     /// <summary>Reactiva un servidor desactivado para que su agente pueda volver.</summary>
     Task<ApiResult<ServerSummary>> EnableServerAsync(Guid serverId, CancellationToken cancellationToken);
 
+    /// <summary>Servicios del sistema de un servidor; <paramref name="filter"/> acota por subcadena del nombre.</summary>
+    Task<ApiResult<IReadOnlyList<ServiceSummary>>> GetServerServicesAsync(Guid serverId, string? filter, CancellationToken cancellationToken);
+
+    /// <summary>Detalle de un servicio concreto de un servidor.</summary>
+    Task<ApiResult<ServiceDetail>> GetServerServiceAsync(Guid serverId, string serviceId, CancellationToken cancellationToken);
+
+    /// <summary>Instantánea de los últimos logs de un servicio, opcionalmente acotada a partir de <paramref name="since"/>.</summary>
+    Task<ApiResult<ServiceLogPage>> GetServerServiceLogsAsync(Guid serverId, string serviceId, int maxLines, DateTimeOffset? since, CancellationToken cancellationToken);
+
+    /// <summary>Aplica una acción de control sobre un servicio y devuelve su detalle resultante. Requiere rol Admin.</summary>
+    Task<ApiResult<ServiceDetail>> ControlServerServiceAsync(Guid serverId, string serviceId, string action, CancellationToken cancellationToken);
+
     /// <summary>Página del catálogo de scripts, filtrada opcionalmente por nombre.</summary>
     Task<ApiResult<PagedResult<ScriptListItem>>> GetScriptsAsync(string? search, int page, int pageSize, CancellationToken cancellationToken);
 

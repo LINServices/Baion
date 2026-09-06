@@ -18,6 +18,7 @@ public static class ServiceCollectionExtensions
         services.AddOptions<MetricPartitionOptions>().Bind(configuration.GetSection(MetricPartitionOptions.SectionName));
         services.AddOptions<ScriptEventOptions>().Bind(configuration.GetSection(ScriptEventOptions.SectionName));
         services.AddOptions<SchedulerOptions>().Bind(configuration.GetSection(SchedulerOptions.SectionName));
+        services.AddOptions<AgentQueryOptions>().Bind(configuration.GetSection(AgentQueryOptions.SectionName));
 
         services.TryAddSingleton(TimeProvider.System);
         services.AddSingleton<IAgentRegistry, AgentRegistry>();
@@ -25,6 +26,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IAgentConnectionHandler, AgentConnectionHandler>();
         services.AddSingleton<IMetricIngestQueue, MetricIngestQueue>();
         services.AddSingleton<IScriptEventQueue, ScriptEventQueue>();
+        services.AddSingleton<IAgentQueryDispatcher, AgentQueryDispatcher>();
 
         services.AddScoped<IAgentEnrollmentService, AgentEnrollmentService>();
         services.AddScoped<IEnrollmentTokenService, EnrollmentTokenService>();
@@ -33,6 +35,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IScriptChainService, ScriptChainService>();
         services.AddScoped<IScheduledTaskService, ScheduledTaskService>();
         services.AddScoped<IServerService, ServerService>();
+        services.AddScoped<IServiceInspectionService, ServiceInspectionService>();
 
         services.AddHostedService<InstancePresenceHostedService>();
         services.AddHostedService<MetricIngestHostedService>();

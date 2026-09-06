@@ -91,3 +91,24 @@ public record ScriptExecutionListItem(Guid Id, Guid ServerId, string ServerName,
 
 /// <summary>Ejecución de un script con su salida completa.</summary>
 public record ScriptExecutionDetail(Guid Id, Guid ServerId, string ServerName, Guid ScriptId, string ScriptName, string Status, string Mode, int? ExitCode, string? StdOut, string? StdErr, string? ErrorMessage, DateTimeOffset QueuedAt, DateTimeOffset? StartedAt, DateTimeOffset? CompletedAt);
+
+/// <summary>
+/// Servicio del sistema de un servidor, en su versión de listado. <c>State</c> y <c>StartupMode</c> llegan
+/// como texto camelCase: <c>unknown | running | stopped | starting | stopping | failed</c> y
+/// <c>unknown | automatic | manual | disabled</c>.
+/// </summary>
+public record ServiceSummary(string Id, string DisplayName, string State, string RawState, string StartupMode);
+
+/// <summary>Servicio del sistema con todo su detalle. Los campos que una plataforma no expone llegan en <c>null</c>.</summary>
+public record ServiceDetail(string Id, string DisplayName, string? Description, string State, string RawState,
+    string? SubState, string StartupMode, int? MainProcessId, DateTimeOffset? ActiveSince, long? MemoryBytes,
+    string? ExecPath, int? ExitCode, IReadOnlyList<string> Dependencies);
+
+/// <summary>Una línea del log de un servicio. La marca de tiempo y el nivel llegan en <c>null</c> si el origen no los aporta.</summary>
+public record ServiceLogLine(DateTimeOffset? Timestamp, string? Level, string Message);
+
+/// <summary>Instantánea de las últimas líneas de log de un servicio, de la más antigua a la más reciente.</summary>
+public record ServiceLogPage(IReadOnlyList<ServiceLogLine> Lines, bool Truncated);
+
+/// <summary>Acción de control a aplicar sobre un servicio: <c>start | stop | restart | enable | disable</c>.</summary>
+public record ControlServiceRequest(string Action);

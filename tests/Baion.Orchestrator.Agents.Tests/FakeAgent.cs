@@ -37,6 +37,12 @@ internal sealed class FakeAgent : IAsyncDisposable
 
     public string MachineId { get; }
 
+    /// <summary>
+    /// Contesta a las peticiones correlacionadas que llegan por el socket (listado, detalle, logs, control
+    /// de servicios). Devolver <c>null</c> deja el mensaje sin respuesta, para poder probar el timeout.
+    /// </summary>
+    public Func<ServerToAgentMessage, AgentToServerMessage?>? QueryResponder { get; set; }
+
     /// <summary>Reutilizar el mismo <paramref name="machineId"/> hace que el orquestador reconozca la máquina y no cree otro servidor.</summary>
     public static async Task<FakeAgent> ConnectAsync(OrchestratorFactory factory, string enrollmentToken, ServerPlatform platform = ServerPlatform.Linux, string? machineId = null)
     {
@@ -103,6 +109,10 @@ internal sealed class FakeAgent : IAsyncDisposable
             if (message is ExecuteScriptMessage order)
             {
                 await _orders.Writer.WriteAsync(order, _shutdown.Token);
+            }
+            else if (QueryResponder?.Invoke(message) is { } reply)
+            {
+                await _channel.SendAsync(reply, _shutdown.Token);
             }
         }
     }

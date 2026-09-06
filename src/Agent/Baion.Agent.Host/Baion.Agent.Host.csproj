@@ -14,5 +14,6 @@
     <ProjectReference Include="..\Baion.Agent.Core\Baion.Agent.Core.csproj" />
     <ProjectReference Include="..\Baion.Agent.Execution\Baion.Agent.Execution.csproj" />
     <ProjectReference Include="..\Baion.Agent.Metrics\Baion.Agent.Metrics.csproj" />
+    <ProjectReference Include="..\Baion.Agent.Services\Baion.Agent.Services.csproj" />
   </ItemGroup>
 </Project>

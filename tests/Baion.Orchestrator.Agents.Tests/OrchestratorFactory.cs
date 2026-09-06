@@ -130,7 +130,8 @@ public class OrchestratorFactory : WebApplicationFactory<Program>, IAsyncLifetim
         [$"{OrchestratorOptions.SectionName}:HeartbeatSeconds"] = "1",
         [$"{OrchestratorOptions.SectionName}:HandshakeTimeoutSeconds"] = "5",
         [$"{SchedulerOptions.SectionName}:TickSeconds"] = "1",
-        [$"{ScriptEventOptions.SectionName}:BatchWindowMilliseconds"] = "100"
+        [$"{ScriptEventOptions.SectionName}:BatchWindowMilliseconds"] = "100",
+        [$"{AgentQueryOptions.SectionName}:TimeoutSeconds"] = "3"
     };
 
     private static string BuildConnectionString(string databaseName)

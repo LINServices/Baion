@@ -7,19 +7,22 @@
 
 <PageHeader Seccion="Servidor" Titulo="@Nombre">
     <Acciones>
-        <SelectShell Class="w-40">
-            <select class="baion-select" aria-label="Periodo del histórico" @bind="_periodo" @bind:after="CambiarPeriodoAsync">
-                <option value="24h">Últimas 24 h</option>
-                <option value="7d">Últimos 7 días</option>
-                <option value="30d">Últimos 30 días</option>
-                <option value="todo">Todo el histórico</option>
-            </select>
-        </SelectShell>
+        @if (_pestana == "metricas")
+        {
+            <SelectShell Class="w-40">
+                <select class="baion-select" aria-label="Periodo del histórico" @bind="_periodo" @bind:after="CambiarPeriodoAsync">
+                    <option value="24h">Últimas 24 h</option>
+                    <option value="7d">Últimos 7 días</option>
+                    <option value="30d">Últimos 30 días</option>
+                    <option value="todo">Todo el histórico</option>
+                </select>
+            </SelectShell>
 
-        <button type="button" class="baion-button-icon" title="Actualizar" aria-label="Actualizar"
-                disabled="@(_cargando || _ocupado)" @onclick="RecargarAsync">
-            <Icon Nombre="refresh-cw" Tamano="20" />
-        </button>
+            <button type="button" class="baion-button-icon" title="Actualizar" aria-label="Actualizar"
+                    disabled="@(_cargando || _ocupado)" @onclick="RecargarAsync">
+                <Icon Nombre="refresh-cw" Tamano="20" />
+            </button>
+        }
 
         <a class="baion-button-ghost" href="/servidores">
             <Icon Nombre="chevron-left" Tamano="14" />
@@ -81,7 +84,20 @@ else
         </dl>
     </div>
 
-    @if (_detalle.LastMetrics is null)
+    <nav class="mt-10 flex items-center gap-1" aria-label="Vistas del servidor">
+        <button type="button" class="baion-nav-pill @(_pestana == "metricas" ? "baion-nav-pill-active" : string.Empty)"
+                @onclick='() => _pestana = "metricas"'>Métricas</button>
+        <button type="button" class="baion-nav-pill @(_pestana == "servicios" ? "baion-nav-pill-active" : string.Empty)"
+                @onclick='() => _pestana = "servicios"'>Servicios</button>
+    </nav>
+
+    @if (_pestana == "servicios")
+    {
+        <div class="mt-6">
+            <ServerServicesPanel ServerId="ServerId" />
+        </div>
+    }
+    else if (_detalle.LastMetrics is null)
     {
         <div class="mt-3">
             <EmptyState Icono="gauge"
@@ -245,6 +261,7 @@ else
     private Models.ServerDetail? _detalle;
     private PagedResult<MetricReading>? _historico;
     private string _periodo = "7d";
+    private string _pestana = "metricas";
     private string? _error;
     private bool _cargando = true;
     private bool _ocupado;
@@ -272,6 +289,7 @@ else
         _error = null;
         _pagina = 1;
         _historico = null;
+        _pestana = "metricas";
 
         var detalle = await Api.GetServerAsync(ServerId, CancellationToken.None);
         _detalle = detalle.Value;

@@ -300,6 +300,45 @@ Exchange direct/topic por agente + fanout para presencia. Registro de presencia 
 `ForceUpdateMessage` → agente descarga binario según su RID, reemplaza y reconecta.
 **Aceptación:** forzar update desde el orquestador sobre un agente Linux y uno Windows, confirmar nueva versión reportada.
 
+### Fase 10 — Inspección de servicios
+Ver el listado de servicios del sistema de un servidor (systemd en Linux, SCM en Windows), su detalle y una
+instantánea de sus logs, con control básico (arrancar, parar, reiniciar, habilitar, deshabilitar).
+
+**Pass-through en tiempo real, sin persistencia.** El orquestador no guarda nada: pregunta al agente por el
+socket en el momento y traduce su respuesta. No hay tablas nuevas ni migración. Requiere el agente conectado.
+
+**Petición/respuesta sobre un socket de una sola dirección.** El protocolo era fire-and-forget; se añade
+correlación por `RequestId` + el marcador `IAgentQueryReply`, y un `IAgentQueryDispatcher` (singleton) que
+guarda un `TaskCompletionSource` por petición en vuelo y lo completa cuando llega la respuesta. El hilo del
+socket solo despierta la espera (`case IAgentQueryReply` en `AgentConnectionHandler.DispatchAsync`), nunca
+bloquea ni escribe en la base.
+
+Contrato en `Baion.Contracts`:
+- Peticiones (`ServerToAgentMessage`): `services-list-request`, `service-describe-request`,
+  `service-logs-request`, `service-control-request`.
+- Respuestas (`AgentToServerMessage`, todas `IAgentQueryReply`): `services-listed`, `service-described`,
+  `service-logs`, `service-controlled`, y `service-query-failed` (con `service.not_found` /
+  `service.forbidden` / `service.tool_failed`, que el orquestador mapea a 404/403/500).
+- DTOs normalizados entre plataformas: `ServiceSummary`, `ServiceDetail`, `ServiceLogLine`, `ServiceLogPage`;
+  enums `ServiceRuntimeState`, `ServiceStartupMode`, `ServiceControlAction`.
+
+API: `GET/POST api/servers/{serverId:guid}/services[...]` (`ServerServicesController`). El control exige rol
+`Admin`; el resto, autenticación. `AgentQueryOptions` (`Orchestrator:AgentQuery`): `TimeoutSeconds` 20,
+`DefaultLogLines` 200, `MaxLogLines` 2000 (la trama son 1 MB; el agente recorta y marca `Truncated`).
+
+**Caveats:**
+- **Solo alcanza agentes conectados a esta instancia.** El dispatcher usa `IAgentRegistry` local; si el
+  socket vive en otra instancia devuelve `agent.not_reachable` (409). El enrutado de respuestas entre
+  instancias es trabajo de la Fase 8 (hoy no hay camino de vuelta por RabbitMQ). Aceptable mientras local
+  sea monoinstancia y `RabbitMq:Enabled=false`.
+- **Streaming de logs en vivo pendiente.** El contrato reserva `service-logs-stream-start` / `-stop` /
+  `-chunk`, pero el orquestador todavía no los emite: de momento solo instantánea (últimas N líneas / desde
+  un instante).
+
+**Aceptación:** 10 tests de round-trip del contrato + 9 de integración con `FakeAgent` (listado, filtro por
+nombre, detalle, `service-query-failed` → 404, recorte de líneas al tope, control con acción, agente en otra
+instancia → 409, servidor inexistente → 404, timeout → 409).
+
 ---
 
 > Documento vivo — se ajusta a medida que el diseño evoluciona durante la implementación.

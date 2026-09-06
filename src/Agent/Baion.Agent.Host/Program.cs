@@ -1,6 +1,7 @@
 using Baion.Agent.Core;
 using Baion.Agent.Execution;
 using Baion.Agent.Metrics;
+using Baion.Agent.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
@@ -14,7 +15,8 @@ builder.Services.AddSystemd();
 builder.Services
     .AddAgentCore(builder.Configuration)
     .AddScriptExecution(builder.Configuration)
-    .AddMetricsCollection(builder.Configuration);
+    .AddMetricsCollection(builder.Configuration)
+    .AddServiceInspection(builder.Configuration);
 
 var host = builder.Build();
 

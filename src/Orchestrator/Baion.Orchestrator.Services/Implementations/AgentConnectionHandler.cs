@@ -17,7 +17,7 @@ namespace Baion.Orchestrator.Services.Implementations;
 /// Conduce un socket de agente de principio a fin. Cada operación contra la base abre su propio scope:
 /// la conexión vive horas y no puede quedarse con un <c>DbContext</c> abierto todo ese tiempo.
 /// </summary>
-internal class AgentConnectionHandler(IServiceScopeFactory scopeFactory, IAgentRegistry registry, IMetricIngestQueue metricQueue, IScriptEventQueue scriptQueue, IAgentCommandSubscription subscription, IAgentPresenceBus presence, IOptions<OrchestratorOptions> options, TimeProvider timeProvider, ILogger<AgentConnectionHandler> logger) : IAgentConnectionHandler
+internal class AgentConnectionHandler(IServiceScopeFactory scopeFactory, IAgentRegistry registry, IMetricIngestQueue metricQueue, IScriptEventQueue scriptQueue, IAgentQueryDispatcher queryDispatcher, IAgentCommandSubscription subscription, IAgentPresenceBus presence, IOptions<OrchestratorOptions> options, TimeProvider timeProvider, ILogger<AgentConnectionHandler> logger) : IAgentConnectionHandler
 {
     public async Task HandleAsync(WebSocket socket, AgentCredentialContext credentials, CancellationToken cancellationToken)
     {
@@ -165,6 +165,11 @@ internal class AgentConnectionHandler(IServiceScopeFactory scopeFactory, IAgentR
 
             case ScriptCompletedMessage completed:
                 scriptQueue.TryEnqueue(new ScriptCompletionEvent(session.TenantId, completed.ExecutionId, completed.Status, completed.ExitCode, completed.CompletedAt, completed.ErrorMessage));
+                break;
+
+            // Respuesta a una consulta puntual: no toca la base, solo despierta a quien la espera.
+            case IAgentQueryReply:
+                queryDispatcher.TryComplete(message);
                 break;
 
             default:

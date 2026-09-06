@@ -54,6 +54,35 @@ internal class BaionApiClient(HttpClient http, IAccessTokenProvider tokens, ILog
 
     public async Task<ApiResult<ServerSummary>> EnableServerAsync(Guid serverId, CancellationToken cancellationToken) => await PostAsync<ServerSummary>($"api/servers/{serverId}/enable", cancellationToken);
 
+    public async Task<ApiResult<IReadOnlyList<ServiceSummary>>> GetServerServicesAsync(Guid serverId, string? filter, CancellationToken cancellationToken) =>
+        await GetAsync<IReadOnlyList<ServiceSummary>>($"api/servers/{serverId}/services" + QueryString([("filter", filter)]), cancellationToken);
+
+    // El identificador del servicio va como un solo segmento de ruta: en Linux son nombres como
+    // «nginx.service», con puntos, así que se escapa el valor entero.
+    public async Task<ApiResult<ServiceDetail>> GetServerServiceAsync(Guid serverId, string serviceId, CancellationToken cancellationToken) =>
+        await GetAsync<ServiceDetail>($"api/servers/{serverId}/services/{Uri.EscapeDataString(serviceId)}", cancellationToken);
+
+    public async Task<ApiResult<ServiceLogPage>> GetServerServiceLogsAsync(Guid serverId, string serviceId, int maxLines, DateTimeOffset? since, CancellationToken cancellationToken)
+    {
+        var filtros = new (string, string?)[]
+        {
+            ("maxLines", Numero(maxLines)),
+            ("since", since?.ToString("O", CultureInfo.InvariantCulture))
+        };
+
+        return await GetAsync<ServiceLogPage>($"api/servers/{serverId}/services/{Uri.EscapeDataString(serviceId)}/logs" + QueryString(filtros), cancellationToken);
+    }
+
+    public async Task<ApiResult<ServiceDetail>> ControlServerServiceAsync(Guid serverId, string serviceId, string action, CancellationToken cancellationToken)
+    {
+        using var message = new HttpRequestMessage(HttpMethod.Post, $"api/servers/{serverId}/services/{Uri.EscapeDataString(serviceId)}/control")
+        {
+            Content = JsonContent.Create(new ControlServiceRequest(action), options: JsonOptions)
+        };
+
+        return await SendAsync<ServiceDetail>(message, authenticated: true, cancellationToken);
+    }
+
     public async Task<ApiResult<PagedResult<ScriptListItem>>> GetScriptsAsync(string? search, int page, int pageSize, CancellationToken cancellationToken)
     {
         var ruta = "api/scripts" + QueryString([("search", search), ("page", Numero(page)), ("pageSize", Numero(pageSize))]);

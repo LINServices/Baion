@@ -9,6 +9,12 @@ namespace Baion.Contracts.Messages;
 [JsonDerivedType(typeof(ConnectionRejectedMessage), ConnectionRejectedMessage.TypeDiscriminator)]
 [JsonDerivedType(typeof(ExecuteScriptMessage), ExecuteScriptMessage.TypeDiscriminator)]
 [JsonDerivedType(typeof(ForceUpdateMessage), ForceUpdateMessage.TypeDiscriminator)]
+[JsonDerivedType(typeof(ListServicesRequestMessage), ListServicesRequestMessage.TypeDiscriminator)]
+[JsonDerivedType(typeof(DescribeServiceRequestMessage), DescribeServiceRequestMessage.TypeDiscriminator)]
+[JsonDerivedType(typeof(ServiceLogsRequestMessage), ServiceLogsRequestMessage.TypeDiscriminator)]
+[JsonDerivedType(typeof(ControlServiceRequestMessage), ControlServiceRequestMessage.TypeDiscriminator)]
+[JsonDerivedType(typeof(ServiceLogStreamStartMessage), ServiceLogStreamStartMessage.TypeDiscriminator)]
+[JsonDerivedType(typeof(ServiceLogStreamStopMessage), ServiceLogStreamStopMessage.TypeDiscriminator)]
 public abstract record ServerToAgentMessage
 {
     public Guid MessageId { get; init; } = Guid.CreateVersion7();

@@ -1,0 +1,29 @@
+@* Estado de un servicio del sistema. El acento solo para lo que está en marcha; el fallo va en danger;
+   los estados de transición llevan el punto negro latiendo, como «lo que está pasando ahora». *@
+
+<span class="baion-chip @Clases">
+    <span class="baion-chip-dot @ClasePunto @(Transicion ? "animate-pulse" : string.Empty)" aria-hidden="true"></span>
+    @ServiceStates.StateLabel(Estado)
+</span>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Estado { get; set; } = string.Empty;
+
+    private bool Transicion => ServiceStates.IsTransitional(Estado);
+
+    private string Clases => Estado switch
+    {
+        "running" => "baion-chip-current",
+        "failed" => "baion-chip-danger",
+        _ => string.Empty
+    };
+
+    private string ClasePunto => Estado switch
+    {
+        "running" => "bg-current-500",
+        "starting" or "stopping" => "bg-ink",
+        "failed" => "bg-danger",
+        _ => "border border-ghost"
+    };
+}

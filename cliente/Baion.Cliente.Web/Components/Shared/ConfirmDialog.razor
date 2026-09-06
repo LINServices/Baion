@@ -1,0 +1,68 @@
+@* Confirmación de una acción que no se puede deshacer sola. Es un overlay: el sistema reserva la sombra
+   justo para esto. El fondo atenúa con ink translúcido, nunca con un color. La acción primaria es negra;
+   si lo que se confirma es destructivo, pasa a contorno rojo. *@
+
+@if (Visible)
+{
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-ink/20 px-4"
+         role="presentation" @onclick="CancelarAsync">
+        <div class="w-full max-w-md rounded-2xl border border-line bg-surface p-6 shadow-overlay"
+             role="alertdialog" aria-modal="true" aria-labelledby="confirm-titulo"
+             @onclick:stopPropagation="true">
+            <p id="confirm-titulo" class="text-title text-ink">@Titulo</p>
+
+            @if (!string.IsNullOrWhiteSpace(Descripcion))
+            {
+                <p class="mt-2 text-body text-ink-2">@Descripcion</p>
+            }
+
+            <div class="mt-6 flex items-center justify-end gap-2">
+                <button type="button" class="baion-button-ghost" @onclick="CancelarAsync">@TextoCancelar</button>
+                <button type="button" class="@(Destructivo ? "baion-button-danger" : "baion-button")" @onclick="ConfirmarAsync">
+                    @TextoConfirmar
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public bool Visible { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> VisibleChanged { get; set; }
+
+    [Parameter, EditorRequired]
+    public string Titulo { get; set; } = string.Empty;
+
+    [Parameter]
+    public string? Descripcion { get; set; }
+
+    [Parameter]
+    public string TextoConfirmar { get; set; } = "Confirmar";
+
+    [Parameter]
+    public string TextoCancelar { get; set; } = "Cancelar";
+
+    /// <summary>Pinta el botón de confirmar como destructivo (contorno rojo) en vez de la acción primaria negra.</summary>
+    [Parameter]
+    public bool Destructivo { get; set; }
+
+    [Parameter]
+    public EventCallback OnConfirmar { get; set; }
+
+    private async Task ConfirmarAsync()
+    {
+        await CerrarAsync();
+        await OnConfirmar.InvokeAsync();
+    }
+
+    private async Task CancelarAsync() => await CerrarAsync();
+
+    private async Task CerrarAsync()
+    {
+        Visible = false;
+        await VisibleChanged.InvokeAsync(false);
+    }
+}
