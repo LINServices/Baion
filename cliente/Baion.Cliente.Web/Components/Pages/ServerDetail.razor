@@ -258,6 +258,10 @@ else
     [Parameter]
     public Guid ServerId { get; set; }
 
+    /// <summary>Pestaña a abrir; la usa el «Volver» de la pantalla de detalle de un servicio.</summary>
+    [SupplyParameterFromQuery(Name = "vista")]
+    public string? Vista { get; set; }
+
     private Models.ServerDetail? _detalle;
     private PagedResult<MetricReading>? _historico;
     private string _periodo = "7d";
@@ -289,7 +293,7 @@ else
         _error = null;
         _pagina = 1;
         _historico = null;
-        _pestana = "metricas";
+        _pestana = Vista == "servicios" ? "servicios" : "metricas";
 
         var detalle = await Api.GetServerAsync(ServerId, CancellationToken.None);
         _detalle = detalle.Value;

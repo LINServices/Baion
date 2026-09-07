@@ -1,8 +1,8 @@
-@* Pestaña «Servicios» de un servidor: lista con buscador, ficha de detalle al abrir una fila y visor de
-   logs bajo demanda. El control (arrancar, parar…) solo se pinta con rol Admin. El streaming en vivo es
-   de una fase posterior: aquí todo se carga a petición. *@
+@* Pestaña «Servicios» de un servidor: lista con buscador. Cada fila abre la pantalla de detalle del
+   servicio, donde viven la ficha, los logs y el control. Aquí no se carga nada más que la lista. *@
 
 @inject IBaionApiClient Api
+@inject NavigationManager Navigation
 
 <div class="flex flex-wrap items-center gap-2">
     <SearchPill @bind-Valor="_filtro" OnBuscar="BuscarAsync" Placeholder="Nombre del servicio" />
@@ -47,19 +47,22 @@
                             <th>Servicio</th>
                             <th>Estado</th>
                             <th>Arranque</th>
+                            <th><span class="sr-only">Abrir</span></th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach (var servicio in Servicios)
                         {
-                            <tr class="cursor-pointer @(servicio.Id == _seleccionadoId ? "bg-surface-alt" : string.Empty)"
-                                @onclick="() => SeleccionarAsync(servicio.Id)">
+                            <tr class="cursor-pointer" @onclick="() => Abrir(servicio.Id)">
                                 <td>
-                                    <div class="text-title text-ink">@servicio.DisplayName</div>
+                                    <a class="text-title text-ink" href="@Ruta(servicio.Id)" @onclick:stopPropagation="true">@servicio.DisplayName</a>
                                     <div class="mt-1 font-mono text-label text-muted">@servicio.Id</div>
                                 </td>
                                 <td><ServiceStateBadge Estado="@servicio.State" /></td>
                                 <td class="text-muted">@ServiceStates.StartupLabel(servicio.StartupMode)</td>
+                                <td class="text-right text-muted">
+                                    <Icon Nombre="chevron-right" Tamano="16" />
+                                </td>
                             </tr>
                         }
                     </tbody>
@@ -67,235 +70,22 @@
             </div>
         </div>
     }
-
-    @if (_seleccionadoId is not null)
-    {
-        <div class="mt-3">
-            @if (_cargandoDetalle && _detalle is null)
-            {
-                <div class="baion-card p-6">
-                    <GhostLoader Filas="4" Descripcion="Cargando el servicio…" />
-                </div>
-            }
-            else if (_detalle is not null)
-            {
-                <div class="baion-card p-6">
-                    <header class="flex flex-wrap items-start justify-between gap-4">
-                        <div class="min-w-0">
-                            <h3 class="truncate text-heading text-ink">@_detalle.DisplayName</h3>
-                            <p class="mt-1 font-mono text-label text-muted">@_detalle.Id</p>
-                        </div>
-
-                        <div class="flex flex-wrap items-center gap-2">
-                            @if (_esAdmin)
-                            {
-                                @if (_detalle.State != "running")
-                                {
-                                    <button type="button" class="baion-button" disabled="@_ejecutandoAccion"
-                                            @onclick='() => PulsarAccionAsync("start")'>Arrancar</button>
-                                }
-                                @if (_detalle.State == "running")
-                                {
-                                    <button type="button" class="baion-button-ghost" disabled="@_ejecutandoAccion"
-                                            @onclick='() => PulsarAccionAsync("restart")'>Reiniciar</button>
-                                    <button type="button" class="baion-button-danger" disabled="@_ejecutandoAccion"
-                                            @onclick='() => PulsarAccionAsync("stop")'>Detener</button>
-                                }
-                                @if (_detalle.StartupMode != "automatic")
-                                {
-                                    <button type="button" class="baion-button-ghost" disabled="@_ejecutandoAccion"
-                                            @onclick='() => PulsarAccionAsync("enable")'>Habilitar arranque</button>
-                                }
-                                @if (_detalle.StartupMode != "disabled")
-                                {
-                                    <button type="button" class="baion-button-danger" disabled="@_ejecutandoAccion"
-                                            @onclick='() => PulsarAccionAsync("disable")'>Deshabilitar arranque</button>
-                                }
-                            }
-                            <button type="button" class="baion-button-icon" title="Cerrar el detalle" aria-label="Cerrar el detalle"
-                                    @onclick="CerrarDetalle">
-                                <Icon Nombre="x" Tamano="20" />
-                            </button>
-                        </div>
-                    </header>
-
-                    <AlertMessage Mensaje="@_errorDetalle" />
-
-                    <dl class="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                        <DetailField Etiqueta="Estado">
-                            <ServiceStateBadge Estado="@_detalle.State" />
-                        </DetailField>
-                        <DetailField Etiqueta="Estado del sistema">
-                            <span class="font-mono text-label text-ink-2">@_detalle.RawState@(_detalle.SubState is null ? string.Empty : $" · {_detalle.SubState}")</span>
-                        </DetailField>
-                        <DetailField Etiqueta="Arranque">
-                            @ServiceStates.StartupLabel(_detalle.StartupMode)
-                        </DetailField>
-                        <DetailField Etiqueta="PID">
-                            <span class="tabular-nums">@(_detalle.MainProcessId?.ToString() ?? "—")</span>
-                        </DetailField>
-                        <DetailField Etiqueta="Memoria">
-                            <span class="tabular-nums">@(_detalle.MemoryBytes is long memoria ? NumberFormat.Bytes(memoria) : "—")</span>
-                        </DetailField>
-                        <DetailField Etiqueta="Activo desde">
-                            <span title="@TimeFormat.Absolute(_detalle.ActiveSince)">@TimeFormat.Relative(_detalle.ActiveSince)</span>
-                        </DetailField>
-                        <DetailField Etiqueta="Código de salida">
-                            <span class="font-mono tabular-nums @(_detalle.ExitCode is int and not 0 ? "text-danger" : "text-ink")">@(_detalle.ExitCode?.ToString() ?? "—")</span>
-                        </DetailField>
-                        <DetailField Etiqueta="Ruta">
-                            <span class="break-all font-mono text-label text-ink-2">@(_detalle.ExecPath ?? "—")</span>
-                        </DetailField>
-                    </dl>
-
-                    @if (!string.IsNullOrWhiteSpace(_detalle.Description))
-                    {
-                        <p class="mt-6 max-w-[80ch] text-body text-ink-2">@_detalle.Description</p>
-                    }
-
-                    @if (_detalle.Dependencies.Count > 0)
-                    {
-                        <div class="mt-6">
-                            <p class="text-label text-muted">Depende de</p>
-                            <div class="mt-2 flex flex-wrap gap-1.5">
-                                @foreach (var dependencia in _detalle.Dependencies)
-                                {
-                                    <span class="baion-chip font-mono">@dependencia</span>
-                                }
-                            </div>
-                        </div>
-                    }
-
-                    <section class="mt-8">
-                        <div class="flex flex-wrap items-end gap-3">
-                            <div>
-                                <label class="baion-label" for="log-lineas">Líneas</label>
-                                <SelectShell Class="mt-2 w-32">
-                                    <select id="log-lineas" class="baion-select tabular-nums" @bind="_maxLineas">
-                                        <option value="100">100</option>
-                                        <option value="200">200</option>
-                                        <option value="500">500</option>
-                                        <option value="1000">1000</option>
-                                        <option value="2000">2000</option>
-                                    </select>
-                                </SelectShell>
-                            </div>
-                            <div>
-                                <label class="baion-label" for="log-desde">Desde (UTC)</label>
-                                <input id="log-desde" type="datetime-local" class="baion-input mt-2" @bind="_desde" />
-                            </div>
-                            <button type="button" class="baion-button-ghost" disabled="@_cargandoLogs" @onclick="CargarLogsAsync">
-                                <Icon Nombre="terminal" Tamano="14" />
-                                @(_cargandoLogs ? "Cargando…" : "Cargar logs")
-                            </button>
-                        </div>
-
-                        <AlertMessage Mensaje="@_errorLogs" />
-
-                        @if (_logs is not null)
-                        {
-                            @if (_logs.Truncated)
-                            {
-                                <p class="mt-3 flex items-start gap-2 text-label text-warn">
-                                    <span class="mt-px shrink-0" aria-hidden="true"><Icon Nombre="circle-alert" Tamano="14" /></span>
-                                    El agente recortó el resultado para no pasarse del tamaño máximo de trama; pide menos líneas o acota «Desde».
-                                </p>
-                            }
-
-                            @if (_logs.Lines.Count == 0)
-                            {
-                                <p class="mt-3 text-body text-muted">No hay líneas de log para el intervalo pedido.</p>
-                            }
-                            else
-                            {
-                                <div class="baion-output mt-3 space-y-1 font-mono">
-                                    @foreach (var linea in _logs.Lines)
-                                    {
-                                        <div class="whitespace-pre-wrap break-words">
-                                            @if (linea.Timestamp is DateTimeOffset marca)
-                                            {
-                                                <span class="text-muted">@marca.ToString("dd/MM HH:mm:ss") </span>
-                                            }
-                                            @if (!string.IsNullOrWhiteSpace(linea.Level))
-                                            {
-                                                <span class="text-ink">[@linea.Level] </span>
-                                            }
-                                            @linea.Message
-                                        </div>
-                                    }
-                                </div>
-                            }
-                        }
-                    </section>
-                </div>
-            }
-            else if (_errorDetalle is not null)
-            {
-                <div class="baion-card p-6">
-                    <div class="flex items-start justify-between gap-4">
-                        <p class="text-body text-danger">@_errorDetalle</p>
-                        <button type="button" class="baion-button-icon" title="Cerrar" aria-label="Cerrar" @onclick="CerrarDetalle">
-                            <Icon Nombre="x" Tamano="20" />
-                        </button>
-                    </div>
-                </div>
-            }
-        </div>
-    }
 </div>
-
-<ConfirmDialog @bind-Visible="_confirmVisible"
-               Titulo="@_confirmTitulo"
-               Descripcion="@_confirmDescripcion"
-               Destructivo="@_confirmDestructivo"
-               TextoConfirmar="Continuar"
-               OnConfirmar="EjecutarAccionAsync" />
 
 @code {
     /// <summary>Servidor cuyos servicios se listan; lo pasa la página de detalle del servidor.</summary>
     [Parameter, EditorRequired]
     public Guid ServerId { get; set; }
 
-    [CascadingParameter]
-    private Task<AuthenticationState>? EstadoAutenticacion { get; set; }
-
     private IReadOnlyList<ServiceSummary>? _servicios;
     private string? _filtro;
     private string? _filtroActivo;
     private string? _error;
     private bool _cargando = true;
-    private bool _esAdmin;
-
-    private string? _seleccionadoId;
-    private Models.ServiceDetail? _detalle;
-    private string? _errorDetalle;
-    private bool _cargandoDetalle;
-    private bool _ejecutandoAccion;
-
-    private ServiceLogPage? _logs;
-    private string? _errorLogs;
-    private bool _cargandoLogs;
-    private int _maxLineas = 200;
-    private DateTime? _desde;
-
-    private bool _confirmVisible;
-    private string? _accionPendiente;
-    private string _confirmTitulo = string.Empty;
-    private string? _confirmDescripcion;
-    private bool _confirmDestructivo;
 
     private IReadOnlyList<ServiceSummary> Servicios => _servicios ?? [];
 
-    protected override async Task OnInitializedAsync()
-    {
-        if (EstadoAutenticacion is not null)
-        {
-            var estado = await EstadoAutenticacion;
-            _esAdmin = estado.User.IsInRole("Admin");
-        }
-
-        await CargarAsync();
-    }
+    protected override async Task OnInitializedAsync() => await CargarAsync();
 
     private async Task CargarAsync()
     {
@@ -320,128 +110,7 @@
 
     private async Task BuscarAsync() => await CargarAsync();
 
-    private async Task SeleccionarAsync(string serviceId)
-    {
-        _seleccionadoId = serviceId;
-        _detalle = null;
-        _errorDetalle = null;
-        _logs = null;
-        _errorLogs = null;
-        _desde = null;
+    private void Abrir(string serviceId) => Navigation.NavigateTo(Ruta(serviceId));
 
-        await CargarDetalleAsync();
-    }
-
-    private async Task CargarDetalleAsync()
-    {
-        if (_seleccionadoId is null)
-        {
-            return;
-        }
-
-        _cargandoDetalle = true;
-
-        var resultado = await Api.GetServerServiceAsync(ServerId, _seleccionadoId, CancellationToken.None);
-
-        if (resultado is { IsSuccess: true, Value: { } detalle })
-        {
-            _detalle = detalle;
-            _errorDetalle = null;
-        }
-        else
-        {
-            _detalle = null;
-            _errorDetalle = ServiceStates.FriendlyError(resultado.ErrorCode, resultado.ErrorMessage);
-        }
-
-        _cargandoDetalle = false;
-    }
-
-    private void CerrarDetalle()
-    {
-        _seleccionadoId = null;
-        _detalle = null;
-        _errorDetalle = null;
-        _logs = null;
-        _errorLogs = null;
-    }
-
-    private async Task CargarLogsAsync()
-    {
-        if (_detalle is null)
-        {
-            return;
-        }
-
-        _cargandoLogs = true;
-        _errorLogs = null;
-
-        var desde = _desde is DateTime valor
-            ? new DateTimeOffset(DateTime.SpecifyKind(valor, DateTimeKind.Utc), TimeSpan.Zero)
-            : (DateTimeOffset?)null;
-
-        var resultado = await Api.GetServerServiceLogsAsync(ServerId, _detalle.Id, _maxLineas, desde, CancellationToken.None);
-
-        if (resultado is { IsSuccess: true, Value: { } pagina })
-        {
-            _logs = pagina;
-        }
-        else
-        {
-            _logs = null;
-            _errorLogs = ServiceStates.FriendlyError(resultado.ErrorCode, resultado.ErrorMessage);
-        }
-
-        _cargandoLogs = false;
-    }
-
-    private async Task PulsarAccionAsync(string accion)
-    {
-        _accionPendiente = accion;
-
-        if (accion is "stop" or "restart" or "disable")
-        {
-            (_confirmTitulo, _confirmDescripcion, _confirmDestructivo) = TextoConfirmacion(accion);
-            _confirmVisible = true;
-            return;
-        }
-
-        await EjecutarAccionAsync();
-    }
-
-    private async Task EjecutarAccionAsync()
-    {
-        if (_accionPendiente is null || _detalle is null)
-        {
-            return;
-        }
-
-        _ejecutandoAccion = true;
-        _errorDetalle = null;
-
-        var resultado = await Api.ControlServerServiceAsync(ServerId, _detalle.Id, _accionPendiente, CancellationToken.None);
-
-        _ejecutandoAccion = false;
-        _accionPendiente = null;
-
-        if (resultado is { IsSuccess: true, Value: { } detalle })
-        {
-            _detalle = detalle;
-            await CargarAsync();
-        }
-        else
-        {
-            _errorDetalle = ServiceStates.FriendlyError(resultado.ErrorCode, resultado.ErrorMessage);
-        }
-    }
-
-    private (string Titulo, string? Descripcion, bool Destructivo) TextoConfirmacion(string accion) => accion switch
-    {
-        "stop" => ("Detener el servicio", $"Se detendrá «{Nombre}» en el servidor; puede afectar a lo que dependa de él.", true),
-        "restart" => ("Reiniciar el servicio", $"Se reiniciará «{Nombre}»: quedará unos segundos sin servicio.", false),
-        "disable" => ("Deshabilitar el arranque", $"«{Nombre}» no volverá a arrancar al iniciar la máquina.", true),
-        _ => ("Confirmar la acción", null, false)
-    };
-
-    private string Nombre => _detalle?.DisplayName ?? _detalle?.Id ?? "el servicio";
+    private string Ruta(string serviceId) => $"/servidores/{ServerId}/servicios/{Uri.EscapeDataString(serviceId)}";
 }
