@@ -1,4 +1,8 @@
-name: Build & Deploy
+name: Build & Deploy (panel)
+
+# El panel es Blazor WebAssembly standalone: `dotnet publish` compila a un sitio
+# estático. Lo que se despliega es el contenido de wwwroot/ del publish (index.html,
+# _framework/, css/...), sin proceso servidor.
 
 on:
   push:
@@ -6,11 +10,10 @@ on:
   workflow_dispatch:
 
 env:
-  PUBLISH_URL: ${{ secrets.LIN_CLOUD_URL_2002 }}
-  PUBLISH_KEY: ${{ secrets.LIN_CLOUD_KEY_2002 }}
-  DOTNET_VERSION: ${{ secrets.LIN_CLOUD_DOTNET_VERSION_2002 }} # ej: 9.0 / 8.0
-  PROJECT_PATH: ${{ secrets.LIN_CLOUD_CSPROJ_2002 }} 
-  PUBLISH_DIR: ./publish
+  PUBLISH_URL: ${{ secrets.LIN_CLOUD_URL_2005 }}
+  PUBLISH_KEY: ${{ secrets.LIN_CLOUD_KEY_2005 }}
+  PROJECT_PATH: ${{ secrets.LIN_CLOUD_CSPROJ_2005 }} 
+  PUBLISH_DIR: "./publish"
 
 jobs:
   build-deploy:
@@ -26,10 +29,18 @@ jobs:
       # --------------------
       # Setup .NET
       # --------------------
-      - name: Setup .NET SDK
+      - name: Setup .NET 10 SDK
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: "${{ env.DOTNET_VERSION }}.x"
+          dotnet-version: "10.0.x"
+
+      # --------------------
+      # Setup Node (Tailwind 4 se compila en un target de MSBuild)
+      # --------------------
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
 
       # --------------------
       # Cache NuGet
@@ -49,35 +60,31 @@ jobs:
         run: dotnet clean "$PROJECT_PATH" -c Release
 
       - name: Restore
-        run: dotnet restore "$PROJECT_PATH" -r linux-x64
+        run: dotnet restore "$PROJECT_PATH"
 
       - name: Build
         run: >
           dotnet build "$PROJECT_PATH"
           -c Release
-          -r linux-x64
-          --self-contained false
-          -f net${{ env.DOTNET_VERSION }}
+          -f net10.0
           --no-restore
 
+      # `dotnet publish` de un proyecto BlazorWebAssembly deja el sitio estático en
+      # $(PUBLISH_DIR)/wwwroot. RunTailwind queda en true: el target compila el CSS.
       - name: Publish
-        run: |
-          dotnet publish "$PROJECT_PATH" \
-            -c Release \
-            -f net${{ env.DOTNET_VERSION }} \
-            -r linux-x64 \
-            --self-contained false \
-            --no-build \
-            -p:PublishSingleFile=false \
-            -p:GenerateRuntimeConfigurationFiles=true \
-            -p:DebugType=None \
-            -p:DebugSymbols=false \
-            -o "$PUBLISH_DIR"
+        run: >
+          dotnet publish "$PROJECT_PATH"
+          -c Release
+          -f net10.0
+          --no-build
+          -o "$PUBLISH_DIR"
 
-      - name: Zip Published Files
+      # El zip se hace desde dentro de publish/wwwroot: al descomprimir, index.html
+      # y _framework/ quedan en la raíz, listos para servir desde el hosting estático.
+      - name: Zip static site
         run: |
-          cd "$PUBLISH_DIR"
-          zip -r ../app.zip .
+          cd "$PUBLISH_DIR/wwwroot"
+          zip -r ../../app.zip .
 
       - name: Upload ZIP a LIN Cloud IIS Push
         run: |
