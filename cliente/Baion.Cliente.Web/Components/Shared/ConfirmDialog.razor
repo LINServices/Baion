@@ -17,8 +17,10 @@
             }
 
             <div class="mt-6 flex items-center justify-end gap-2">
-                <button type="button" class="baion-button-ghost" @onclick="CancelarAsync">@TextoCancelar</button>
-                <button type="button" class="@(Destructivo ? "baion-button-danger" : "baion-button")" @onclick="ConfirmarAsync">
+                <button type="button" class="baion-button-ghost @_ratonCancelar.Clase" @onclick="CancelarAsync"
+                        @attributes="this.EventosRaton(_ratonCancelar)">@TextoCancelar</button>
+                <button type="button" class="@(Destructivo ? "baion-button-danger" : "baion-button") @_ratonConfirmar.Clase"
+                        @onclick="ConfirmarAsync" @attributes="this.EventosRaton(_ratonConfirmar)">
                     @TextoConfirmar
                 </button>
             </div>
@@ -27,6 +29,9 @@
 }
 
 @code {
+    private readonly EstadoRaton _ratonCancelar = new();
+    private readonly EstadoRaton _ratonConfirmar = new();
+
     [Parameter]
     public bool Visible { get; set; }
 

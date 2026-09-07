@@ -42,8 +42,8 @@
             </select>
         </SelectShell>
 
-        <button type="button" class="baion-button-icon" title="Actualizar" aria-label="Actualizar"
-                disabled="@_cargando" @onclick="CargarAsync">
+        <button type="button" class="baion-button-icon @_raton.Clase" title="Actualizar" aria-label="Actualizar"
+                disabled="@_cargando" @onclick="CargarAsync" @attributes="this.EventosRaton(_raton)">
             <Icon Nombre="refresh-cw" Tamano="20" />
         </button>
     </Acciones>
@@ -101,6 +101,8 @@ else
 }
 
 @code {
+    private readonly EstadoRaton _raton = new();
+
     private PagedResult<ScriptExecutionListItem>? _resultado;
     private IReadOnlyList<ServerSummary> _servidores = [];
     private string _servidor = string.Empty;

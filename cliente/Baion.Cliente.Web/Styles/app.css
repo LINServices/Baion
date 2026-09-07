@@ -268,43 +268,74 @@
     @apply pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-muted;
   }
 
-  /* Acción primaria: negra. El acento es un marcador, nunca una superficie de contenido. */
+  /* Acción primaria: negra. El acento es un marcador, nunca una superficie de contenido.
+     Respuesta al ratón por escala del sistema, sin espectáculo: el puntero indica que se
+     puede pulsar, hover atenúa el fondo y :active hunde 1px. Las clases .is-hover / .is-pressed
+     replican esos dos estados para cuando se conducen por evento desde el marcado. */
   .baion-button {
-    @apply text-title text-on-ink ease-brand inline-flex items-center justify-center gap-2
-           rounded-xl bg-ink px-4 py-2.5 transition-colors duration-150
+    @apply text-title text-on-ink ease-brand inline-flex cursor-pointer items-center justify-center
+           gap-2 rounded-xl bg-ink px-4 py-2.5 transition-[background-color,transform] duration-150
            hover:bg-ink/90
+           active:translate-y-px active:bg-ink/80
            disabled:cursor-not-allowed disabled:opacity-40;
   }
+  .baion-button.is-hover { @apply bg-ink/90; }
+  .baion-button.is-pressed { @apply translate-y-px bg-ink/80; }
 
   .baion-button-ghost {
-    @apply text-title ease-brand inline-flex items-center justify-center gap-2 rounded-xl border
-           border-line bg-surface px-4 py-2.5 text-ink transition-colors duration-150
+    @apply text-title ease-brand inline-flex cursor-pointer items-center justify-center gap-2
+           rounded-xl border border-line bg-surface px-4 py-2.5 text-ink
+           transition-[background-color,border-color,transform] duration-150
            hover:border-line-strong
+           active:translate-y-px active:bg-surface-alt
            disabled:cursor-not-allowed disabled:opacity-40;
   }
+  .baion-button-ghost.is-hover { @apply border-line-strong; }
+  .baion-button-ghost.is-pressed { @apply translate-y-px bg-surface-alt; }
 
   /* Lo destructivo se comunica con contorno, no con un bloque rojo. */
   .baion-button-danger {
-    @apply text-title ease-brand inline-flex items-center justify-center gap-2 rounded-xl border
-           border-danger/40 bg-surface px-4 py-2.5 text-danger transition-colors duration-150
+    @apply text-title ease-brand inline-flex cursor-pointer items-center justify-center gap-2
+           rounded-xl border border-danger/40 bg-surface px-4 py-2.5 text-danger
+           transition-[background-color,border-color,transform] duration-150
            hover:border-danger
+           active:translate-y-px active:bg-danger/5
            disabled:cursor-not-allowed disabled:opacity-40;
   }
+  .baion-button-danger.is-hover { @apply border-danger; }
+  .baion-button-danger.is-pressed { @apply translate-y-px bg-danger/5; }
 
   .baion-button-icon {
-    @apply ease-brand inline-flex size-10 shrink-0 items-center justify-center rounded-xl border
-           border-line bg-surface text-ink transition-colors duration-150
+    @apply ease-brand inline-flex size-10 shrink-0 cursor-pointer items-center justify-center
+           rounded-xl border border-line bg-surface text-ink
+           transition-[background-color,border-color,transform] duration-150
            hover:border-line-strong
+           active:translate-y-px active:bg-surface-alt
            disabled:cursor-not-allowed disabled:opacity-40;
   }
+  .baion-button-icon.is-hover { @apply border-line-strong; }
+  .baion-button-icon.is-pressed { @apply translate-y-px bg-surface-alt; }
+
+  /* Botón redondo dentro del buscador: el mismo negro que la acción primaria, a 32px. */
+  .baion-search-go {
+    @apply ease-brand flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full
+           bg-ink text-on-ink transition-[background-color,transform] duration-150
+           hover:bg-ink/90
+           active:translate-y-px active:bg-ink/80;
+  }
+  .baion-search-go.is-hover { @apply bg-ink/90; }
+  .baion-search-go.is-pressed { @apply translate-y-px bg-ink/80; }
 
   /* ── Navegación. Seleccionado = fondo ink; es la única señal de selección. ─ */
 
   .baion-nav-pill {
-    @apply text-title ease-brand rounded-xl px-4 py-2.5 whitespace-nowrap
+    @apply text-title ease-brand cursor-pointer rounded-xl px-4 py-2.5 whitespace-nowrap
            text-ink-2 transition-colors duration-150
-           hover:text-ink;
+           hover:text-ink
+           active:text-ink;
   }
+  .baion-nav-pill.is-hover,
+  .baion-nav-pill.is-pressed { @apply text-ink; }
 
   .baion-nav-pill-active {
     @apply text-on-ink bg-ink hover:text-on-ink;

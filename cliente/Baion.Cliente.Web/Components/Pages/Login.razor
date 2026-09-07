@@ -41,7 +41,8 @@
                     <ValidationMessage For="() => Input.Password" class="mt-2 text-label text-danger" />
                 </div>
 
-                <button type="submit" class="baion-button w-full" disabled="@_entrando">
+                <button type="submit" class="baion-button w-full @_raton.Clase" disabled="@_entrando"
+                        @attributes="this.EventosRaton(_raton)">
                     @(_entrando ? "Entrando…" : "Entrar")
                 </button>
             </EditForm>
@@ -50,6 +51,8 @@
 </div>
 
 @code {
+    private readonly EstadoRaton _raton = new();
+
     private string? _error;
     private bool _entrando;
 

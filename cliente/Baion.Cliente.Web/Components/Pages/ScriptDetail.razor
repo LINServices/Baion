@@ -17,7 +17,8 @@
                 <Icon Nombre="sliders-horizontal" Tamano="14" />
                 Editar
             </a>
-            <button type="button" class="baion-button" @onclick="() => _mostrandoEjecucion = true">
+            <button type="button" class="baion-button @_raton.Clase" @onclick="() => _mostrandoEjecucion = true"
+                    @attributes="this.EventosRaton(_raton)">
                 <Icon Nombre="play" Tamano="14" />
                 Ejecutar
             </button>
@@ -93,6 +94,8 @@ else
 }
 
 @code {
+    private readonly EstadoRaton _raton = new();
+
     private bool _mostrandoEjecucion;
 
     private Models.ScriptDetail? _script;

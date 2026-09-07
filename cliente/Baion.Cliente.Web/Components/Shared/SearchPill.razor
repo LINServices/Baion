@@ -3,8 +3,8 @@
 
 <div class="flex h-10 items-center gap-3 rounded-full border border-line bg-surface py-1 pl-1 pr-4
             transition-colors duration-150 ease-brand focus-within:border-line-strong">
-    <button type="button" class="flex size-8 shrink-0 items-center justify-center rounded-full bg-ink text-on-ink"
-            aria-label="Buscar" @onclick="BuscarAsync">
+    <button type="button" class="baion-search-go @_raton.Clase"
+            aria-label="Buscar" @onclick="BuscarAsync" @attributes="this.EventosRaton(_raton)">
         <Icon Nombre="search" Tamano="14" />
     </button>
 
@@ -14,6 +14,8 @@
 </div>
 
 @code {
+    private readonly EstadoRaton _raton = new();
+
     [Parameter]
     public string? Valor { get; set; }
 

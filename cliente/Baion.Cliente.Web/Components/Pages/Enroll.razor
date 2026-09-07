@@ -85,7 +85,8 @@
                         <ValidationMessage For="() => _entrada.ExpiresInDays" class="mt-2 text-label text-danger" />
                     </div>
 
-                    <button type="submit" class="baion-button w-full" disabled="@_emitiendo">
+                    <button type="submit" class="baion-button w-full @_raton.Clase" disabled="@_emitiendo"
+                            @attributes="this.EventosRaton(_raton)">
                         @(_emitiendo ? "Emitiendo…" : "Emitir token")
                     </button>
                 </div>
@@ -135,7 +136,9 @@
                                     <td class="text-right">
                                         @if (token.RevokedAt is null)
                                         {
-                                            <button type="button" class="baion-button-danger" @onclick="() => RevocarAsync(token.Id)" disabled="@_revocando">Revocar</button>
+                                            <button type="button" class="baion-button-danger @_ratones[token.Id].Clase"
+                                                    @onclick="() => RevocarAsync(token.Id)" disabled="@_revocando"
+                                                    @attributes="this.EventosRaton(_ratones[token.Id])">Revocar</button>
                                         }
                                     </td>
                                 </tr>
@@ -150,6 +153,8 @@
 
 @code {
     private readonly EntradaToken _entrada = new();
+    private readonly EstadoRaton _raton = new();
+    private readonly EstadoRatonMapa _ratones = new();
 
     private IReadOnlyList<EnrollmentTokenSummary> _tokens = [];
     private EnrollmentTokenIssued? _emitido;

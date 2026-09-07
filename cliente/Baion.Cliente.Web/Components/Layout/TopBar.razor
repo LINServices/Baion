@@ -21,7 +21,8 @@
 
     <AuthorizeView>
         <Authorized>
-            <button type="button" class="baion-button-icon shrink-0" title="Cerrar sesión" aria-label="Cerrar sesión" @onclick="CerrarSesionAsync">
+            <button type="button" class="baion-button-icon shrink-0 @_raton.Clase" title="Cerrar sesión" aria-label="Cerrar sesión"
+                    @onclick="CerrarSesionAsync" @attributes="this.EventosRaton(_raton)">
                 <Icon Nombre="log-out" Tamano="20" />
             </button>
 
@@ -41,6 +42,8 @@
 </header>
 
 @code {
+    private readonly EstadoRaton _raton = new();
+
     private async Task CerrarSesionAsync()
     {
         await Sesion.CerrarSesionAsync();

@@ -7,8 +7,8 @@
 
 <PageHeader Seccion="Infraestructura" Titulo="Servidores">
     <Acciones>
-        <button type="button" class="baion-button-icon" title="Actualizar" aria-label="Actualizar"
-                disabled="@_cargando" @onclick="RecargarAsync">
+        <button type="button" class="baion-button-icon @_raton.Clase" title="Actualizar" aria-label="Actualizar"
+                disabled="@_cargando" @onclick="RecargarAsync" @attributes="this.EventosRaton(_raton)">
             <Icon Nombre="refresh-cw" Tamano="20" />
         </button>
         <a class="baion-button" href="/servidores/enrolar">
@@ -24,6 +24,8 @@
 <ServerTable Servidores="_servidores" Ocupado="_ocupado" AlDesactivar="DesactivarAsync" AlReactivar="ReactivarAsync" />
 
 @code {
+    private readonly EstadoRaton _raton = new();
+
     private IReadOnlyList<ServerSummary> _servidores = [];
     private string? _error;
     private string? _aviso;

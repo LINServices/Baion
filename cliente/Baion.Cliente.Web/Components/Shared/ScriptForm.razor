@@ -51,7 +51,8 @@
                 <p class="mt-2 text-label text-muted">Al vencer, el agente mata el proceso y todos sus hijos.</p>
             </div>
 
-            <button type="submit" class="baion-button w-full" disabled="@Guardando">
+            <button type="submit" class="baion-button w-full @_raton.Clase" disabled="@Guardando"
+                    @attributes="this.EventosRaton(_raton)">
                 @(Guardando ? "Guardando…" : TextoBoton)
             </button>
         </div>
@@ -70,6 +71,8 @@
 </EditForm>
 
 @code {
+    private readonly EstadoRaton _raton = new();
+
     /// <summary>Script a editar. Nulo en el alta: el formulario arranca vacío.</summary>
     [Parameter]
     public Models.ScriptDetail? Original { get; set; }

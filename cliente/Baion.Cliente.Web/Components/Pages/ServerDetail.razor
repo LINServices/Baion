@@ -18,8 +18,8 @@
                 </select>
             </SelectShell>
 
-            <button type="button" class="baion-button-icon" title="Actualizar" aria-label="Actualizar"
-                    disabled="@(_cargando || _ocupado)" @onclick="RecargarAsync">
+            <button type="button" class="baion-button-icon @_raton.Clase" title="Actualizar" aria-label="Actualizar"
+                    disabled="@(_cargando || _ocupado)" @onclick="RecargarAsync" @attributes="this.EventosRaton(_raton)">
                 <Icon Nombre="refresh-cw" Tamano="20" />
             </button>
         }
@@ -85,10 +85,10 @@ else
     </div>
 
     <nav class="mt-10 flex items-center gap-1" aria-label="Vistas del servidor">
-        <button type="button" class="baion-nav-pill @(_pestana == "metricas" ? "baion-nav-pill-active" : string.Empty)"
-                @onclick='() => _pestana = "metricas"'>Métricas</button>
-        <button type="button" class="baion-nav-pill @(_pestana == "servicios" ? "baion-nav-pill-active" : string.Empty)"
-                @onclick='() => _pestana = "servicios"'>Servicios</button>
+        <button type="button" class="@ClasePestana("metricas")"
+                @onclick='() => _pestana = "metricas"' @attributes="this.EventosRaton(_ratonMetricas)">Métricas</button>
+        <button type="button" class="@ClasePestana("servicios")"
+                @onclick='() => _pestana = "servicios"' @attributes="this.EventosRaton(_ratonServicios)">Servicios</button>
     </nav>
 
     @if (_pestana == "servicios")
@@ -262,6 +262,10 @@ else
     [SupplyParameterFromQuery(Name = "vista")]
     public string? Vista { get; set; }
 
+    private readonly EstadoRaton _raton = new();
+    private readonly EstadoRaton _ratonMetricas = new();
+    private readonly EstadoRaton _ratonServicios = new();
+
     private Models.ServerDetail? _detalle;
     private PagedResult<MetricReading>? _historico;
     private string _periodo = "7d";
@@ -272,6 +276,13 @@ else
     private int _pagina = 1;
 
     private string Nombre => _detalle?.Server.Name ?? "Servidor";
+
+    private string ClasePestana(string pestana)
+    {
+        var raton = pestana == "metricas" ? _ratonMetricas : _ratonServicios;
+
+        return $"baion-nav-pill {raton.Clase} {(_pestana == pestana ? "baion-nav-pill-active" : string.Empty)}";
+    }
 
     private IReadOnlyList<MetricReading> Muestras => _historico?.Items ?? [];
 

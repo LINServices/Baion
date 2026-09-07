@@ -6,15 +6,17 @@
         @if (TotalPaginas > 1)
         {
             <div class="flex items-center gap-2">
-                <button type="button" class="baion-button-icon" disabled="@(!HayAnterior)"
-                        aria-label="Página anterior" @onclick="() => IrAsync(Pagina - 1)">
+                <button type="button" class="baion-button-icon @_ratonAnterior.Clase" disabled="@(!HayAnterior)"
+                        aria-label="Página anterior" @onclick="() => IrAsync(Pagina - 1)"
+                        @attributes="this.EventosRaton(_ratonAnterior)">
                     <Icon Nombre="chevron-left" />
                 </button>
 
                 <span class="px-1 text-label tabular-nums text-muted">Página @Pagina de @TotalPaginas</span>
 
-                <button type="button" class="baion-button-icon" disabled="@(!HaySiguiente)"
-                        aria-label="Página siguiente" @onclick="() => IrAsync(Pagina + 1)">
+                <button type="button" class="baion-button-icon @_ratonSiguiente.Clase" disabled="@(!HaySiguiente)"
+                        aria-label="Página siguiente" @onclick="() => IrAsync(Pagina + 1)"
+                        @attributes="this.EventosRaton(_ratonSiguiente)">
                     <Icon Nombre="chevron-right" />
                 </button>
             </div>
@@ -23,6 +25,9 @@
 }
 
 @code {
+    private readonly EstadoRaton _ratonAnterior = new();
+    private readonly EstadoRaton _ratonSiguiente = new();
+
     [Parameter, EditorRequired]
     public int Pagina { get; set; } = 1;
 

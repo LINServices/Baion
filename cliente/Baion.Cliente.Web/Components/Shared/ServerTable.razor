@@ -51,17 +51,21 @@ else
                                     {
                                         <div class="flex items-center justify-end gap-2">
                                             <span class="text-label text-muted">Se corta la conexión del agente. ¿Seguro?</span>
-                                            <button type="button" class="baion-button-danger" disabled="@EstaOcupado(servidor)" @onclick="() => DesactivarAsync(servidor)">Sí, desactivar</button>
-                                            <button type="button" class="baion-button-ghost" @onclick="() => _confirmando = null">Cancelar</button>
+                                            <button type="button" class='baion-button-danger @(RatonAccion(servidor.Id, "si").Clase)' disabled="@EstaOcupado(servidor)"
+                                                    @onclick="() => DesactivarAsync(servidor)" @attributes='this.EventosRaton(RatonAccion(servidor.Id, "si"))'>Sí, desactivar</button>
+                                            <button type="button" class='baion-button-ghost @(RatonAccion(servidor.Id, "no").Clase)'
+                                                    @onclick="() => _confirmando = null" @attributes='this.EventosRaton(RatonAccion(servidor.Id, "no"))'>Cancelar</button>
                                         </div>
                                     }
                                     else if (servidor.Status == "disabled")
                                     {
-                                        <button type="button" class="baion-button-ghost" disabled="@EstaOcupado(servidor)" @onclick="() => AlReactivar.InvokeAsync(servidor)">Reactivar</button>
+                                        <button type="button" class='baion-button-ghost @(RatonAccion(servidor.Id, "reactivar").Clase)' disabled="@EstaOcupado(servidor)"
+                                                @onclick="() => AlReactivar.InvokeAsync(servidor)" @attributes='this.EventosRaton(RatonAccion(servidor.Id, "reactivar"))'>Reactivar</button>
                                     }
                                     else
                                     {
-                                        <button type="button" class="baion-button-ghost" disabled="@EstaOcupado(servidor)" @onclick="() => _confirmando = servidor.Id">Desactivar</button>
+                                        <button type="button" class='baion-button-ghost @(RatonAccion(servidor.Id, "desactivar").Clase)' disabled="@EstaOcupado(servidor)"
+                                                @onclick="() => _confirmando = servidor.Id" @attributes='this.EventosRaton(RatonAccion(servidor.Id, "desactivar"))'>Desactivar</button>
                                     }
                                 </td>
                             }
@@ -88,9 +92,13 @@ else
     [Parameter]
     public Guid? Ocupado { get; set; }
 
+    private readonly EstadoRatonMapa _ratones = new();
+
     private Guid? _confirmando;
 
     private bool HayAcciones => AlDesactivar.HasDelegate;
+
+    private EstadoRaton RatonAccion(Guid servidorId, string accion) => _ratones[(servidorId, accion)];
 
     private bool EstaOcupado(ServerSummary servidor) => Ocupado == servidor.Id;
 

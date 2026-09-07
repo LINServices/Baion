@@ -9,7 +9,8 @@
             <span class="text-ink" aria-hidden="true"><Icon Nombre="play" /></span>
             <h2 class="text-title text-ink">Ejecutar script</h2>
         </div>
-        <button type="button" class="baion-button-icon" title="Cerrar" aria-label="Cerrar" @onclick="Cancelar">
+        <button type="button" class="baion-button-icon @_ratonCerrar.Clase" title="Cerrar" aria-label="Cerrar"
+                @onclick="Cancelar" @attributes="this.EventosRaton(_ratonCerrar)">
             <Icon Nombre="x" Tamano="20" />
         </button>
     </div>
@@ -96,10 +97,12 @@
             </details>
 
             <div class="mt-6 flex items-center gap-2">
-                <button type="submit" class="baion-button" disabled="@_lanzando">
+                <button type="submit" class="baion-button @_ratonLanzar.Clase" disabled="@_lanzando"
+                        @attributes="this.EventosRaton(_ratonLanzar)">
                     @(_lanzando ? "Lanzando…" : "Ejecutar ahora")
                 </button>
-                <button type="button" class="baion-button-ghost" @onclick="Cancelar" disabled="@_lanzando">Cancelar</button>
+                <button type="button" class="baion-button-ghost @_ratonCancelar.Clase" @onclick="Cancelar" disabled="@_lanzando"
+                        @attributes="this.EventosRaton(_ratonCancelar)">Cancelar</button>
             </div>
         </EditForm>
     }
@@ -107,6 +110,9 @@
 
 @code {
     private readonly EntradaEjecucion _entrada = new();
+    private readonly EstadoRaton _ratonCerrar = new();
+    private readonly EstadoRaton _ratonLanzar = new();
+    private readonly EstadoRaton _ratonCancelar = new();
 
     private IReadOnlyList<ServerSummary> _compatibles = [];
     private int _incompatibles;
