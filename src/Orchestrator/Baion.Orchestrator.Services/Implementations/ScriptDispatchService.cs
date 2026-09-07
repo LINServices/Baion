@@ -105,7 +105,10 @@ internal class ScriptDispatchService(IRepository<Script> scripts, IRepository<Se
             : Result<ScriptExecutionDetail>.Success(ToDetail(execution));
     }
 
-    public async Task<PagedResult<ScriptExecutionListItem>> ListAsync(ExecutionFilter filter, int page, int pageSize, CancellationToken cancellationToken) => await queries.ListExecutionsAsync(filter, page, pageSize, cancellationToken);
+    public async Task<PagedResult<ScriptExecutionListItem>> ListAsync(ExecutionFilter filter, int page, int pageSize, CancellationToken cancellationToken)
+    {
+        return await queries.ListExecutionsAsync(filter, page, pageSize, cancellationToken);
+    }
 
     public async Task ApplyAsync(ScriptExecutionEvent notification, CancellationToken cancellationToken)
     {
@@ -271,38 +274,46 @@ internal class ScriptDispatchService(IRepository<Script> scripts, IRepository<Se
     }
 
     // std_out y std_err arrancan vacíos, no nulos: .WRITE de SQL Server no puede añadir sobre un NULL.
-    private ScriptExecution CreateExecution(PreparedDispatch prepared) => new()
+    private ScriptExecution CreateExecution(PreparedDispatch prepared)
     {
-        ServerId = prepared.Server.Id,
-        ScriptId = prepared.Script.Id,
-        ChainRunId = prepared.ChainRunId,
-        ScriptChainStepId = prepared.ScriptChainStepId,
-        ScheduledTaskId = prepared.ScheduledTaskId,
-        DispatchDeadline = prepared.DispatchDeadline,
-        Mode = prepared.Mode,
-        Status = ExecutionStatus.Pending,
-        QueuedAt = timeProvider.GetUtcNow(),
-        StdOut = string.Empty,
-        StdErr = string.Empty
-    };
+        return new()
+        {
+            ServerId = prepared.Server.Id,
+            ScriptId = prepared.Script.Id,
+            ChainRunId = prepared.ChainRunId,
+            ScriptChainStepId = prepared.ScriptChainStepId,
+            ScheduledTaskId = prepared.ScheduledTaskId,
+            DispatchDeadline = prepared.DispatchDeadline,
+            Mode = prepared.Mode,
+            Status = ExecutionStatus.Pending,
+            QueuedAt = timeProvider.GetUtcNow(),
+            StdOut = string.Empty,
+            StdErr = string.Empty
+        };
+    }
 
-    private static ScriptExecutionDetail ToDetail(ScriptExecution execution) => new(
-        execution.Id,
-        execution.ServerId,
-        execution.Server.Name,
-        execution.ScriptId,
-        execution.Script.Name,
-        execution.Status,
-        execution.Mode,
-        execution.ExitCode,
-        execution.StdOut,
-        execution.StdErr,
-        execution.ErrorMessage,
-        execution.QueuedAt,
-        execution.StartedAt,
-        execution.CompletedAt);
+    private static ScriptExecutionDetail ToDetail(ScriptExecution execution)
+    {
+        return new(
+            execution.Id,
+            execution.ServerId,
+            execution.Server.Name,
+            execution.ScriptId,
+            execution.Script.Name,
+            execution.Status,
+            execution.Mode,
+            execution.ExitCode,
+            execution.StdOut,
+            execution.StdErr,
+            execution.ErrorMessage,
+            execution.QueuedAt,
+            execution.StartedAt,
+            execution.CompletedAt);
+    }
 
-    /// <summary>Todo lo ya resuelto y validado que necesita el envío, venga de una orden suelta, de una cadena o de una tarea.</summary>
+    /// <summary>
+    /// Todo lo ya resuelto y validado que necesita el envío, venga de una orden suelta, de una cadena o de una tarea.
+    /// </summary>
     private record PreparedDispatch(Script Script, Server Server, ExecutionMode Mode, int TimeoutSeconds, string? WorkingDirectory, IReadOnlyDictionary<string, string>? EnvironmentVariables)
     {
         public Guid? ChainRunId { get; init; }

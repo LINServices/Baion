@@ -131,7 +131,9 @@ internal class ScheduledTaskService(IScheduledTaskRepository tasks, IRepository<
         return new ScheduledTaskTriggered(task.Id, destinos.Count, entregados, fallidos);
     }
 
-    /// <summary>Devuelve el error de la primera referencia que no exista, o null si todas son válidas.</summary>
+    /// <summary>
+    /// Devuelve el error de la primera referencia que no exista, o null si todas son válidas.
+    /// </summary>
     private async Task<Error?> ValidateReferencesAsync(CreateScheduledTaskRequest request)
     {
         if (request.ScriptId is Guid scriptId && await scripts.GetByIdAsync(scriptId) is null)
@@ -196,17 +198,20 @@ internal class ScheduledTaskService(IScheduledTaskRepository tasks, IRepository<
         return [];
     }
 
-    private static ScheduledTaskSummary ToSummary(ScheduledTask task) => new(
-        task.Id,
-        task.Name,
-        task.CronExpression,
-        task.TimeZoneId,
-        task.ScriptId,
-        task.ScriptChainId,
-        task.ServerId,
-        task.ServerGroupId,
-        task.Mode,
-        task.IsEnabled,
-        task.LastRunAt,
-        task.NextRunAt);
+    private static ScheduledTaskSummary ToSummary(ScheduledTask task)
+    {
+        return new(
+            task.Id,
+            task.Name,
+            task.CronExpression,
+            task.TimeZoneId,
+            task.ScriptId,
+            task.ScriptChainId,
+            task.ServerId,
+            task.ServerGroupId,
+            task.Mode,
+            task.IsEnabled,
+            task.LastRunAt,
+            task.NextRunAt);
+    }
 }

@@ -13,7 +13,10 @@ internal sealed class WebSocketAgentConnection(Guid tenantId, Guid serverId, Bai
 
     public Guid ServerId => serverId;
 
-    public async Task SendAsync(ServerToAgentMessage message, CancellationToken cancellationToken) => await channel.SendAsync(message, cancellationToken);
+    public async Task SendAsync(ServerToAgentMessage message, CancellationToken cancellationToken)
+    {
+        await channel.SendAsync(message, cancellationToken);
+    }
 
     public async Task CloseAsync(string reason)
     {

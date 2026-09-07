@@ -11,25 +11,39 @@ namespace Baion.Orchestrator.Persistence;
 /// </summary>
 public interface IAgentRepository
 {
-    /// <summary>Busca un token de instalación por su hash, sin filtro de tenant.</summary>
+    /// <summary>
+    /// Busca un token de instalación por su hash, sin filtro de tenant.
+    /// </summary>
     Task<EnrollmentToken?> FindEnrollmentTokenAsync(string tokenHash, CancellationToken cancellationToken);
 
-    /// <summary>Obtiene un token de instalación por identificador, sin filtro de tenant.</summary>
+    /// <summary>
+    /// Obtiene un token de instalación por identificador, sin filtro de tenant.
+    /// </summary>
     Task<EnrollmentToken?> FindEnrollmentTokenByIdAsync(Guid tokenId, CancellationToken cancellationToken);
 
-    /// <summary>Busca el servidor dueño de una credencial de agente, sin filtro de tenant.</summary>
+    /// <summary>
+    /// Busca el servidor dueño de una credencial de agente, sin filtro de tenant.
+    /// </summary>
     Task<Server?> FindByAgentTokenAsync(string tokenHash, CancellationToken cancellationToken);
 
-    /// <summary>Busca un servidor por su identificador de máquina dentro de un tenant, sin filtro de tenant.</summary>
+    /// <summary>
+    /// Busca un servidor por su identificador de máquina dentro de un tenant, sin filtro de tenant.
+    /// </summary>
     Task<Server?> FindByMachineIdAsync(Guid tenantId, string machineId, CancellationToken cancellationToken);
 
-    /// <summary>Obtiene un servidor por identificador dentro de un tenant, sin filtro de tenant.</summary>
+    /// <summary>
+    /// Obtiene un servidor por identificador dentro de un tenant, sin filtro de tenant.
+    /// </summary>
     Task<Server?> FindByIdAsync(Guid tenantId, Guid serverId, CancellationToken cancellationToken);
 
-    /// <summary>Indica si el tenant ya tiene un servidor con ese nombre.</summary>
+    /// <summary>
+    /// Indica si el tenant ya tiene un servidor con ese nombre.
+    /// </summary>
     Task<bool> NameExistsAsync(Guid tenantId, string name, CancellationToken cancellationToken);
 
-    /// <summary>Añade un servidor recién enrolado.</summary>
+    /// <summary>
+    /// Añade un servidor recién enrolado.
+    /// </summary>
     Task AddAsync(Server server);
 
     /// <summary>

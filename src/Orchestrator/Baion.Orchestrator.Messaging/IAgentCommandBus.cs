@@ -12,6 +12,8 @@ namespace Baion.Orchestrator.Messaging;
 /// </summary>
 public interface IAgentCommandBus
 {
-    /// <summary>Envía el comando. Devuelve false si el agente no está conectado en ninguna instancia.</summary>
+    /// <summary>
+    /// Envía el comando. Devuelve false si el agente no está conectado en ninguna instancia.
+    /// </summary>
     Task<bool> TrySendAsync(Guid serverId, ServerToAgentMessage message, CancellationToken cancellationToken);
 }

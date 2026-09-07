@@ -12,7 +12,9 @@ namespace Baion.Orchestrator.Messaging;
 /// </summary>
 public interface ILocalAgentDelivery
 {
-    /// <summary>Entrega el mensaje si el socket del servidor está en esta instancia.</summary>
+    /// <summary>
+    /// Entrega el mensaje si el socket del servidor está en esta instancia.
+    /// </summary>
     Task<bool> TryDeliverAsync(Guid serverId, ServerToAgentMessage message, CancellationToken cancellationToken);
 
     /// <summary>

@@ -2,7 +2,9 @@ using System;
 
 namespace Baion.Orchestrator.Services;
 
-/// <summary>Parámetros de esta instancia del orquestador.</summary>
+/// <summary>
+/// Parámetros de esta instancia del orquestador.
+/// </summary>
 public class OrchestratorOptions
 {
     /// <summary>
@@ -11,12 +13,18 @@ public class OrchestratorOptions
     /// </summary>
     public string InstanceId { get; set; } = $"{Environment.MachineName}-{Environment.ProcessId}";
 
-    /// <summary>Cadencia con la que el agente debe enviar su latido.</summary>
+    /// <summary>
+    /// Cadencia con la que el agente debe enviar su latido.
+    /// </summary>
     public int HeartbeatSeconds { get; set; } = 30;
 
-    /// <summary>Margen para que el agente envíe su saludo tras abrirse el socket.</summary>
+    /// <summary>
+    /// Margen para que el agente envíe su saludo tras abrirse el socket.
+    /// </summary>
     public int HandshakeTimeoutSeconds { get; set; } = 10;
 
-    /// <summary>Sección de configuración de la que se enlazan estas opciones.</summary>
+    /// <summary>
+    /// Sección de configuración de la que se enlazan estas opciones.
+    /// </summary>
     public const string SectionName = "Orchestrator";
 }

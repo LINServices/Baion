@@ -127,17 +127,25 @@ internal sealed class ServiceInspectionService(IRepository<Server> servers, IAge
         };
     }
 
-    private static Error MapFailure(ServiceQueryFailedMessage fallo) => fallo.Code switch
+    private static Error MapFailure(ServiceQueryFailedMessage fallo)
     {
-        ServiceQueryFailedMessage.NotFoundCode => Error.NotFound("service.not_found", fallo.Message),
-        ServiceQueryFailedMessage.ForbiddenCode => Error.Forbidden("service.forbidden", fallo.Message),
-        _ => Error.Unexpected("service.tool_failed", fallo.Message)
-    };
+        return fallo.Code switch
+        {
+            ServiceQueryFailedMessage.NotFoundCode => Error.NotFound("service.not_found", fallo.Message),
+            ServiceQueryFailedMessage.ForbiddenCode => Error.Forbidden("service.forbidden", fallo.Message),
+            _ => Error.Unexpected("service.tool_failed", fallo.Message)
+        };
+    }
 
-    private static Error? ValidateServiceId(string serviceId) =>
-        string.IsNullOrWhiteSpace(serviceId) ? Error.Validation("service.id_required", "Falta el identificador del servicio.") : null;
+    private static Error? ValidateServiceId(string serviceId)
+    {
+        return string.IsNullOrWhiteSpace(serviceId) ? Error.Validation("service.id_required", "Falta el identificador del servicio.") : null;
+    }
 
-    private static string? Normalize(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    private static string? Normalize(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    }
 
     private static readonly Error ServerNotFound = Error.NotFound("server.not_found", "El servidor no existe.");
 }

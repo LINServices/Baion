@@ -60,9 +60,6 @@ internal class RabbitMqAgentCommandBus(RabbitMqConnectionProvider connections, I
         return await scope.ServiceProvider.GetRequiredService<IAgentPresenceLookup>().ResolveInstanceAsync(serverId, cancellationToken);
     }
 
-    /// <summary>Clave de enrutado por servidor: solo la instancia que tiene su socket está enlazada a ella.</summary>
-    public static string BuildRoutingKey(Guid serverId) => $"agent.{serverId:N}";
-
     private async Task<IChannel> GetChannelAsync(CancellationToken cancellationToken)
     {
         if (_channel is { IsOpen: true } abierto)
@@ -95,5 +92,13 @@ internal class RabbitMqAgentCommandBus(RabbitMqConnectionProvider connections, I
     {
         await _channel.CloseQuietlyAsync();
         _gate.Dispose();
+    }
+
+    /// <summary>
+    /// Clave de enrutado por servidor: solo la instancia que tiene su socket está enlazada a ella.
+    /// </summary>
+    public static string BuildRoutingKey(Guid serverId)
+    {
+        return $"agent.{serverId:N}";
     }
 }

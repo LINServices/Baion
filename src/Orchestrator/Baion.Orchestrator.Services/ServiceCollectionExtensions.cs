@@ -7,10 +7,14 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Baion.Orchestrator.Services;
 
-/// <summary>Registro de dependencias de la capa.</summary>
+/// <summary>
+/// Registro de dependencias de la capa.
+/// </summary>
 public static class ServiceCollectionExtensions
 {
-    /// <summary>Registra los servicios de aplicación del orquestador.</summary>
+    /// <summary>
+    /// Registra los servicios de aplicación del orquestador.
+    /// </summary>
     public static IServiceCollection AddServices(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddOptions<OrchestratorOptions>().Bind(configuration.GetSection(OrchestratorOptions.SectionName));

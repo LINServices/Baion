@@ -44,7 +44,10 @@ internal class AgentPresenceConsumerHostedService(RabbitMqConnectionProvider con
         }
     }
 
-    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+    public Task StopAsync(CancellationToken cancellationToken)
+    {
+        return Task.CompletedTask;
+    }
 
     private async Task OnReceivedAsync(object sender, BasicDeliverEventArgs delivery)
     {

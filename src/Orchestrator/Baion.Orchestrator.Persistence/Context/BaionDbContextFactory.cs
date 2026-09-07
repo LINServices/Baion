@@ -29,6 +29,9 @@ internal class BaionDbContextFactory : IDesignTimeDbContextFactory<BaionDbContex
     {
         public Guid? TenantId => null;
 
-        public void SetTenant(Guid tenantId) => throw new NotSupportedException("El contexto de diseño no opera sobre un tenant.");
+        public void SetTenant(Guid tenantId)
+        {
+            throw new NotSupportedException("El contexto de diseño no opera sobre un tenant.");
+        }
     }
 }

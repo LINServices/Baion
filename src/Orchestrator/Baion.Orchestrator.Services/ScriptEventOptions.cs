@@ -1,6 +1,8 @@
 namespace Baion.Orchestrator.Services;
 
-/// <summary>Parámetros de la ingesta de novedades de ejecución.</summary>
+/// <summary>
+/// Parámetros de la ingesta de novedades de ejecución.
+/// </summary>
 public class ScriptEventOptions
 {
     /// <summary>
@@ -13,6 +15,8 @@ public class ScriptEventOptions
 
     public int BatchWindowMilliseconds { get; set; } = 250;
 
-    /// <summary>Sección de configuración de la que se enlazan estas opciones.</summary>
+    /// <summary>
+    /// Sección de configuración de la que se enlazan estas opciones.
+    /// </summary>
     public const string SectionName = "Orchestrator:ScriptEvents";
 }

@@ -36,7 +36,10 @@ internal class IdentityBootstrapHostedService(IServiceScopeFactory scopeFactory,
         }
     }
 
-    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+    public Task StopAsync(CancellationToken cancellationToken)
+    {
+        return Task.CompletedTask;
+    }
 
     private async Task BootstrapAsync(IdentityBootstrapOptions settings, CancellationToken cancellationToken)
     {

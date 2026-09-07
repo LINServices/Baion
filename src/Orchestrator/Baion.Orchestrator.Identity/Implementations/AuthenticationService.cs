@@ -60,8 +60,13 @@ internal class AuthenticationService(ITenantRepository tenants, ITenantContext t
         return Result<AuthenticationResult>.Success(new AuthenticationResult(token.Value, TokenType, token.ExpiresAt, tenant.Id, user.UserId, user.Email, user.Roles));
     }
 
-    /// <summary>Normaliza el slug igual que al crear el tenant, para que el índice único acierte.</summary>
-    public static string NormalizeSlug(string slug) => slug.Trim().ToLowerInvariant();
+    /// <summary>
+    /// Normaliza el slug igual que al crear el tenant, para que el índice único acierte.
+    /// </summary>
+    public static string NormalizeSlug(string slug)
+    {
+        return slug.Trim().ToLowerInvariant();
+    }
 
     private const string TokenType = "Bearer";
 

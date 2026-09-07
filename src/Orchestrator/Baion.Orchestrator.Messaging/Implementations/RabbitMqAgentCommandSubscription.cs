@@ -39,7 +39,10 @@ internal class RabbitMqAgentCommandSubscription(RabbitMqConnectionProvider conne
         }
     }
 
-    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+    public Task StopAsync(CancellationToken cancellationToken)
+    {
+        return Task.CompletedTask;
+    }
 
     public async Task SubscribeAsync(Guid serverId, CancellationToken cancellationToken)
     {
@@ -130,17 +133,17 @@ internal class RabbitMqAgentCommandSubscription(RabbitMqConnectionProvider conne
         }
     }
 
+    public async ValueTask DisposeAsync()
+    {
+        await _channel.CloseQuietlyAsync();
+        _gate.Dispose();
+    }
+
     private static bool TryParseServerId(string routingKey, out Guid serverId)
     {
         serverId = Guid.Empty;
         var separador = routingKey.LastIndexOf('.');
 
         return separador >= 0 && Guid.TryParseExact(routingKey[(separador + 1)..], "N", out serverId);
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        await _channel.CloseQuietlyAsync();
-        _gate.Dispose();
     }
 }

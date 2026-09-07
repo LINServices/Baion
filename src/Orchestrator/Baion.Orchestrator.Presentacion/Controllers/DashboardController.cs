@@ -11,7 +11,12 @@ namespace Baion.Orchestrator.Presentacion.Controllers;
 [Authorize]
 public class DashboardController(IServerService servers) : ControllerBase
 {
-    /// <summary>Cifras de cabecera del panel: servidores, scripts y ejecuciones de las últimas 24 horas.</summary>
+    /// <summary>
+    /// Cifras de cabecera del panel: servidores, scripts y ejecuciones de las últimas 24 horas.
+    /// </summary>
     [HttpGet("summary")]
-    public async Task<IActionResult> ResumenAsync(CancellationToken cancellationToken) => Ok(await servers.GetDashboardSummaryAsync(cancellationToken));
+    public async Task<IActionResult> ResumenAsync(CancellationToken cancellationToken)
+    {
+        return Ok(await servers.GetDashboardSummaryAsync(cancellationToken));
+    }
 }

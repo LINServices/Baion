@@ -13,16 +13,12 @@ using Microsoft.Extensions.Logging;
 
 namespace Baion.Orchestrator.Services.Implementations;
 
-internal class ServerService(
-    IRepository<Server> servers,
-    IServerQueries queries,
-    IAgentRegistry registry,
-    IAgentCommandBus commandBus,
-    IUnitOfWork unitOfWork,
-    TimeProvider timeProvider,
-    ILogger<ServerService> logger) : IServerService
+internal class ServerService(IRepository<Server> servers, IServerQueries queries, IAgentRegistry registry, IAgentCommandBus commandBus, IUnitOfWork unitOfWork, TimeProvider timeProvider, ILogger<ServerService> logger) : IServerService
 {
-    public async Task<IReadOnlyList<ServerSummary>> GetAllAsync(CancellationToken cancellationToken) => await queries.ListAsync(cancellationToken);
+    public async Task<IReadOnlyList<ServerSummary>> GetAllAsync(CancellationToken cancellationToken)
+    {
+        return await queries.ListAsync(cancellationToken);
+    }
 
     public async Task<Result<ServerDetail>> GetAsync(Guid serverId, CancellationToken cancellationToken)
     {
@@ -104,7 +100,10 @@ internal class ServerService(
         return Result<ServerSummary>.Success(ToSummary(server));
     }
 
-    public async Task<DashboardSummary> GetDashboardSummaryAsync(CancellationToken cancellationToken) => await queries.GetDashboardSummaryAsync(timeProvider.GetUtcNow().AddHours(-24), cancellationToken);
+    public async Task<DashboardSummary> GetDashboardSummaryAsync(CancellationToken cancellationToken)
+    {
+        return await queries.GetDashboardSummaryAsync(timeProvider.GetUtcNow().AddHours(-24), cancellationToken);
+    }
 
     /// <summary>
     /// Corta por los dos caminos posibles. El aviso va por el bus, que sabe llegar a la instancia que
@@ -125,17 +124,20 @@ internal class ServerService(
         await connection.CloseAsync("El servidor fue desactivado.");
     }
 
-    internal static ServerSummary ToSummary(Server server) => new(
-        server.Id,
-        server.Name,
-        server.Hostname,
-        server.Kind,
-        server.Platform,
-        server.Status,
-        server.AgentVersion,
-        server.RuntimeIdentifier,
-        server.OrchestratorInstanceId,
-        server.ConnectedAt,
-        server.LastSeenAt,
-        server.MaxConcurrentExecutions);
+    internal static ServerSummary ToSummary(Server server)
+    {
+        return new(
+            server.Id,
+            server.Name,
+            server.Hostname,
+            server.Kind,
+            server.Platform,
+            server.Status,
+            server.AgentVersion,
+            server.RuntimeIdentifier,
+            server.OrchestratorInstanceId,
+            server.ConnectedAt,
+            server.LastSeenAt,
+            server.MaxConcurrentExecutions);
+    }
 }

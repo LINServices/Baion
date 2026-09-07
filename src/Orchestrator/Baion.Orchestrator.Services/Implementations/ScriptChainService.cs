@@ -221,13 +221,22 @@ internal class ScriptChainService(IScriptChainRepository chains, IRepository<Scr
         return pasos.All(paso => paso.Status is ExecutionStatus.Succeeded) ? ChainRunStatus.Succeeded : ChainRunStatus.CompletedWithFailures;
     }
 
-    private static bool IsFinished(ExecutionStatus status) => status is ExecutionStatus.Succeeded or ExecutionStatus.Failed or ExecutionStatus.TimedOut or ExecutionStatus.Canceled;
+    private static bool IsFinished(ExecutionStatus status)
+    {
+        return status is ExecutionStatus.Succeeded or ExecutionStatus.Failed or ExecutionStatus.TimedOut or ExecutionStatus.Canceled;
+    }
 
-    private static ScriptChainStepRun ToStepRun(ScriptChainStep step, ScriptExecution? execution) => new(step.Order, step.ScriptId, step.FailurePolicy, execution?.Id, execution?.Status, execution?.ExitCode);
+    private static ScriptChainStepRun ToStepRun(ScriptChainStep step, ScriptExecution? execution)
+    {
+        return new(step.Order, step.ScriptId, step.FailurePolicy, execution?.Id, execution?.Status, execution?.ExitCode);
+    }
 
-    private static ScriptChainSummary ToSummary(ScriptChain chain) => new(
-        chain.Id,
-        chain.Name,
-        chain.IsActive,
-        [.. chain.Steps.OrderBy(step => step.Order).Select(step => new ScriptChainStepSummary(step.Id, step.Order, step.ScriptId, step.FailurePolicy, step.TimeoutSecondsOverride))]);
+    private static ScriptChainSummary ToSummary(ScriptChain chain)
+    {
+        return new(
+            chain.Id,
+            chain.Name,
+            chain.IsActive,
+            [.. chain.Steps.OrderBy(step => step.Order).Select(step => new ScriptChainStepSummary(step.Id, step.Order, step.ScriptId, step.FailurePolicy, step.TimeoutSecondsOverride))]);
+    }
 }

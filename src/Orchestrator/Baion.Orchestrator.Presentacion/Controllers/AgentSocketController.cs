@@ -18,7 +18,9 @@ namespace Baion.Orchestrator.Presentacion.Controllers;
 [Route(BaionProtocol.WebSocketPath)]
 public class AgentSocketController(IAgentEnrollmentService enrollmentService, IAgentConnectionHandler connectionHandler, IHostApplicationLifetime lifetime) : ControllerBase
 {
-    /// <summary>Acepta la conexión WebSocket de un agente tras validar su token de instalación o su credencial.</summary>
+    /// <summary>
+    /// Acepta la conexión WebSocket de un agente tras validar su token de instalación o su credencial.
+    /// </summary>
     [HttpGet]
     public async Task ConnectAsync(CancellationToken cancellationToken)
     {
@@ -44,5 +46,8 @@ public class AgentSocketController(IAgentEnrollmentService enrollmentService, IA
         await connectionHandler.HandleAsync(socket, context, connectionToken.Token);
     }
 
-    private string? ReadHeader(string name) => Request.Headers.TryGetValue(name, out var values) ? values.ToString() : null;
+    private string? ReadHeader(string name)
+    {
+        return Request.Headers.TryGetValue(name, out var values) ? values.ToString() : null;
+    }
 }

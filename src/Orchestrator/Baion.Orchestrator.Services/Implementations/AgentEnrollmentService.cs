@@ -175,19 +175,28 @@ internal class AgentEnrollmentService(IAgentRepository agents, ITenantContext te
             : conMaquina;
     }
 
-    private static string ShortId(string machineId) => machineId.Length <= MachineIdSuffixLength ? machineId : machineId[..MachineIdSuffixLength];
-
-    private static string Truncate(string value) => value.Length <= MaxNameLength ? value : value[..MaxNameLength];
-
-    private static Server CreateServer(HelloMessage hello, string agentTokenHash, string name) => new()
+    private static string ShortId(string machineId)
     {
-        Name = name,
-        Hostname = hello.Hostname,
-        MachineId = hello.MachineId,
-        AgentTokenHash = agentTokenHash,
-        Kind = ServerKind.Vps,
-        Platform = hello.Platform
-    };
+        return machineId.Length <= MachineIdSuffixLength ? machineId : machineId[..MachineIdSuffixLength];
+    }
+
+    private static string Truncate(string value)
+    {
+        return value.Length <= MaxNameLength ? value : value[..MaxNameLength];
+    }
+
+    private static Server CreateServer(HelloMessage hello, string agentTokenHash, string name)
+    {
+        return new()
+        {
+            Name = name,
+            Hostname = hello.Hostname,
+            MachineId = hello.MachineId,
+            AgentTokenHash = agentTokenHash,
+            Kind = ServerKind.Vps,
+            Platform = hello.Platform
+        };
+    }
 
     private static void ApplyHello(Server server, HelloMessage hello, DateTimeOffset now, string instanceId)
     {

@@ -7,10 +7,14 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Baion.Orchestrator.Identity;
 
-/// <summary>Registro de dependencias de la capa.</summary>
+/// <summary>
+/// Registro de dependencias de la capa.
+/// </summary>
 public static class ServiceCollectionExtensions
 {
-    /// <summary>Registra el proveedor de identidad según la configuración del tenant.</summary>
+    /// <summary>
+    /// Registra el proveedor de identidad según la configuración del tenant.
+    /// </summary>
     public static IServiceCollection AddIdentityProvider(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddOptions<BaionIdentityOptions>()
@@ -37,8 +41,14 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    private static bool HasUsableSigningKey(BaionIdentityOptions options) => !string.IsNullOrWhiteSpace(options.SigningKey) && Encoding.UTF8.GetByteCount(options.SigningKey) >= MinimumSigningKeyBytes;
+    private static bool HasUsableSigningKey(BaionIdentityOptions options)
+    {
+        return !string.IsNullOrWhiteSpace(options.SigningKey)
+            && Encoding.UTF8.GetByteCount(options.SigningKey) >= MinimumSigningKeyBytes;
+    }
 
-    /// <summary>HMAC-SHA256 exige una clave de al menos el tamaño del hash.</summary>
+    /// <summary>
+    /// HMAC-SHA256 exige una clave de al menos el tamaño del hash.
+    /// </summary>
     private const int MinimumSigningKeyBytes = 32;
 }

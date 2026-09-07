@@ -76,7 +76,9 @@ internal class UserProvisioningService(ITenantRepository tenants, ITenantContext
         return Result<Guid>.Success(user.Id);
     }
 
-    /// <summary>Devuelve los roles pedidos, creando los que el tenant todavía no tenga.</summary>
+    /// <summary>
+    /// Devuelve los roles pedidos, creando los que el tenant todavía no tenga.
+    /// </summary>
     private async Task<IReadOnlyList<Role>> ResolveRolesAsync(IReadOnlyList<string> requested, CancellationToken cancellationToken)
     {
         var normalized = requested

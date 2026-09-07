@@ -18,6 +18,8 @@ public class MetricsController(IServerService servers) : ControllerBase
     /// y <paramref name="until"/> acotan la ventana; cada extremo omitido deja ese lado abierto.
     /// </summary>
     [HttpGet]
-    public async Task<IActionResult> ListarAsync(Guid serverId, [FromQuery] DateTimeOffset? since, DateTimeOffset? until, int page = 1, int pageSize = 25, CancellationToken cancellationToken = default) =>
-        (await servers.GetMetricsAsync(serverId, new MetricsWindow(since, until), page, pageSize, cancellationToken)).ToActionResult();
+    public async Task<IActionResult> ListarAsync(Guid serverId, [FromQuery] DateTimeOffset? since, DateTimeOffset? until, int page = 1, int pageSize = 25, CancellationToken cancellationToken = default)
+    {
+        return (await servers.GetMetricsAsync(serverId, new MetricsWindow(since, until), page, pageSize, cancellationToken)).ToActionResult();
+    }
 }

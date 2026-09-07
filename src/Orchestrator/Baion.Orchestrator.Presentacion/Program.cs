@@ -5,11 +5,11 @@ using Baion.Orchestrator.Persistence.Context;
 using Baion.Orchestrator.Presentacion;
 using Baion.Orchestrator.Presentacion.Middleware;
 using Baion.Orchestrator.Services;
+using Http.Extensions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
-using Http.Extensions;
 
-WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder(args);
 
 builder.Services
     .AddPersistence(builder.Configuration)
@@ -37,5 +37,7 @@ app.MapControllers();
 
 app.Run();
 
-/// <summary>Punto de entrada expuesto para que las pruebas de integración puedan levantar la aplicación.</summary>
+/// <summary>
+/// Punto de entrada expuesto para que las pruebas de integración puedan levantar la aplicación.
+/// </summary>
 public partial class Program;

@@ -10,7 +10,12 @@ namespace Baion.Orchestrator.Presentacion.Controllers;
 [Route("api/auth")]
 public class AuthController(IAuthenticationService authenticationService) : ControllerBase
 {
-    /// <summary>Autentica un usuario contra su tenant y devuelve el token de acceso.</summary>
+    /// <summary>
+    /// Autentica un usuario contra su tenant y devuelve el token de acceso.
+    /// </summary>
     [HttpPost("login")]
-    public async Task<IActionResult> LoginAsync([FromBody] LoginRequest request, CancellationToken cancellationToken) => (await authenticationService.LoginAsync(request, cancellationToken)).ToActionResult();
+    public async Task<IActionResult> LoginAsync([FromBody] LoginRequest request, CancellationToken cancellationToken)
+    {
+        return (await authenticationService.LoginAsync(request, cancellationToken)).ToActionResult();
+    }
 }

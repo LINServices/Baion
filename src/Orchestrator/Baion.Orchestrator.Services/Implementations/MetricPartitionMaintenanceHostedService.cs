@@ -124,7 +124,9 @@ internal class MetricPartitionMaintenanceHostedService(IServiceScopeFactory scop
         }
     }
 
-    /// <summary>Límites mensuales en UTC, desde los meses hacia atrás configurados hasta los de adelanto.</summary>
+    /// <summary>
+    /// Límites mensuales en UTC, desde los meses hacia atrás configurados hasta los de adelanto.
+    /// </summary>
     private static IEnumerable<DateTimeOffset> EnumerateBoundaries(MetricPartitionOptions settings, DateTimeOffset now)
     {
         var inicio = new DateTimeOffset(now.Year, now.Month, 1, 0, 0, 0, TimeSpan.Zero).AddMonths(-Math.Max(settings.PastMonths, 0));

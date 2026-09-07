@@ -1,6 +1,8 @@
 namespace Baion.Orchestrator.Models.Results;
 
-/// <summary>Resultado de una operación sin valor de retorno. Las excepciones quedan para lo verdaderamente inesperado.</summary>
+/// <summary>
+/// Resultado de una operación sin valor de retorno. Las excepciones quedan para lo verdaderamente inesperado.
+/// </summary>
 public class Result
 {
     public bool IsSuccess { get; private init; }
@@ -9,7 +11,13 @@ public class Result
 
     public bool IsFailure => !IsSuccess;
 
-    public static Result Success() => new() { IsSuccess = true };
+    public static Result Success()
+    {
+        return new() { IsSuccess = true };
+    }
 
-    public static Result Failure(Error error) => new() { IsSuccess = false, Error = error };
+    public static Result Failure(Error error)
+    {
+        return new() { IsSuccess = false, Error = error };
+    }
 }

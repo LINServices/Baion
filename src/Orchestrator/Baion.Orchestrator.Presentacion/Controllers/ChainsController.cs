@@ -13,22 +13,44 @@ namespace Baion.Orchestrator.Presentacion.Controllers;
 [Authorize]
 public class ChainsController(IScriptChainService chains) : ControllerBase
 {
-    /// <summary>Da de alta una cadena con sus pasos.</summary>
+    /// <summary>
+    /// Da de alta una cadena con sus pasos.
+    /// </summary>
     [HttpPost]
-    public async Task<IActionResult> CrearAsync([FromBody] CreateScriptChainRequest request, CancellationToken cancellationToken) => (await chains.CreateAsync(request, cancellationToken)).ToActionResult();
+    public async Task<IActionResult> CrearAsync([FromBody] CreateScriptChainRequest request, CancellationToken cancellationToken)
+    {
+        return (await chains.CreateAsync(request, cancellationToken)).ToActionResult();
+    }
 
-    /// <summary>Obtiene la ficha de una cadena.</summary>
+    /// <summary>
+    /// Obtiene la ficha de una cadena.
+    /// </summary>
     [HttpGet("{chainId:guid}")]
-    public async Task<IActionResult> ObtenerAsync(Guid chainId, CancellationToken cancellationToken) => (await chains.GetAsync(chainId, cancellationToken)).ToActionResult();
+    public async Task<IActionResult> ObtenerAsync(Guid chainId, CancellationToken cancellationToken)
+    {
+        return (await chains.GetAsync(chainId, cancellationToken)).ToActionResult();
+    }
 
-    /// <summary>Arranca la cadena sobre un servidor y despacha su primer paso.</summary>
+    /// <summary>
+    /// Arranca la cadena sobre un servidor y despacha su primer paso.
+    /// </summary>
     [HttpPost("{chainId:guid}/runs")]
-    public async Task<IActionResult> ArrancarAsync(Guid chainId, [FromBody] StartChainBody body, CancellationToken cancellationToken) => (await chains.StartAsync(new StartChainRequest(chainId, body.ServerId), cancellationToken)).ToActionResult();
+    public async Task<IActionResult> ArrancarAsync(Guid chainId, [FromBody] StartChainBody body, CancellationToken cancellationToken)
+    {
+        return (await chains.StartAsync(new StartChainRequest(chainId, body.ServerId), cancellationToken)).ToActionResult();
+    }
 
-    /// <summary>Consulta el avance de un recorrido de cadena.</summary>
+    /// <summary>
+    /// Consulta el avance de un recorrido de cadena.
+    /// </summary>
     [HttpGet("runs/{chainRunId:guid}")]
-    public async Task<IActionResult> ObtenerRecorridoAsync(Guid chainRunId, CancellationToken cancellationToken) => (await chains.GetRunAsync(chainRunId, cancellationToken)).ToActionResult();
+    public async Task<IActionResult> ObtenerRecorridoAsync(Guid chainRunId, CancellationToken cancellationToken)
+    {
+        return (await chains.GetRunAsync(chainRunId, cancellationToken)).ToActionResult();
+    }
 
-    /// <summary>Cuerpo del arranque; la cadena viaja en la ruta.</summary>
+    /// <summary>
+    /// Cuerpo del arranque; la cadena viaja en la ruta.
+    /// </summary>
     public record StartChainBody(Guid ServerId);
 }

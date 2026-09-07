@@ -3,7 +3,9 @@ using Baion.Orchestrator.Models.Enums;
 
 namespace Baion.Orchestrator.Models.Dtos;
 
-/// <summary>Token de instalación recién emitido. El valor en claro solo se devuelve aquí y no se guarda.</summary>
+/// <summary>
+/// Token de instalación recién emitido. El valor en claro solo se devuelve aquí y no se guarda.
+/// </summary>
 public record EnrollmentTokenIssued(Guid Id, string Token, DateTimeOffset? ExpiresAt);
 
 /// <summary>

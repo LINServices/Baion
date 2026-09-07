@@ -10,10 +10,14 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Baion.Orchestrator.Persistence;
 
-/// <summary>Registro de dependencias de la capa.</summary>
+/// <summary>
+/// Registro de dependencias de la capa.
+/// </summary>
 public static class ServiceCollectionExtensions
 {
-    /// <summary>Registra el contexto de datos y los repositorios.</summary>
+    /// <summary>
+    /// Registra el contexto de datos y los repositorios.
+    /// </summary>
     public static IServiceCollection AddPersistence(this IServiceCollection services, IConfiguration configuration)
     {
         var connectionString = configuration.GetConnectionString(ConnectionStringName);
@@ -48,6 +52,8 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    /// <summary>Clave de la cadena de conexión a <c>lin_baion</c> dentro de <c>ConnectionStrings</c>.</summary>
+    /// <summary>
+    /// Clave de la cadena de conexión a <c>lin_baion</c> dentro de <c>ConnectionStrings</c>.
+    /// </summary>
     public const string ConnectionStringName = "BaionDatabase";
 }

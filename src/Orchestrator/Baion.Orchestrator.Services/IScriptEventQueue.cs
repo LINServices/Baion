@@ -8,9 +8,13 @@ namespace Baion.Orchestrator.Services;
 /// </summary>
 public interface IScriptEventQueue
 {
-    /// <summary>Encola una novedad sin bloquear. Devuelve false si el buzón está lleno.</summary>
+    /// <summary>
+    /// Encola una novedad sin bloquear. Devuelve false si el buzón está lleno.
+    /// </summary>
     bool TryEnqueue(ScriptExecutionEvent notification);
 
-    /// <summary>Novedades pendientes de escribir.</summary>
+    /// <summary>
+    /// Novedades pendientes de escribir.
+    /// </summary>
     int PendingCount { get; }
 }

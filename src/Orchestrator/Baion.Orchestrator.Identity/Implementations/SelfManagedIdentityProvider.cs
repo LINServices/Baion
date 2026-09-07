@@ -78,8 +78,13 @@ internal class SelfManagedIdentityProvider(IUserRepository users, IPasswordHashe
         await unitOfWork.SaveChangesAsync(cancellationToken);
     }
 
-    /// <summary>Normaliza el email igual que al darlo de alta, para que la búsqueda por índice único acierte.</summary>
-    public static string NormalizeEmail(string email) => email.Trim().ToUpperInvariant();
+    /// <summary>
+    /// Normaliza el email igual que al darlo de alta, para que la búsqueda por índice único acierte.
+    /// </summary>
+    public static string NormalizeEmail(string email)
+    {
+        return email.Trim().ToUpperInvariant();
+    }
 
     // Mismo error para usuario inexistente y contraseña incorrecta: no se revela qué emails existen.
     private static readonly Result<AuthenticatedUser> InvalidCredentials = Result<AuthenticatedUser>.Failure(Error.Unauthorized("auth.invalid_credentials", "Las credenciales no son válidas."));

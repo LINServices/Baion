@@ -9,10 +9,14 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace Baion.Orchestrator.Presentacion;
 
-/// <summary>Registro de dependencias de la capa de presentación.</summary>
+/// <summary>
+/// Registro de dependencias de la capa de presentación.
+/// </summary>
 public static class ServiceCollectionExtensions
 {
-    /// <summary>Registra los controllers, filtros y la autenticación por token de la API.</summary>
+    /// <summary>
+    /// Registra los controllers, filtros y la autenticación por token de la API.
+    /// </summary>
     public static IServiceCollection AddPresentacion(this IServiceCollection services, IConfiguration configuration)
     {
         // Mismos enums en texto que el protocolo del agente: la API no habla con números mágicos.

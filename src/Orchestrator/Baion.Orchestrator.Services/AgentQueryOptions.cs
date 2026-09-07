@@ -6,10 +6,14 @@ namespace Baion.Orchestrator.Services;
 /// </summary>
 public class AgentQueryOptions
 {
-    /// <summary>Plazo para que el agente conteste una petición antes de darla por fallida.</summary>
+    /// <summary>
+    /// Plazo para que el agente conteste una petición antes de darla por fallida.
+    /// </summary>
     public int TimeoutSeconds { get; set; } = 20;
 
-    /// <summary>Líneas de log que se piden cuando el cliente no indica un número.</summary>
+    /// <summary>
+    /// Líneas de log que se piden cuando el cliente no indica un número.
+    /// </summary>
     public int DefaultLogLines { get; set; } = 200;
 
     /// <summary>
@@ -18,6 +22,8 @@ public class AgentQueryOptions
     /// </summary>
     public int MaxLogLines { get; set; } = 2000;
 
-    /// <summary>Sección de configuración de la que se enlazan estas opciones.</summary>
+    /// <summary>
+    /// Sección de configuración de la que se enlazan estas opciones.
+    /// </summary>
     public const string SectionName = "Orchestrator:AgentQuery";
 }

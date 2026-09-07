@@ -12,13 +12,19 @@ namespace Baion.Orchestrator.Services;
 /// </summary>
 public interface IScriptChainService
 {
-    /// <summary>Da de alta una cadena con sus pasos.</summary>
+    /// <summary>
+    /// Da de alta una cadena con sus pasos.
+    /// </summary>
     Task<Result<ScriptChainSummary>> CreateAsync(CreateScriptChainRequest request, CancellationToken cancellationToken);
 
-    /// <summary>Obtiene la ficha de una cadena.</summary>
+    /// <summary>
+    /// Obtiene la ficha de una cadena.
+    /// </summary>
     Task<Result<ScriptChainSummary>> GetAsync(Guid chainId, CancellationToken cancellationToken);
 
-    /// <summary>Arranca la cadena sobre un servidor y despacha su primer paso.</summary>
+    /// <summary>
+    /// Arranca la cadena sobre un servidor y despacha su primer paso.
+    /// </summary>
     Task<Result<ScriptChainRunStarted>> StartAsync(StartChainRequest request, CancellationToken cancellationToken);
 
     /// <summary>
@@ -27,6 +33,8 @@ public interface IScriptChainService
     /// </summary>
     Task AdvanceAsync(Guid executionId, CancellationToken cancellationToken);
 
-    /// <summary>Estado agregado de un recorrido.</summary>
+    /// <summary>
+    /// Estado agregado de un recorrido.
+    /// </summary>
     Task<Result<ScriptChainRunDetail>> GetRunAsync(Guid chainRunId, CancellationToken cancellationToken);
 }

@@ -9,7 +9,9 @@ namespace Baion.Orchestrator.Services;
 /// </summary>
 public static class CronSchedule
 {
-    /// <summary>Calcula el siguiente disparo posterior a <paramref name="from"/>, o null si la expresión no vuelve a cumplirse.</summary>
+    /// <summary>
+    /// Calcula el siguiente disparo posterior a <paramref name="from"/>, o null si la expresión no vuelve a cumplirse.
+    /// </summary>
     public static DateTimeOffset? GetNextOccurrence(string expression, string timeZoneId, DateTimeOffset from)
     {
         if (!TryParse(expression, out var cron) || !TryResolveTimeZone(timeZoneId, out var zone))
@@ -20,8 +22,13 @@ public static class CronSchedule
         return cron.GetNextOccurrence(from, zone);
     }
 
-    /// <summary>Indica si la expresión y la zona horaria son utilizables.</summary>
-    public static bool IsValid(string expression, string timeZoneId) => TryParse(expression, out _) && TryResolveTimeZone(timeZoneId, out _);
+    /// <summary>
+    /// Indica si la expresión y la zona horaria son utilizables.
+    /// </summary>
+    public static bool IsValid(string expression, string timeZoneId)
+    {
+        return TryParse(expression, out _) && TryResolveTimeZone(timeZoneId, out _);
+    }
 
     private static bool TryParse(string expression, out CronExpression cron)
     {

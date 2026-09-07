@@ -1,6 +1,8 @@
 namespace Baion.Orchestrator.Models.Results;
 
-/// <summary>Naturaleza de un fallo esperado, para que la capa web lo traduzca a un código HTTP.</summary>
+/// <summary>
+/// Naturaleza de un fallo esperado, para que la capa web lo traduzca a un código HTTP.
+/// </summary>
 public enum ErrorKind
 {
     Validation = 1,

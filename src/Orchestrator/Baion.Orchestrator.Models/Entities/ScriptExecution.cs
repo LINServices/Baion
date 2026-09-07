@@ -3,7 +3,9 @@ using Baion.Contracts.Enums;
 
 namespace Baion.Orchestrator.Models.Entities;
 
-/// <summary>Resultado de ejecutar un script sobre un servidor concreto.</summary>
+/// <summary>
+/// Resultado de ejecutar un script sobre un servidor concreto.
+/// </summary>
 public class ScriptExecution : TenantEntity
 {
     public Guid ServerId { get; set; }
@@ -14,15 +16,21 @@ public class ScriptExecution : TenantEntity
 
     public Script Script { get; set; } = null!;
 
-    /// <summary>Paso de cadena que originó la ejecución, cuando no es una ejecución suelta.</summary>
+    /// <summary>
+    /// Paso de cadena que originó la ejecución, cuando no es una ejecución suelta.
+    /// </summary>
     public Guid? ScriptChainStepId { get; set; }
 
     public ScriptChainStep? ScriptChainStep { get; set; }
 
-    /// <summary>Correlaciona las ejecuciones de un mismo recorrido de cadena, incluso si hay varios en paralelo.</summary>
+    /// <summary>
+    /// Correlaciona las ejecuciones de un mismo recorrido de cadena, incluso si hay varios en paralelo.
+    /// </summary>
     public Guid? ChainRunId { get; set; }
 
-    /// <summary>Tarea programada que originó la ejecución, cuando no la pidió una persona.</summary>
+    /// <summary>
+    /// Tarea programada que originó la ejecución, cuando no la pidió una persona.
+    /// </summary>
     public Guid? ScheduledTaskId { get; set; }
 
     public ScheduledTask? ScheduledTask { get; set; }
@@ -43,7 +51,9 @@ public class ScriptExecution : TenantEntity
 
     public string? StdErr { get; set; }
 
-    /// <summary>Motivo del fallo cuando no proviene del proceso (timeout, agente offline, checksum inválido).</summary>
+    /// <summary>
+    /// Motivo del fallo cuando no proviene del proceso (timeout, agente offline, checksum inválido).
+    /// </summary>
     public string? ErrorMessage { get; set; }
 
     public DateTimeOffset QueuedAt { get; set; }

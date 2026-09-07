@@ -10,9 +10,13 @@ namespace Baion.Orchestrator.Messaging;
 /// </summary>
 public interface IAgentCommandSubscription
 {
-    /// <summary>Empieza a recibir los comandos dirigidos a este servidor.</summary>
+    /// <summary>
+    /// Empieza a recibir los comandos dirigidos a este servidor.
+    /// </summary>
     Task SubscribeAsync(Guid serverId, CancellationToken cancellationToken);
 
-    /// <summary>Deja de recibirlos.</summary>
+    /// <summary>
+    /// Deja de recibirlos.
+    /// </summary>
     Task UnsubscribeAsync(Guid serverId, CancellationToken cancellationToken);
 }

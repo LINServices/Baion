@@ -1,6 +1,8 @@
 namespace Baion.Orchestrator.Messaging;
 
-/// <summary>Conexión y nombres de los exchanges que usa el orquestador.</summary>
+/// <summary>
+/// Conexión y nombres de los exchanges que usa el orquestador.
+/// </summary>
 public class RabbitMqOptions
 {
     /// <summary>
@@ -19,12 +21,18 @@ public class RabbitMqOptions
 
     public string Password { get; set; } = "guest";
 
-    /// <summary>Exchange de tipo topic por el que viajan los comandos dirigidos a un agente concreto.</summary>
+    /// <summary>
+    /// Exchange de tipo topic por el que viajan los comandos dirigidos a un agente concreto.
+    /// </summary>
     public string CommandExchange { get; set; } = "baion.agent.commands";
 
-    /// <summary>Exchange de tipo fanout por el que se anuncian los cambios de presencia.</summary>
+    /// <summary>
+    /// Exchange de tipo fanout por el que se anuncian los cambios de presencia.
+    /// </summary>
     public string PresenceExchange { get; set; } = "baion.agent.presence";
 
-    /// <summary>Sección de configuración de la que se enlazan estas opciones.</summary>
+    /// <summary>
+    /// Sección de configuración de la que se enlazan estas opciones.
+    /// </summary>
     public const string SectionName = "RabbitMq";
 }

@@ -5,10 +5,14 @@ using Baion.Orchestrator.Models.Enums;
 
 namespace Baion.Orchestrator.Models.Dtos;
 
-/// <summary>Arranque de una cadena sobre un servidor.</summary>
+/// <summary>
+/// Arranque de una cadena sobre un servidor.
+/// </summary>
 public record StartChainRequest(Guid ScriptChainId, Guid ServerId);
 
-/// <summary>Confirmación de que la cadena arrancó y su primer paso salió hacia el agente.</summary>
+/// <summary>
+/// Confirmación de que la cadena arrancó y su primer paso salió hacia el agente.
+/// </summary>
 public record ScriptChainRunStarted(Guid ChainRunId, Guid FirstExecutionId);
 
 /// <summary>
@@ -17,5 +21,7 @@ public record ScriptChainRunStarted(Guid ChainRunId, Guid FirstExecutionId);
 /// </summary>
 public record ScriptChainRunDetail(Guid ChainRunId, Guid ScriptChainId, Guid ServerId, ChainRunStatus Status, IReadOnlyList<ScriptChainStepRun> Steps);
 
-/// <summary>Resultado de un paso dentro del recorrido.</summary>
+/// <summary>
+/// Resultado de un paso dentro del recorrido.
+/// </summary>
 public record ScriptChainStepRun(int Order, Guid ScriptId, ChainFailurePolicy FailurePolicy, Guid? ExecutionId, ExecutionStatus? Status, int? ExitCode);

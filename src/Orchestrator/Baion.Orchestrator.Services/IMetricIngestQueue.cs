@@ -8,9 +8,13 @@ namespace Baion.Orchestrator.Services;
 /// </summary>
 public interface IMetricIngestQueue
 {
-    /// <summary>Encola una muestra sin bloquear. Devuelve false si el buzón está lleno y hubo que descartarla.</summary>
+    /// <summary>
+    /// Encola una muestra sin bloquear. Devuelve false si el buzón está lleno y hubo que descartarla.
+    /// </summary>
     bool TryEnqueue(MetricSample sample);
 
-    /// <summary>Muestras pendientes de escribir.</summary>
+    /// <summary>
+    /// Muestras pendientes de escribir.
+    /// </summary>
     int PendingCount { get; }
 }

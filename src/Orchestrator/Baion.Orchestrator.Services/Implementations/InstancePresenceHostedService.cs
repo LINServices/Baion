@@ -16,9 +16,15 @@ namespace Baion.Orchestrator.Services.Implementations;
 /// </summary>
 internal class InstancePresenceHostedService(IServiceScopeFactory scopeFactory, IOptions<OrchestratorOptions> options, ILogger<InstancePresenceHostedService> logger) : IHostedService
 {
-    public async Task StartAsync(CancellationToken cancellationToken) => await ReleaseAsync("arranque", cancellationToken);
+    public async Task StartAsync(CancellationToken cancellationToken)
+    {
+        await ReleaseAsync("arranque", cancellationToken);
+    }
 
-    public async Task StopAsync(CancellationToken cancellationToken) => await ReleaseAsync("parada", cancellationToken);
+    public async Task StopAsync(CancellationToken cancellationToken)
+    {
+        await ReleaseAsync("parada", cancellationToken);
+    }
 
     private async Task ReleaseAsync(string motivo, CancellationToken cancellationToken)
     {

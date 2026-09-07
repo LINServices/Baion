@@ -1,9 +1,13 @@
 namespace Baion.Orchestrator.Models.Dtos;
 
-/// <summary>Límites de paginación comunes a todos los listados de la API.</summary>
+/// <summary>
+/// Límites de paginación comunes a todos los listados de la API.
+/// </summary>
 public static class Pagination
 {
-    /// <summary>Encaja lo que llegue de la petición dentro de los límites admitidos.</summary>
+    /// <summary>
+    /// Encaja lo que llegue de la petición dentro de los límites admitidos.
+    /// </summary>
     public static (int Page, int PageSize) Normalize(int page, int pageSize)
     {
         var pagina = page < FirstPage ? FirstPage : page;
@@ -21,6 +25,8 @@ public static class Pagination
 
     public const int DefaultPageSize = 25;
 
-    /// <summary>Tope duro: sin él una sola petición podría arrastrar la tabla entera.</summary>
+    /// <summary>
+    /// Tope duro: sin él una sola petición podría arrastrar la tabla entera.
+    /// </summary>
     public const int MaxPageSize = 100;
 }

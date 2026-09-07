@@ -141,7 +141,9 @@ internal class ScriptEventIngestHostedService(IScriptEventQueue queue, IServiceS
         builder.Append(output.Content);
     }
 
-    /// <summary>Vuelca los fragmentos acumulados de una ejecución, o de todas si no se indica ninguna.</summary>
+    /// <summary>
+    /// Vuelca los fragmentos acumulados de una ejecución, o de todas si no se indica ninguna.
+    /// </summary>
     private async Task FlushBuffersAsync(Dictionary<OutputKey, StringBuilder> buffers, Guid? executionId, Dictionary<Guid, AsyncServiceScope> scopes, CancellationToken cancellationToken)
     {
         if (buffers.Count == 0)
@@ -187,7 +189,9 @@ internal class ScriptEventIngestHostedService(IScriptEventQueue queue, IServiceS
         }
     }
 
-    /// <summary>Un scope por tenant dentro del lote: cada uno solo puede operar sobre el suyo.</summary>
+    /// <summary>
+    /// Un scope por tenant dentro del lote: cada uno solo puede operar sobre el suyo.
+    /// </summary>
     private AsyncServiceScope ResolveScope(Dictionary<Guid, AsyncServiceScope> scopes, Guid tenantId)
     {
         if (scopes.TryGetValue(tenantId, out var existente))
@@ -214,6 +218,8 @@ internal class ScriptEventIngestHostedService(IScriptEventQueue queue, IServiceS
         }
     }
 
-    /// <summary>Clave de acumulación: el tenant forma parte de ella porque es lo que decide el scope de escritura.</summary>
+    /// <summary>
+    /// Clave de acumulación: el tenant forma parte de ella porque es lo que decide el scope de escritura.
+    /// </summary>
     private readonly record struct OutputKey(Guid TenantId, Guid ExecutionId, OutputStream Stream);
 }

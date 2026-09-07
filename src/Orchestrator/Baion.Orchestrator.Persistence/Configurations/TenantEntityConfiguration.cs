@@ -4,7 +4,9 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Baion.Orchestrator.Persistence.Configurations;
 
-/// <summary>Configuración común a toda entidad aislada por tenant: clave, y FK al tenant sin cascada.</summary>
+/// <summary>
+/// Configuración común a toda entidad aislada por tenant: clave, y FK al tenant sin cascada.
+/// </summary>
 internal abstract class TenantEntityConfiguration<TEntity> : IEntityTypeConfiguration<TEntity> where TEntity : TenantEntity
 {
     public void Configure(EntityTypeBuilder<TEntity> builder)

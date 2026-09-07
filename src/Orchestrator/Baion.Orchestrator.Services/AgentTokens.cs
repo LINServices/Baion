@@ -12,11 +12,21 @@ namespace Baion.Orchestrator.Services;
 /// </summary>
 public static class AgentTokens
 {
-    /// <summary>Genera un token aleatorio de 256 bits en base64url.</summary>
-    public static string Generate() => Base64Url.EncodeToString(RandomNumberGenerator.GetBytes(TokenBytes));
+    /// <summary>
+    /// Genera un token aleatorio de 256 bits en base64url.
+    /// </summary>
+    public static string Generate()
+    {
+        return Base64Url.EncodeToString(RandomNumberGenerator.GetBytes(TokenBytes));
+    }
 
-    /// <summary>Calcula el SHA-256 del token, en hexadecimal minúscula.</summary>
-    public static string Hash(string token) => Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(token)));
+    /// <summary>
+    /// Calcula el SHA-256 del token, en hexadecimal minúscula.
+    /// </summary>
+    public static string Hash(string token)
+    {
+        return Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(token)));
+    }
 
     private const int TokenBytes = 32;
 }

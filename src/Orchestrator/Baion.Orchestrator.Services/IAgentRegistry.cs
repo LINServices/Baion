@@ -9,15 +9,23 @@ namespace Baion.Orchestrator.Services;
 /// </summary>
 public interface IAgentRegistry
 {
-    /// <summary>Registra la conexión de un servidor. Devuelve false si ya había otra activa aquí.</summary>
+    /// <summary>
+    /// Registra la conexión de un servidor. Devuelve false si ya había otra activa aquí.
+    /// </summary>
     bool TryRegister(IAgentConnection connection);
 
-    /// <summary>Obtiene la conexión abierta con un servidor, si la tiene esta instancia.</summary>
+    /// <summary>
+    /// Obtiene la conexión abierta con un servidor, si la tiene esta instancia.
+    /// </summary>
     bool TryGet(Guid serverId, [NotNullWhen(true)] out IAgentConnection? connection);
 
-    /// <summary>Quita la conexión, solo si sigue siendo la que se registró.</summary>
+    /// <summary>
+    /// Quita la conexión, solo si sigue siendo la que se registró.
+    /// </summary>
     void Remove(IAgentConnection connection);
 
-    /// <summary>Número de agentes conectados a esta instancia.</summary>
+    /// <summary>
+    /// Número de agentes conectados a esta instancia.
+    /// </summary>
     int Count { get; }
 }

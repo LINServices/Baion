@@ -90,7 +90,10 @@ internal class JwtTokenService(IOptions<BaionIdentityOptions> options, TimeProvi
         return Result<BaionPrincipal>.Success(new BaionPrincipal(tenantId, userId, email ?? string.Empty, securityStamp, roles));
     }
 
-    private static SymmetricSecurityKey CreateSigningKey(string signingKey) => new(Encoding.UTF8.GetBytes(signingKey));
+    private static SymmetricSecurityKey CreateSigningKey(string signingKey)
+    {
+        return new(Encoding.UTF8.GetBytes(signingKey));
+    }
 
     private static readonly JsonWebTokenHandler Handler = new();
 

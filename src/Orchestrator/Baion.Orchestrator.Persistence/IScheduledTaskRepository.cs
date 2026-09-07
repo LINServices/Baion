@@ -12,13 +12,19 @@ namespace Baion.Orchestrator.Persistence;
 /// </summary>
 public interface IScheduledTaskRepository
 {
-    /// <summary>Obtiene una tarea del tenant actual con su script o cadena y su destino.</summary>
+    /// <summary>
+    /// Obtiene una tarea del tenant actual con su script o cadena y su destino.
+    /// </summary>
     Task<ScheduledTask?> GetByIdAsync(Guid taskId, CancellationToken cancellationToken);
 
-    /// <summary>Marca una tarea para inserción.</summary>
+    /// <summary>
+    /// Marca una tarea para inserción.
+    /// </summary>
     Task AddAsync(ScheduledTask task);
 
-    /// <summary>Tareas activas de todos los tenants cuyo próximo disparo ya venció.</summary>
+    /// <summary>
+    /// Tareas activas de todos los tenants cuyo próximo disparo ya venció.
+    /// </summary>
     Task<IReadOnlyList<ScheduledTask>> GetDueAsync(DateTimeOffset now, int limit, CancellationToken cancellationToken);
 
     /// <summary>
@@ -27,6 +33,8 @@ public interface IScheduledTaskRepository
     /// </summary>
     Task<bool> TryClaimAsync(Guid taskId, DateTimeOffset expectedNextRunAt, DateTimeOffset nextOccurrence, DateTimeOffset now, CancellationToken cancellationToken);
 
-    /// <summary>Servidores de un grupo, con el grupo acotado a su tenant.</summary>
+    /// <summary>
+    /// Servidores de un grupo, con el grupo acotado a su tenant.
+    /// </summary>
     Task<IReadOnlyList<Guid>> GetGroupServerIdsAsync(Guid tenantId, Guid serverGroupId, CancellationToken cancellationToken);
 }

@@ -1,6 +1,8 @@
 namespace Baion.Orchestrator.Models.Results;
 
-/// <summary>Resultado de una operación que devuelve un valor cuando tiene éxito.</summary>
+/// <summary>
+/// Resultado de una operación que devuelve un valor cuando tiene éxito.
+/// </summary>
 public class Result<TValue>
 {
     public bool IsSuccess { get; private init; }
@@ -11,7 +13,13 @@ public class Result<TValue>
 
     public bool IsFailure => !IsSuccess;
 
-    public static Result<TValue> Success(TValue value) => new() { IsSuccess = true, Value = value };
+    public static Result<TValue> Success(TValue value)
+    {
+        return new() { IsSuccess = true, Value = value };
+    }
 
-    public static Result<TValue> Failure(Error error) => new() { IsSuccess = false, Error = error };
+    public static Result<TValue> Failure(Error error)
+    {
+        return new() { IsSuccess = false, Error = error };
+    }
 }

@@ -69,5 +69,8 @@ internal static class RabbitMqDisposal
         }
     }
 
-    private static bool IsExpectedOnShutdown(Exception exception) => exception is ObjectDisposedException or AlreadyClosedException or OperationInterruptedException or IOException;
+    private static bool IsExpectedOnShutdown(Exception exception)
+    {
+        return exception is ObjectDisposedException or AlreadyClosedException or OperationInterruptedException or IOException;
+    }
 }

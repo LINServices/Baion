@@ -3,7 +3,9 @@ using System.Collections.Generic;
 
 namespace Baion.Orchestrator.Models.Entities;
 
-/// <summary>Muestra puntual de CPU, RAM y disco de un servidor. Tabla de alto volumen, particionada por fecha.</summary>
+/// <summary>
+/// Muestra puntual de CPU, RAM y disco de un servidor. Tabla de alto volumen, particionada por fecha.
+/// </summary>
 public class Metric : ITenantOwned
 {
     public long Id { get; set; }
@@ -26,6 +28,8 @@ public class Metric : ITenantOwned
 
     public long MemoryAvailableBytes { get; set; }
 
-    /// <summary>Volúmenes del servidor, guardados como JSON dentro de la misma fila para no partir la tabla.</summary>
+    /// <summary>
+    /// Volúmenes del servidor, guardados como JSON dentro de la misma fila para no partir la tabla.
+    /// </summary>
     public ICollection<MetricDisk> Disks { get; set; } = [];
 }

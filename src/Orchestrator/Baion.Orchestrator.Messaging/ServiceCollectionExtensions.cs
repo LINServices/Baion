@@ -4,10 +4,14 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Baion.Orchestrator.Messaging;
 
-/// <summary>Registro de dependencias de la capa.</summary>
+/// <summary>
+/// Registro de dependencias de la capa.
+/// </summary>
 public static class ServiceCollectionExtensions
 {
-    /// <summary>Registra el publicador y los consumidores de RabbitMQ.</summary>
+    /// <summary>
+    /// Registra el publicador y los consumidores de RabbitMQ.
+    /// </summary>
     public static IServiceCollection AddMessaging(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddOptions<RabbitMqOptions>().Bind(configuration.GetSection(RabbitMqOptions.SectionName));

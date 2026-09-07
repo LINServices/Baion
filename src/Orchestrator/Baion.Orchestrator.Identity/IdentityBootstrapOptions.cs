@@ -16,11 +16,15 @@ public class IdentityBootstrapOptions
 
     public string AdminDisplayName { get; set; } = "Administrador";
 
-    /// <summary>Contraseña inicial. Se usa solo en el primer arranque y debe rotarse después.</summary>
+    /// <summary>
+    /// Contraseña inicial. Se usa solo en el primer arranque y debe rotarse después.
+    /// </summary>
     public string AdminPassword { get; set; } = string.Empty;
 
     public string AdminRole { get; set; } = "Admin";
 
-    /// <summary>Sección de configuración de la que se enlazan estas opciones.</summary>
+    /// <summary>
+    /// Sección de configuración de la que se enlazan estas opciones.
+    /// </summary>
     public const string SectionName = "Identity:Bootstrap";
 }

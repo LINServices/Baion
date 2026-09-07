@@ -44,22 +44,25 @@ internal class ScriptQueries(BaionDbContext context) : IScriptQueries
         return new PagedResult<ScriptListItem>(elementos, pagina, tamano, total);
     }
 
-    public async Task<ScriptDetail?> GetScriptDetailAsync(Guid scriptId, CancellationToken cancellationToken) => await context.Scripts
-        .AsNoTracking()
-        .Where(script => script.Id == scriptId)
-        .Select(script => new ScriptDetail(
-            script.Id,
-            script.Name,
-            script.Description,
-            script.Content,
-            script.Runtime,
-            script.Version,
-            script.Checksum,
-            script.DefaultTimeoutSeconds,
-            script.IsActive,
-            script.CreatedAt,
-            script.UpdatedAt))
-        .FirstOrDefaultAsync(cancellationToken);
+    public async Task<ScriptDetail?> GetScriptDetailAsync(Guid scriptId, CancellationToken cancellationToken)
+    {
+        return await context.Scripts
+            .AsNoTracking()
+            .Where(script => script.Id == scriptId)
+            .Select(script => new ScriptDetail(
+                script.Id,
+                script.Name,
+                script.Description,
+                script.Content,
+                script.Runtime,
+                script.Version,
+                script.Checksum,
+                script.DefaultTimeoutSeconds,
+                script.IsActive,
+                script.CreatedAt,
+                script.UpdatedAt))
+            .FirstOrDefaultAsync(cancellationToken);
+    }
 
     public async Task<PagedResult<ScriptExecutionListItem>> ListExecutionsAsync(ExecutionFilter filter, int page, int pageSize, CancellationToken cancellationToken)
     {

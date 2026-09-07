@@ -14,10 +14,14 @@ namespace Baion.Orchestrator.Services;
 /// </summary>
 public interface IServiceInspectionService
 {
-    /// <summary>Lista los servicios del servidor, opcionalmente acotando por una subcadena del nombre.</summary>
+    /// <summary>
+    /// Lista los servicios del servidor, opcionalmente acotando por una subcadena del nombre.
+    /// </summary>
     Task<Result<IReadOnlyList<ServiceSummary>>> ListAsync(Guid serverId, string? nameFilter, CancellationToken cancellationToken);
 
-    /// <summary>Obtiene el detalle de un servicio concreto del servidor.</summary>
+    /// <summary>
+    /// Obtiene el detalle de un servicio concreto del servidor.
+    /// </summary>
     Task<Result<ServiceDetail>> DescribeAsync(Guid serverId, string serviceId, CancellationToken cancellationToken);
 
     /// <summary>

@@ -99,7 +99,9 @@ internal class AgentConnectionHandler(IServiceScopeFactory scopeFactory, IAgentR
         }
     }
 
-    /// <summary>Lee el saludo con un plazo propio, para que un cliente mudo no ocupe la conexión indefinidamente.</summary>
+    /// <summary>
+    /// Lee el saludo con un plazo propio, para que un cliente mudo no ocupe la conexión indefinidamente.
+    /// </summary>
     private async Task<HelloMessage?> ReceiveHelloAsync(BaionMessageChannel channel, CancellationToken cancellationToken)
     {
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);

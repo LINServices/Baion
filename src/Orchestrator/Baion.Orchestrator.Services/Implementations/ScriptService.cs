@@ -77,7 +77,10 @@ internal class ScriptService(IRepository<Script> scripts, IScriptQueries queries
             : Result<ScriptSummary>.Success(ToSummary(script));
     }
 
-    public async Task<PagedResult<ScriptListItem>> ListAsync(string? search, int page, int pageSize, CancellationToken cancellationToken) => await queries.ListScriptsAsync(search, page, pageSize, cancellationToken);
+    public async Task<PagedResult<ScriptListItem>> ListAsync(string? search, int page, int pageSize, CancellationToken cancellationToken)
+    {
+        return await queries.ListScriptsAsync(search, page, pageSize, cancellationToken);
+    }
 
     public async Task<Result<ScriptDetail>> GetDetailAsync(Guid scriptId, CancellationToken cancellationToken)
     {
@@ -88,7 +91,9 @@ internal class ScriptService(IRepository<Script> scripts, IScriptQueries queries
             : Result<ScriptDetail>.Success(script);
     }
 
-    /// <summary>Reglas comunes al alta y a la edición; devuelve el primer <see cref="Error"/> o null si todo cuadra.</summary>
+    /// <summary>
+    /// Reglas comunes al alta y a la edición; devuelve el primer <see cref="Error"/> o null si todo cuadra.
+    /// </summary>
     private static Error? Validate(string name, string content, int defaultTimeoutSeconds)
     {
         if (string.IsNullOrWhiteSpace(name))
@@ -109,8 +114,16 @@ internal class ScriptService(IRepository<Script> scripts, IScriptQueries queries
         return null;
     }
 
-    private static ScriptSummary ToSummary(Script script) => new(script.Id, script.Name, script.Runtime, script.Version, script.Checksum, script.DefaultTimeoutSeconds);
+    private static ScriptSummary ToSummary(Script script)
+    {
+        return new(script.Id, script.Name, script.Runtime, script.Version, script.Checksum, script.DefaultTimeoutSeconds);
+    }
 
-    /// <summary>SHA-256 del contenido en hexadecimal. El agente lo recalcula y rechaza si no cuadra.</summary>
-    public static string ComputeChecksum(string content) => Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(content)));
+    /// <summary>
+    /// SHA-256 del contenido en hexadecimal. El agente lo recalcula y rechaza si no cuadra.
+    /// </summary>
+    public static string ComputeChecksum(string content)
+    {
+        return Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(content)));
+    }
 }

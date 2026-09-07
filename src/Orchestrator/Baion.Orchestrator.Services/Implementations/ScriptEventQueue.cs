@@ -43,7 +43,9 @@ internal class ScriptEventQueue : IScriptEventQueue
         return false;
     }
 
-    /// <summary>Toma una novedad si la hay, sin esperar.</summary>
+    /// <summary>
+    /// Toma una novedad si la hay, sin esperar.
+    /// </summary>
     internal bool TryRead([MaybeNullWhen(false)] out ScriptExecutionEvent notification)
     {
         if (!_channel.Reader.TryRead(out notification))
@@ -55,6 +57,11 @@ internal class ScriptEventQueue : IScriptEventQueue
         return true;
     }
 
-    /// <summary>Espera a que haya algo que leer. Devuelve false cuando el buzón se cierra.</summary>
-    internal ValueTask<bool> WaitToReadAsync(CancellationToken cancellationToken) => _channel.Reader.WaitToReadAsync(cancellationToken);
+    /// <summary>
+    /// Espera a que haya algo que leer. Devuelve false cuando el buzón se cierra.
+    /// </summary>
+    internal ValueTask<bool> WaitToReadAsync(CancellationToken cancellationToken)
+    {
+        return _channel.Reader.WaitToReadAsync(cancellationToken);
+    }
 }

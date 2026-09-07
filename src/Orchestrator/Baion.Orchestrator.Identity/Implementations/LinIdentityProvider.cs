@@ -15,7 +15,10 @@ internal class LinIdentityProvider : IIdentityProvider
 {
     public IdentityMode Mode => IdentityMode.Lin;
 
-    public Task<Result<AuthenticatedUser>> VerifyCredentialsAsync(Tenant tenant, LoginRequest request, CancellationToken cancellationToken) => Task.FromResult(NotImplemented);
+    public Task<Result<AuthenticatedUser>> VerifyCredentialsAsync(Tenant tenant, LoginRequest request, CancellationToken cancellationToken)
+    {
+        return Task.FromResult(NotImplemented);
+    }
 
     private static readonly Result<AuthenticatedUser> NotImplemented = Result<AuthenticatedUser>.Failure(Error.Unexpected("identity.lin_unavailable", "La integración con LIN Cloud Identity Platform aún no está implementada."));
 }

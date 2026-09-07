@@ -59,7 +59,9 @@ internal class RabbitMqConnectionProvider(IOptions<RabbitMqOptions> options, ILo
         }
     }
 
-    /// <summary>Declara los exchanges. Es idempotente, así que puede llamarse en cada arranque.</summary>
+    /// <summary>
+    /// Declara los exchanges. Es idempotente, así que puede llamarse en cada arranque.
+    /// </summary>
     public async Task EnsureTopologyAsync(IChannel channel, CancellationToken cancellationToken)
     {
         var settings = options.Value;
@@ -68,14 +70,20 @@ internal class RabbitMqConnectionProvider(IOptions<RabbitMqOptions> options, ILo
         await channel.ExchangeDeclareAsync(settings.PresenceExchange, ExchangeType.Fanout, durable: true, autoDelete: false, cancellationToken: cancellationToken);
     }
 
-    public Task StartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+    public Task StartAsync(CancellationToken cancellationToken)
+    {
+        return Task.CompletedTask;
+    }
 
     /// <summary>
     /// La conexión se cierra aquí y no solo al liberar el contenedor. Con la recuperación automática
     /// activada, el cliente mantiene maquinaria de reconexión que impide que el proceso termine si nadie
     /// la para; la parada del host sí es un momento determinista para hacerlo.
     /// </summary>
-    public async Task StopAsync(CancellationToken cancellationToken) => await CloseAsync();
+    public async Task StopAsync(CancellationToken cancellationToken)
+    {
+        await CloseAsync();
+    }
 
     public async ValueTask DisposeAsync()
     {

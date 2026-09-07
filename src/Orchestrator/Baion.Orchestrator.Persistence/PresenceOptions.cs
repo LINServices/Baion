@@ -1,6 +1,8 @@
 namespace Baion.Orchestrator.Persistence;
 
-/// <summary>Vigencia del registro de presencia de los agentes.</summary>
+/// <summary>
+/// Vigencia del registro de presencia de los agentes.
+/// </summary>
 public class PresenceOptions
 {
     /// <summary>
@@ -9,6 +11,8 @@ public class PresenceOptions
     /// </summary>
     public int TimeToLiveSeconds { get; set; } = 120;
 
-    /// <summary>Sección de configuración de la que se enlazan estas opciones.</summary>
+    /// <summary>
+    /// Sección de configuración de la que se enlazan estas opciones.
+    /// </summary>
     public const string SectionName = "Orchestrator:Presence";
 }

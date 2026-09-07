@@ -7,13 +7,19 @@ using Baion.Orchestrator.Models.Entities;
 
 namespace Baion.Orchestrator.Persistence;
 
-/// <summary>Acceso a las ejecuciones de script del tenant actual.</summary>
+/// <summary>
+/// Acceso a las ejecuciones de script del tenant actual.
+/// </summary>
 public interface IScriptExecutionRepository
 {
-    /// <summary>Obtiene una ejecución del tenant actual.</summary>
+    /// <summary>
+    /// Obtiene una ejecución del tenant actual.
+    /// </summary>
     Task<ScriptExecution?> GetByIdAsync(Guid executionId, CancellationToken cancellationToken);
 
-    /// <summary>Obtiene una ejecución con su servidor y su script cargados, para mostrarla con nombres.</summary>
+    /// <summary>
+    /// Obtiene una ejecución con su servidor y su script cargados, para mostrarla con nombres.
+    /// </summary>
     Task<ScriptExecution?> GetWithNamesAsync(Guid executionId, CancellationToken cancellationToken);
 
     /// <summary>
@@ -22,7 +28,9 @@ public interface IScriptExecutionRepository
     /// </summary>
     Task<IReadOnlyList<ScriptExecution>> GetPendingDispatchesAsync(int limit, CancellationToken cancellationToken);
 
-    /// <summary>Obtiene todas las ejecuciones de un recorrido de cadena, ordenadas por el paso al que pertenecen.</summary>
+    /// <summary>
+    /// Obtiene todas las ejecuciones de un recorrido de cadena, ordenadas por el paso al que pertenecen.
+    /// </summary>
     Task<IReadOnlyList<ScriptExecution>> GetByChainRunAsync(Guid chainRunId, CancellationToken cancellationToken);
 
     /// <summary>

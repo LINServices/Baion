@@ -55,5 +55,9 @@ internal class TenantProvisioningService(ITenantRepository tenants, IUnitOfWork 
         return Result<Guid>.Success(tenant.Id);
     }
 
-    private static bool IsValidSlug(string slug) => slug.Length is >= 3 and <= 100 && slug.All(character => char.IsAsciiLetterLower(character) || char.IsAsciiDigit(character) || character == '-');
+    private static bool IsValidSlug(string slug)
+    {
+        return slug.Length is >= 3 and <= 100
+            && slug.All(character => char.IsAsciiLetterLower(character) || char.IsAsciiDigit(character) || character == '-');
+    }
 }

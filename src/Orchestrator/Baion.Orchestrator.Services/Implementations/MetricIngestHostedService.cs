@@ -157,16 +157,19 @@ internal class MetricIngestHostedService(IMetricIngestQueue queue, IServiceScope
         }
     }
 
-    private static Metric ToMetric(MetricSample sample) => new()
+    private static Metric ToMetric(MetricSample sample)
     {
-        TenantId = sample.TenantId,
-        ServerId = sample.ServerId,
-        CapturedAt = sample.Report.CapturedAt,
-        CpuUsagePercent = sample.Report.Cpu.UsagePercent,
-        CpuCoreCount = sample.Report.Cpu.CoreCount,
-        LoadAverage1m = sample.Report.Cpu.LoadAverage1m,
-        MemoryTotalBytes = sample.Report.Memory.TotalBytes,
-        MemoryAvailableBytes = sample.Report.Memory.AvailableBytes,
-        Disks = [.. sample.Report.Disks.Select(disk => new MetricDisk { Name = disk.Name, MountPoint = disk.MountPoint, TotalBytes = disk.TotalBytes, AvailableBytes = disk.AvailableBytes })]
-    };
+        return new()
+        {
+            TenantId = sample.TenantId,
+            ServerId = sample.ServerId,
+            CapturedAt = sample.Report.CapturedAt,
+            CpuUsagePercent = sample.Report.Cpu.UsagePercent,
+            CpuCoreCount = sample.Report.Cpu.CoreCount,
+            LoadAverage1m = sample.Report.Cpu.LoadAverage1m,
+            MemoryTotalBytes = sample.Report.Memory.TotalBytes,
+            MemoryAvailableBytes = sample.Report.Memory.AvailableBytes,
+            Disks = [.. sample.Report.Disks.Select(disk => new MetricDisk { Name = disk.Name, MountPoint = disk.MountPoint, TotalBytes = disk.TotalBytes, AvailableBytes = disk.AvailableBytes })]
+        };
+    }
 }

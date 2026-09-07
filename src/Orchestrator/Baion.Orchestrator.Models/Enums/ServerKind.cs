@@ -1,6 +1,8 @@
 namespace Baion.Orchestrator.Models.Enums;
 
-/// <summary>Naturaleza del servidor gestionado.</summary>
+/// <summary>
+/// Naturaleza del servidor gestionado.
+/// </summary>
 public enum ServerKind
 {
     Vm = 1,

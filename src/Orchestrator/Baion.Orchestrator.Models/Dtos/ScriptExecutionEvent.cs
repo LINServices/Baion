@@ -10,11 +10,17 @@ namespace Baion.Orchestrator.Models.Dtos;
 /// </summary>
 public abstract record ScriptExecutionEvent(Guid TenantId, Guid ExecutionId);
 
-/// <summary>El proceso arrancó en la máquina.</summary>
+/// <summary>
+/// El proceso arrancó en la máquina.
+/// </summary>
 public record ScriptStartEvent(Guid TenantId, Guid ExecutionId, DateTimeOffset StartedAt) : ScriptExecutionEvent(TenantId, ExecutionId);
 
-/// <summary>Fragmento de salida.</summary>
+/// <summary>
+/// Fragmento de salida.
+/// </summary>
 public record ScriptOutputEvent(Guid TenantId, Guid ExecutionId, OutputStream Stream, string Content) : ScriptExecutionEvent(TenantId, ExecutionId);
 
-/// <summary>Desenlace de la ejecución.</summary>
+/// <summary>
+/// Desenlace de la ejecución.
+/// </summary>
 public record ScriptCompletionEvent(Guid TenantId, Guid ExecutionId, ExecutionStatus Status, int? ExitCode, DateTimeOffset CompletedAt, string? ErrorMessage) : ScriptExecutionEvent(TenantId, ExecutionId);

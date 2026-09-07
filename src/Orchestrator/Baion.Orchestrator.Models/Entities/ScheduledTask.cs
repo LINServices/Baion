@@ -3,32 +3,44 @@ using Baion.Contracts.Enums;
 
 namespace Baion.Orchestrator.Models.Entities;
 
-/// <summary>Disparo por cron de un script o una cadena sobre un servidor o un grupo.</summary>
+/// <summary>
+/// Disparo por cron de un script o una cadena sobre un servidor o un grupo.
+/// </summary>
 public class ScheduledTask : TenantEntity
 {
     public string Name { get; set; } = string.Empty;
 
     public string CronExpression { get; set; } = string.Empty;
 
-    /// <summary>Zona horaria IANA con la que se evalúa <see cref="CronExpression"/>.</summary>
+    /// <summary>
+    /// Zona horaria IANA con la que se evalúa <see cref="CronExpression"/>.
+    /// </summary>
     public string TimeZoneId { get; set; } = "UTC";
 
-    /// <summary>Script a ejecutar. Excluyente con <see cref="ScriptChainId"/>.</summary>
+    /// <summary>
+    /// Script a ejecutar. Excluyente con <see cref="ScriptChainId"/>.
+    /// </summary>
     public Guid? ScriptId { get; set; }
 
     public Script? Script { get; set; }
 
-    /// <summary>Cadena a ejecutar. Excluyente con <see cref="ScriptId"/>.</summary>
+    /// <summary>
+    /// Cadena a ejecutar. Excluyente con <see cref="ScriptId"/>.
+    /// </summary>
     public Guid? ScriptChainId { get; set; }
 
     public ScriptChain? ScriptChain { get; set; }
 
-    /// <summary>Servidor destino. Excluyente con <see cref="ServerGroupId"/>.</summary>
+    /// <summary>
+    /// Servidor destino. Excluyente con <see cref="ServerGroupId"/>.
+    /// </summary>
     public Guid? ServerId { get; set; }
 
     public Server? Server { get; set; }
 
-    /// <summary>Grupo destino. Excluyente con <see cref="ServerId"/>.</summary>
+    /// <summary>
+    /// Grupo destino. Excluyente con <see cref="ServerId"/>.
+    /// </summary>
     public Guid? ServerGroupId { get; set; }
 
     public ServerGroup? ServerGroup { get; set; }

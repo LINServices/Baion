@@ -11,14 +11,20 @@ internal class IdentityPasswordHasher : IPasswordHasher
     // El hasher ignora el usuario que recibe; se le pasa un objeto fijo.
     private readonly PasswordHasher<object> _hasher = new();
 
-    public string Hash(string password) => _hasher.HashPassword(HashSubject, password);
-
-    public PasswordVerification Verify(string hash, string password) => _hasher.VerifyHashedPassword(HashSubject, hash, password) switch
+    public string Hash(string password)
     {
-        PasswordVerificationResult.Success => PasswordVerification.Succeeded,
-        PasswordVerificationResult.SuccessRehashNeeded => PasswordVerification.SucceededNeedsRehash,
-        _ => PasswordVerification.Failed
-    };
+        return _hasher.HashPassword(HashSubject, password);
+    }
+
+    public PasswordVerification Verify(string hash, string password)
+    {
+        return _hasher.VerifyHashedPassword(HashSubject, hash, password) switch
+        {
+            PasswordVerificationResult.Success => PasswordVerification.Succeeded,
+            PasswordVerificationResult.SuccessRehashNeeded => PasswordVerification.SucceededNeedsRehash,
+            _ => PasswordVerification.Failed
+        };
+    }
 
     private static readonly object HashSubject = new();
 }

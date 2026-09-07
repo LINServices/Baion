@@ -2,7 +2,9 @@ using System;
 
 namespace Baion.Orchestrator.Models.Entities;
 
-/// <summary>Asignación de un rol a un usuario dentro del mismo tenant.</summary>
+/// <summary>
+/// Asignación de un rol a un usuario dentro del mismo tenant.
+/// </summary>
 public class UserRole : TenantEntity
 {
     public Guid UserId { get; set; }

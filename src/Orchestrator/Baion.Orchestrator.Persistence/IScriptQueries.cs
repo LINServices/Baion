@@ -11,12 +11,18 @@ namespace Baion.Orchestrator.Persistence;
 /// </summary>
 public interface IScriptQueries
 {
-    /// <summary>Página de scripts del tenant, filtrando por nombre cuando <paramref name="search"/> trae algo.</summary>
+    /// <summary>
+    /// Página de scripts del tenant, filtrando por nombre cuando <paramref name="search"/> trae algo.
+    /// </summary>
     Task<PagedResult<ScriptListItem>> ListScriptsAsync(string? search, int page, int pageSize, CancellationToken cancellationToken);
 
-    /// <summary>Ficha completa de un script con su contenido, o null si no existe en el tenant.</summary>
+    /// <summary>
+    /// Ficha completa de un script con su contenido, o null si no existe en el tenant.
+    /// </summary>
     Task<ScriptDetail?> GetScriptDetailAsync(Guid scriptId, CancellationToken cancellationToken);
 
-    /// <summary>Página de ejecuciones que cumplen el filtro, de la más reciente a la más antigua.</summary>
+    /// <summary>
+    /// Página de ejecuciones que cumplen el filtro, de la más reciente a la más antigua.
+    /// </summary>
     Task<PagedResult<ScriptExecutionListItem>> ListExecutionsAsync(ExecutionFilter filter, int page, int pageSize, CancellationToken cancellationToken);
 }
