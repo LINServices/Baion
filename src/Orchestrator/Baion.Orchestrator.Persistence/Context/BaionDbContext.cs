@@ -7,7 +7,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Baion.Orchestrator.Persistence.Context;
 
-/// <summary>Contexto de la base <c>lin_baion</c>. Aplica el aislamiento por tenant a todo el modelo.</summary>
+/// <summary>
+/// Contexto de la base <c>lin_baion</c>. Aplica el aislamiento por tenant a todo el modelo.
+/// </summary>
 public class BaionDbContext(DbContextOptions<BaionDbContext> options, ITenantContext tenantContext) : DbContext(options)
 {
     public DbSet<Tenant> Tenants => Set<Tenant>();
@@ -67,9 +69,14 @@ public class BaionDbContext(DbContextOptions<BaionDbContext> options, ITenantCon
     }
 
     // Invocado por reflexión desde ApplyTenantFilters.
-    private void ApplyTenantFilter<TEntity>(ModelBuilder modelBuilder) where TEntity : class, ITenantOwned => modelBuilder.Entity<TEntity>().HasQueryFilter(entity => entity.TenantId == CurrentTenantId);
+    private void ApplyTenantFilter<TEntity>(ModelBuilder modelBuilder) where TEntity : class, ITenantOwned
+    {
+        modelBuilder.Entity<TEntity>().HasQueryFilter(entity => entity.TenantId == CurrentTenantId);
+    }
 
-    /// <summary>Historial de migraciones, nombrado con la misma convención que el resto del esquema.</summary>
+    /// <summary>
+    /// Historial de migraciones, nombrado con la misma convención que el resto del esquema.
+    /// </summary>
     public const string MigrationsHistoryTable = "__ef_migrations_history";
 
     private static readonly MethodInfo TenantFilterMethod = typeof(BaionDbContext).GetMethod(nameof(ApplyTenantFilter), BindingFlags.Instance | BindingFlags.NonPublic)!;

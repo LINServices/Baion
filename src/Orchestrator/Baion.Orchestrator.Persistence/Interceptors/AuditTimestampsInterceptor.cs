@@ -8,7 +8,9 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace Baion.Orchestrator.Persistence.Interceptors;
 
-/// <summary>Mantiene <c>CreatedAt</c> y <c>UpdatedAt</c> sin que los servicios tengan que acordarse.</summary>
+/// <summary>
+/// Mantiene <c>CreatedAt</c> y <c>UpdatedAt</c> sin que los servicios tengan que acordarse.
+/// </summary>
 internal class AuditTimestampsInterceptor(TimeProvider timeProvider) : SaveChangesInterceptor
 {
     public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
