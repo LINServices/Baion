@@ -12,7 +12,7 @@ on:
 env:
   PUBLISH_URL: ${{ secrets.LIN_CLOUD_URL_2005 }}
   PUBLISH_KEY: ${{ secrets.LIN_CLOUD_KEY_2005 }}
-  PROJECT_PATH: ${{ secrets.LIN_CLOUD_CSPROJ_2005 }} 
+  PROJECT_PATH: "cliente/Baion.Cliente.Web/Baion.Cliente.Web.csproj"
   PUBLISH_DIR: "./publish"
 
 jobs:
