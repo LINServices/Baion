@@ -21,16 +21,25 @@
 <AlertMessage Mensaje="@_error" />
 <AlertMessage Mensaje="@_aviso" EsError="false" />
 
-<ServerTable Servidores="_servidores" Ocupado="_ocupado" AlDesactivar="DesactivarAsync" AlReactivar="ReactivarAsync" />
+@if (_cargando && _servidores is null)
+{
+    <GhostLoader Filas="5" Descripcion="Cargando los servidores…" />
+}
+else
+{
+    <ServerTable Servidores="Servidores" Ocupado="_ocupado" AlDesactivar="DesactivarAsync" AlReactivar="ReactivarAsync" />
+}
 
 @code {
     private readonly EstadoRaton _raton = new();
 
-    private IReadOnlyList<ServerSummary> _servidores = [];
+    private IReadOnlyList<ServerSummary>? _servidores;
     private string? _error;
     private string? _aviso;
     private Guid? _ocupado;
     private bool _cargando = true;
+
+    private IReadOnlyList<ServerSummary> Servidores => _servidores ?? [];
 
     protected override async Task OnInitializedAsync() => await RecargarAsync();
 
@@ -40,7 +49,8 @@
 
         var resultado = await Api.GetServersAsync(CancellationToken.None);
 
-        _servidores = resultado.Value ?? [];
+        // Un fallo al recargar no borra la lista que ya se estuviera viendo; el aviso de error basta.
+        _servidores = resultado.Value ?? _servidores ?? [];
         _error = resultado.ErrorMessage;
         _cargando = false;
     }

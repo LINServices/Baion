@@ -97,7 +97,11 @@
     <div class="lg:col-span-2">
         <h2 class="mb-4 text-heading text-ink">Tokens emitidos</h2>
 
-        @if (_tokens.Count == 0)
+        @if (_cargando && _tokens.Count == 0)
+        {
+            <GhostLoader Filas="4" Descripcion="Cargando los tokens emitidos…" />
+        }
+        else if (_tokens.Count == 0)
         {
             <EmptyState Icono="key-round"
                         Titulo="Ningún token emitido"
@@ -159,6 +163,7 @@
     private IReadOnlyList<EnrollmentTokenSummary> _tokens = [];
     private EnrollmentTokenIssued? _emitido;
     private string? _error;
+    private bool _cargando = true;
     private bool _emitiendo;
     private bool _revocando;
 
@@ -176,6 +181,7 @@
 
         _tokens = resultado.Value ?? [];
         _error = resultado.ErrorMessage;
+        _cargando = false;
     }
 
     private async Task EmitirAsync()

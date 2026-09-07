@@ -10,10 +10,11 @@
          y las barras de scroll del lado correcto antes de que llegue la hoja de estilos. -->
     <meta name="color-scheme" content="light dark" />
     <title>Baion</title>
-    <!-- Gilroy va autoalojada y se descubre desde app.css: no hay ninguna fuente de un CDN.
-         No hay hoja de estilos de ámbito de componente (.razor.css); si se añade alguna, enlazar
-         aquí "Baion.Cliente.Web.styles.css". -->
+    <!-- Gilroy va autoalojada y se descubre desde app.css: no hay ninguna fuente de un CDN. -->
     <link rel="stylesheet" href="css/app.css" />
+    <!-- Hojas de ámbito de componente (.razor.css): las usan el login (animaciones y fix de autofill)
+         y la marca de verificación de Success. -->
+    <link rel="stylesheet" href="Baion.Cliente.Web.styles.css" />
     <style>
         /* El único estilo fuera de app.css: el aviso de error del runtime, que se pinta antes de que
            Blazor esté vivo y por eso no puede depender de sus clases. */

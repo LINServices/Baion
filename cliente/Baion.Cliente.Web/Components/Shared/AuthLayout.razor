@@ -1,0 +1,39 @@
+@* Estructura de las pantallas de autenticación: panel izquierdo con el formulario y panel derecho
+   con la cita de marca. Copia del componente equivalente de LIN Console; solo cambia la marca. *@
+
+<div class="flex h-screen w-full flex-col overflow-hidden bg-shell md:flex-row">
+
+    <!-- Left Side -->
+    <div class="flex h-full w-full flex-col overflow-y-auto bg-shell px-6 py-8 md:w-1/2 md:px-16 md:py-12 lg:px-32">
+
+        <!-- Brand -->
+        <div class="flex shrink-0 items-center gap-2.5">
+            <BrandMark Tamano="28" ConNombre="true" />
+        </div>
+
+        <div class="flex flex-grow flex-col justify-center">
+            <div class="mx-auto w-full max-w-md md:mx-0">
+                @LeftContent
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Side -->
+    <div class="relative hidden w-1/2 flex-col justify-end overflow-hidden border-l border-line bg-current-100/50 p-12 text-ink dark:bg-current-900/10 md:flex lg:p-14">
+        <div class="right-[-10%] absolute top-[10%] h-64 w-72 rounded-3xl bg-current-500/30 blur-2xl"></div>
+        <div class="relative z-10 mt-auto max-w-sm">
+            @RightContent
+        </div>
+    </div>
+
+</div>
+
+@code {
+
+    [Parameter]
+    public RenderFragment? LeftContent { get; set; }
+
+    [Parameter]
+    public RenderFragment? RightContent { get; set; }
+
+}
