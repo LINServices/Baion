@@ -1,3 +1,4 @@
+using System;
 using Http.Extensions;
 using LIN.Cloud.Enterprise.Baion.Orchestrator.Identity;
 using LIN.Cloud.Enterprise.Baion.Orchestrator.Messaging;
@@ -20,11 +21,15 @@ builder.Services
     .AddLINHttp()
     .AddPresentacion(builder.Configuration);
 
-var app = builder.Build();
+WebApplication app = builder.Build();
 
-await using (var scope = app.Services.CreateAsyncScope())
+try
 {
+    await using AsyncServiceScope scope = app.Services.CreateAsyncScope();
     await scope.ServiceProvider.GetRequiredService<BaionDbContext>().Database.MigrateAsync();
+}
+catch (Exception)
+{
 }
 
 app.UseLINHttp(useGateway: true);
