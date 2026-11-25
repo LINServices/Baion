@@ -1,3 +1,4 @@
+using Http.Extensions;
 using LIN.Cloud.Enterprise.Baion.Orchestrator.Identity;
 using LIN.Cloud.Enterprise.Baion.Orchestrator.Messaging;
 using LIN.Cloud.Enterprise.Baion.Orchestrator.Persistence;
@@ -5,8 +6,8 @@ using LIN.Cloud.Enterprise.Baion.Orchestrator.Persistence.Context;
 using LIN.Cloud.Enterprise.Baion.Orchestrator.Presentacion;
 using LIN.Cloud.Enterprise.Baion.Orchestrator.Presentacion.Middleware;
 using LIN.Cloud.Enterprise.Baion.Orchestrator.Services;
-using Http.Extensions;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -21,8 +22,10 @@ builder.Services
 
 var app = builder.Build();
 
-var service = app.Services.CreateScope().ServiceProvider.GetRequiredService<BaionDbContext>();
-var created = await service.Database.EnsureCreatedAsync();
+await using (var scope = app.Services.CreateAsyncScope())
+{
+    await scope.ServiceProvider.GetRequiredService<BaionDbContext>().Database.MigrateAsync();
+}
 
 app.UseLINHttp(useGateway: true);
 app.UseWebSockets();
@@ -37,7 +40,5 @@ app.MapControllers();
 
 app.Run();
 
-/// <summary>
-/// Punto de entrada expuesto para que las pruebas de integración puedan levantar la aplicación.
-/// </summary>
+// Punto de entrada expuesto para que las pruebas de integración puedan levantar la aplicación.
 public partial class Program;

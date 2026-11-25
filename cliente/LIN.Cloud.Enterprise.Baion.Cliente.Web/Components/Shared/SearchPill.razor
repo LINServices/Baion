@@ -3,8 +3,8 @@
 
 <div class="flex h-10 items-center gap-3 rounded-full border border-line bg-surface py-1 pl-1 pr-4
             transition-colors duration-150 ease-brand focus-within:border-line-strong">
-    <button type="button" class="baion-search-go @_raton.Clase"
-            aria-label="Buscar" @onclick="BuscarAsync" @attributes="this.EventosRaton(_raton)">
+    <button type="button" class="baion-search-go @_raton.CssClass"
+            aria-label="Buscar" @onclick="BuscarAsync" @attributes="this.MouseEvents(_raton)">
         <Icon Nombre="search" Tamano="14" />
     </button>
 
@@ -14,7 +14,7 @@
 </div>
 
 @code {
-    private readonly EstadoRaton _raton = new();
+    private readonly MouseState _raton = new();
 
     [Parameter]
     public string? Valor { get; set; }
@@ -22,7 +22,6 @@
     [Parameter]
     public EventCallback<string?> ValorChanged { get; set; }
 
-    /// <summary>Se invoca al pulsar el botón o Enter; quien usa el componente decide qué recargar.</summary>
     [Parameter, EditorRequired]
     public EventCallback OnBuscar { get; set; }
 
@@ -38,10 +37,11 @@
     private async Task BuscarSiEsEnterAsync(KeyboardEventArgs argumentos)
     {
         if (argumentos.Key is "Enter")
-        {
             await BuscarAsync();
-        }
     }
 
-    private async Task BuscarAsync() => await OnBuscar.InvokeAsync();
+    private async Task BuscarAsync()
+    {
+        await OnBuscar.InvokeAsync();
+    }
 }

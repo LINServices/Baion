@@ -19,24 +19,23 @@
 </div>
 
 @code {
-    /// <summary>Fracción de 0 a 1 ya conseguida. Es lo único de la barra que lleva el acento.</summary>
     [Parameter]
     public double Logrado { get; set; }
 
-    /// <summary>Fracción de 0 a 1 en marcha ahora mismo.</summary>
     [Parameter]
     public double EnCurso { get; set; }
 
-    /// <summary>Fracción de 0 a 1 que todavía no ha ocurrido: se dibuja con ticks, nunca en gris sólido.</summary>
     [Parameter]
     public double Pendiente { get; set; }
 
-    /// <summary>Lo que la barra dice, para quien no la ve.</summary>
     [Parameter, EditorRequired]
     public string Descripcion { get; set; } = string.Empty;
 
     // Los porcentajes van al atributo style, así que se formatean en invariante: una coma decimal
     // ahí no es un ancho, es CSS roto.
-    private static string Ancho(double fraccion) => string.Format(
-        System.Globalization.CultureInfo.InvariantCulture, "{0:0.##}%", Math.Clamp(fraccion, 0, 1) * 100);
+    private static string Ancho(double fraccion)
+    {
+        return string.Create(
+            System.Globalization.CultureInfo.InvariantCulture, $"{Math.Clamp(fraccion, 0, 1) * 100:0.##}%");
+    }
 }

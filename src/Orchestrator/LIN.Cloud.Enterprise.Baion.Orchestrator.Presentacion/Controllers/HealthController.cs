@@ -11,7 +11,7 @@ public class HealthController : ControllerBase
     /// Indica que la instancia del orquestador está viva y con qué versión de protocolo opera.
     /// </summary>
     [HttpGet]
-    public IActionResult Obtener()
+    public IActionResult Get()
     {
         return Ok(new { Estado = "Ok", ProtocoloVersion = BaionProtocol.Version });
     }

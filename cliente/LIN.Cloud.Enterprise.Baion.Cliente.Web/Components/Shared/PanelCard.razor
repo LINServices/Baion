@@ -26,22 +26,18 @@
 </article>
 
 @code {
-    /// <summary>Nombre del icono de la cabecera; va en ink, no en gris.</summary>
     [Parameter, EditorRequired]
     public string Icono { get; set; } = string.Empty;
 
     [Parameter, EditorRequired]
     public string Titulo { get; set; } = string.Empty;
 
-    /// <summary>Destino de la flecha ↗. Sin destino no se pinta la flecha.</summary>
     [Parameter]
     public string? Href { get; set; }
 
-    /// <summary>Control alternativo en la esquina, para tarjetas que no navegan.</summary>
     [Parameter]
     public RenderFragment? Accion { get; set; }
 
-    /// <summary>Padding de 24px, para tarjetas anchas o con gráfico; por defecto son 20px.</summary>
     [Parameter]
     public bool Ancha { get; set; }
 

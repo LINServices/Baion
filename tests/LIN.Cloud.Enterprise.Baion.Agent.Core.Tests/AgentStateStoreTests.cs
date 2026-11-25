@@ -2,7 +2,6 @@ using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using LIN.Cloud.Enterprise.Baion.Agent.Core;
 using LIN.Cloud.Enterprise.Baion.Agent.Core.Implementations;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -64,12 +63,13 @@ public class AgentStateStoreTests : IDisposable
     public void Dispose()
     {
         if (Directory.Exists(_directory))
-        {
             Directory.Delete(_directory, recursive: true);
-        }
 
         GC.SuppressFinalize(this);
     }
 
-    private IAgentStateStore CrearStore() => new FileAgentStateStore(Options.Create(new AgentOptions { StateDirectory = _directory }), NullLogger<FileAgentStateStore>.Instance);
+    private IAgentStateStore CrearStore()
+    {
+        return new FileAgentStateStore(Options.Create(new AgentOptions { StateDirectory = _directory }), NullLogger<FileAgentStateStore>.Instance);
+    }
 }

@@ -1,7 +1,6 @@
 using System;
-using System.Threading.Tasks;
-using LIN.Cloud.Enterprise.Baion.Cliente.Web;
 using LIN.Cloud.Enterprise.Baion.Cliente.Web.Components;
+using LIN.Cloud.Enterprise.Baion.Cliente.Web.Options;
 using LIN.Cloud.Enterprise.Baion.Cliente.Web.Services;
 using LIN.Cloud.Enterprise.Baion.Cliente.Web.Services.Implementations;
 using Microsoft.AspNetCore.Components.Authorization;
@@ -31,11 +30,9 @@ builder.Services.AddHttpClient<IBaionApiClient, BaionApiClient>((provider, clien
     var settings = provider.GetRequiredService<IOptions<BaionApiOptions>>().Value;
 
     if (string.IsNullOrWhiteSpace(settings.BaseAddress))
-    {
         throw new InvalidOperationException($"Falta '{BaionApiOptions.SectionName}:BaseAddress': el panel no sabe dónde está el orquestador.");
-    }
 
-    client.BaseAddress = new Uri(settings.BaseAddress.TrimEnd('/') + "/");
+    client.BaseAddress = new Uri($"{settings.BaseAddress.TrimEnd('/')}/");
     client.Timeout = TimeSpan.FromSeconds(Math.Max(settings.TimeoutSeconds, 1));
 });
 

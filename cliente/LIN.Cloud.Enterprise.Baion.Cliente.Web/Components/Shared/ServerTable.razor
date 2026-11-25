@@ -51,21 +51,21 @@ else
                                     {
                                         <div class="flex items-center justify-end gap-2">
                                             <span class="text-label text-muted">Se corta la conexión del agente. ¿Seguro?</span>
-                                            <button type="button" class='baion-button-danger @(RatonAccion(servidor.Id, "si").Clase)' disabled="@EstaOcupado(servidor)"
-                                                    @onclick="() => DesactivarAsync(servidor)" @attributes='this.EventosRaton(RatonAccion(servidor.Id, "si"))'>Sí, desactivar</button>
-                                            <button type="button" class='baion-button-ghost @(RatonAccion(servidor.Id, "no").Clase)'
-                                                    @onclick="() => _confirmando = null" @attributes='this.EventosRaton(RatonAccion(servidor.Id, "no"))'>Cancelar</button>
+                                            <button type="button" class='baion-button-danger @(RatonAccion(servidor.Id, "si").CssClass)' disabled="@EstaOcupado(servidor)"
+                                                    @onclick="() => DesactivarAsync(servidor)" @attributes='this.MouseEvents(RatonAccion(servidor.Id, "si"))'>Sí, desactivar</button>
+                                            <button type="button" class='baion-button-ghost @(RatonAccion(servidor.Id, "no").CssClass)'
+                                                    @onclick="() => _confirmando = null" @attributes='this.MouseEvents(RatonAccion(servidor.Id, "no"))'>Cancelar</button>
                                         </div>
                                     }
                                     else if (servidor.Status == "disabled")
                                     {
-                                        <button type="button" class='baion-button-ghost @(RatonAccion(servidor.Id, "reactivar").Clase)' disabled="@EstaOcupado(servidor)"
-                                                @onclick="() => AlReactivar.InvokeAsync(servidor)" @attributes='this.EventosRaton(RatonAccion(servidor.Id, "reactivar"))'>Reactivar</button>
+                                        <button type="button" class='baion-button-ghost @(RatonAccion(servidor.Id, "reactivar").CssClass)' disabled="@EstaOcupado(servidor)"
+                                                @onclick="() => AlReactivar.InvokeAsync(servidor)" @attributes='this.MouseEvents(RatonAccion(servidor.Id, "reactivar"))'>Reactivar</button>
                                     }
                                     else
                                     {
-                                        <button type="button" class='baion-button-ghost @(RatonAccion(servidor.Id, "desactivar").Clase)' disabled="@EstaOcupado(servidor)"
-                                                @onclick="() => _confirmando = servidor.Id" @attributes='this.EventosRaton(RatonAccion(servidor.Id, "desactivar"))'>Desactivar</button>
+                                        <button type="button" class='baion-button-ghost @(RatonAccion(servidor.Id, "desactivar").CssClass)' disabled="@EstaOcupado(servidor)"
+                                                @onclick="() => _confirmando = servidor.Id" @attributes='this.MouseEvents(RatonAccion(servidor.Id, "desactivar"))'>Desactivar</button>
                                     }
                                 </td>
                             }
@@ -78,29 +78,34 @@ else
 }
 
 @code {
+    private readonly MouseStateMap _ratones = new();
+
+    private Guid? _confirmando;
+
     [Parameter, EditorRequired]
     public IReadOnlyList<ServerSummary> Servidores { get; set; } = [];
 
-    /// <summary>Sin manejador no se pinta la columna: el panel de inicio muestra la misma tabla en solo lectura.</summary>
+    // Sin manejador no se pinta la columna: el panel de inicio muestra la misma tabla en solo lectura.
     [Parameter]
     public EventCallback<ServerSummary> AlDesactivar { get; set; }
 
     [Parameter]
     public EventCallback<ServerSummary> AlReactivar { get; set; }
 
-    /// <summary>Servidor cuya llamada sigue en curso; sus botones quedan bloqueados mientras tanto.</summary>
     [Parameter]
     public Guid? Ocupado { get; set; }
 
-    private readonly EstadoRatonMapa _ratones = new();
-
-    private Guid? _confirmando;
-
     private bool HayAcciones => AlDesactivar.HasDelegate;
 
-    private EstadoRaton RatonAccion(Guid servidorId, string accion) => _ratones[(servidorId, accion)];
+    private MouseState RatonAccion(Guid servidorId, string accion)
+    {
+        return _ratones[(servidorId, accion)];
+    }
 
-    private bool EstaOcupado(ServerSummary servidor) => Ocupado == servidor.Id;
+    private bool EstaOcupado(ServerSummary servidor)
+    {
+        return Ocupado == servidor.Id;
+    }
 
     private async Task DesactivarAsync(ServerSummary servidor)
     {
@@ -108,5 +113,8 @@ else
         await AlDesactivar.InvokeAsync(servidor);
     }
 
-    private static string Plataforma(string plataforma) => ScriptRuntimes.PlatformLabel(plataforma);
+    private static string Plataforma(string plataforma)
+    {
+        return ScriptRuntimes.PlatformLabel(plataforma);
+    }
 }

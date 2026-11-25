@@ -2,7 +2,6 @@ using LIN.Cloud.Enterprise.Baion.Agent.Core;
 using LIN.Cloud.Enterprise.Baion.Agent.Execution;
 using LIN.Cloud.Enterprise.Baion.Agent.Metrics;
 using LIN.Cloud.Enterprise.Baion.Agent.Services;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 var builder = Host.CreateApplicationBuilder(args);

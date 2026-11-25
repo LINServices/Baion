@@ -7,6 +7,8 @@
     <PackageVersion Include="Cronos" Version="0.13.0" />
     <PackageVersion Include="Http.Utils" Version="6.5.0" />
     <PackageVersion Include="RabbitMQ.Client" Version="7.2.2" />
+    <!-- Transitivo (SqlClient): anclado para corregir las vulnerabilidades NU1902/NU1903 de la 9.0.11. -->
+    <PackageVersion Include="System.Security.Cryptography.Pkcs" Version="9.0.23" />
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.11" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.11" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.11" />

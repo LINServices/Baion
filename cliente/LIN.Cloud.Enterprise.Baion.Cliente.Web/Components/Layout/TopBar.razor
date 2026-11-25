@@ -21,8 +21,8 @@
 
     <AuthorizeView>
         <Authorized>
-            <button type="button" class="baion-button-icon shrink-0 @_raton.Clase" title="Cerrar sesión" aria-label="Cerrar sesión"
-                    @onclick="CerrarSesionAsync" @attributes="this.EventosRaton(_raton)">
+            <button type="button" class="baion-button-icon shrink-0 @_raton.CssClass" title="Cerrar sesión" aria-label="Cerrar sesión"
+                    @onclick="CerrarSesionAsync" @attributes="this.MouseEvents(_raton)">
                 <Icon Nombre="log-out" Tamano="20" />
             </button>
 
@@ -42,16 +42,6 @@
 </header>
 
 @code {
-    private readonly EstadoRaton _raton = new();
-
-    private async Task CerrarSesionAsync()
-    {
-        await Sesion.CerrarSesionAsync();
-        Navigation.NavigateTo("/login");
-    }
-
-    private record Enlace(string Href, string Texto, NavLinkMatch Match);
-
     private static readonly Enlace[] Enlaces =
     [
         new("", "Panel", NavLinkMatch.All),
@@ -60,6 +50,14 @@
         new("ejecuciones", "Ejecuciones", NavLinkMatch.Prefix)
     ];
 
+    private readonly MouseState _raton = new();
+
+    private async Task CerrarSesionAsync()
+    {
+        await Sesion.SignOutAsync();
+        Navigation.NavigateTo("/login");
+    }
+
     private static string Roles(AuthenticationState state)
     {
         var roles = string.Join(", ", state.User.FindAll(System.Security.Claims.ClaimTypes.Role).Select(claim => claim.Value));
@@ -67,11 +65,13 @@
         return roles.Length == 0 ? "Sin rol" : roles;
     }
 
-    /// <summary>Avatar por defecto: no hay foto de perfil, así que la inicial hace de retrato.</summary>
+    // Avatar por defecto: no hay foto de perfil, así que la inicial hace de retrato.
     private static string Inicial(AuthenticationState state)
     {
         var nombre = state.User.Identity?.Name;
 
         return string.IsNullOrWhiteSpace(nombre) ? "?" : nombre.Trim()[..1].ToUpperInvariant();
     }
+
+    private record Enlace(string Href, string Texto, NavLinkMatch Match);
 }

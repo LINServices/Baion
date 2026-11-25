@@ -9,18 +9,27 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using LIN.Cloud.Enterprise.Baion.Cliente.Web.Models;
+using LIN.Cloud.Enterprise.Baion.Cliente.Web.Dtos.Auth;
+using LIN.Cloud.Enterprise.Baion.Cliente.Web.Dtos.Common;
+using LIN.Cloud.Enterprise.Baion.Cliente.Web.Dtos.Dashboard;
+using LIN.Cloud.Enterprise.Baion.Cliente.Web.Dtos.Enrollment;
+using LIN.Cloud.Enterprise.Baion.Cliente.Web.Dtos.Executions;
+using LIN.Cloud.Enterprise.Baion.Cliente.Web.Dtos.Scripts;
+using LIN.Cloud.Enterprise.Baion.Cliente.Web.Dtos.Servers;
+using LIN.Cloud.Enterprise.Baion.Cliente.Web.Dtos.SystemServices;
+using LIN.Cloud.Enterprise.Baion.Cliente.Web.Results;
 using Microsoft.Extensions.Logging;
 
 namespace LIN.Cloud.Enterprise.Baion.Cliente.Web.Services.Implementations;
 
-/// <summary>
-/// El token se adjunta petición a petición en lugar de con un <c>DelegatingHandler</c>: los manejadores de
-/// <c>IHttpClientFactory</c> viven en su propio ámbito, distinto del circuito de Blazor, y desde ahí no se
-/// ve el usuario de la sesión.
-/// </summary>
+// El token se adjunta petición a petición en lugar de con un DelegatingHandler: los manejadores de
+// IHttpClientFactory viven en su propio ámbito y desde ahí no se ve el usuario de la sesión.
 internal class BaionApiClient(HttpClient http, IAccessTokenProvider tokens, ILogger<BaionApiClient> logger) : IBaionApiClient
 {
+    private const string UnreachableMessage = "No se pudo contactar con el orquestador.";
+
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+
     public async Task<ApiResult<AuthenticationResult>> LoginAsync(LoginRequest request, CancellationToken cancellationToken)
     {
         using var message = new HttpRequestMessage(HttpMethod.Post, "api/auth/login")
@@ -31,11 +40,20 @@ internal class BaionApiClient(HttpClient http, IAccessTokenProvider tokens, ILog
         return await SendAsync<AuthenticationResult>(message, authenticated: false, cancellationToken);
     }
 
-    public async Task<ApiResult<DashboardSummary>> GetDashboardSummaryAsync(CancellationToken cancellationToken) => await GetAsync<DashboardSummary>("api/dashboard/summary", cancellationToken);
+    public async Task<ApiResult<DashboardSummary>> GetDashboardSummaryAsync(CancellationToken cancellationToken)
+    {
+        return await GetAsync<DashboardSummary>("api/dashboard/summary", cancellationToken);
+    }
 
-    public async Task<ApiResult<IReadOnlyList<ServerSummary>>> GetServersAsync(CancellationToken cancellationToken) => await GetAsync<IReadOnlyList<ServerSummary>>("api/servers", cancellationToken);
+    public async Task<ApiResult<IReadOnlyList<ServerSummary>>> GetServersAsync(CancellationToken cancellationToken)
+    {
+        return await GetAsync<IReadOnlyList<ServerSummary>>("api/servers", cancellationToken);
+    }
 
-    public async Task<ApiResult<ServerDetail>> GetServerAsync(Guid serverId, CancellationToken cancellationToken) => await GetAsync<ServerDetail>($"api/servers/{serverId}", cancellationToken);
+    public async Task<ApiResult<ServerDetail>> GetServerAsync(Guid serverId, CancellationToken cancellationToken)
+    {
+        return await GetAsync<ServerDetail>($"api/servers/{serverId}", cancellationToken);
+    }
 
     public async Task<ApiResult<PagedResult<MetricReading>>> GetServerMetricsAsync(Guid serverId, DateTimeOffset? since, DateTimeOffset? until, int page, int pageSize, CancellationToken cancellationToken)
     {
@@ -47,20 +65,30 @@ internal class BaionApiClient(HttpClient http, IAccessTokenProvider tokens, ILog
             ("pageSize", Numero(pageSize))
         };
 
-        return await GetAsync<PagedResult<MetricReading>>($"api/servers/{serverId}/metrics" + QueryString(filtros), cancellationToken);
+        return await GetAsync<PagedResult<MetricReading>>($"api/servers/{serverId}/metrics{QueryString(filtros)}", cancellationToken);
     }
 
-    public async Task<ApiResult<ServerSummary>> DisableServerAsync(Guid serverId, CancellationToken cancellationToken) => await PostAsync<ServerSummary>($"api/servers/{serverId}/disable", cancellationToken);
+    public async Task<ApiResult<ServerSummary>> DisableServerAsync(Guid serverId, CancellationToken cancellationToken)
+    {
+        return await PostAsync<ServerSummary>($"api/servers/{serverId}/disable", cancellationToken);
+    }
 
-    public async Task<ApiResult<ServerSummary>> EnableServerAsync(Guid serverId, CancellationToken cancellationToken) => await PostAsync<ServerSummary>($"api/servers/{serverId}/enable", cancellationToken);
+    public async Task<ApiResult<ServerSummary>> EnableServerAsync(Guid serverId, CancellationToken cancellationToken)
+    {
+        return await PostAsync<ServerSummary>($"api/servers/{serverId}/enable", cancellationToken);
+    }
 
-    public async Task<ApiResult<IReadOnlyList<ServiceSummary>>> GetServerServicesAsync(Guid serverId, string? filter, CancellationToken cancellationToken) =>
-        await GetAsync<IReadOnlyList<ServiceSummary>>($"api/servers/{serverId}/services" + QueryString([("filter", filter)]), cancellationToken);
+    public async Task<ApiResult<IReadOnlyList<ServiceSummary>>> GetServerServicesAsync(Guid serverId, string? filter, CancellationToken cancellationToken)
+    {
+        return await GetAsync<IReadOnlyList<ServiceSummary>>($"api/servers/{serverId}/services{QueryString([("filter", filter)])}", cancellationToken);
+    }
 
     // El identificador del servicio va como un solo segmento de ruta: en Linux son nombres como
     // «nginx.service», con puntos, así que se escapa el valor entero.
-    public async Task<ApiResult<ServiceDetail>> GetServerServiceAsync(Guid serverId, string serviceId, CancellationToken cancellationToken) =>
-        await GetAsync<ServiceDetail>($"api/servers/{serverId}/services/{Uri.EscapeDataString(serviceId)}", cancellationToken);
+    public async Task<ApiResult<ServiceDetail>> GetServerServiceAsync(Guid serverId, string serviceId, CancellationToken cancellationToken)
+    {
+        return await GetAsync<ServiceDetail>($"api/servers/{serverId}/services/{Uri.EscapeDataString(serviceId)}", cancellationToken);
+    }
 
     public async Task<ApiResult<ServiceLogPage>> GetServerServiceLogsAsync(Guid serverId, string serviceId, int maxLines, DateTimeOffset? since, CancellationToken cancellationToken)
     {
@@ -70,7 +98,7 @@ internal class BaionApiClient(HttpClient http, IAccessTokenProvider tokens, ILog
             ("since", since?.ToString("O", CultureInfo.InvariantCulture))
         };
 
-        return await GetAsync<ServiceLogPage>($"api/servers/{serverId}/services/{Uri.EscapeDataString(serviceId)}/logs" + QueryString(filtros), cancellationToken);
+        return await GetAsync<ServiceLogPage>($"api/servers/{serverId}/services/{Uri.EscapeDataString(serviceId)}/logs{QueryString(filtros)}", cancellationToken);
     }
 
     public async Task<ApiResult<ServiceDetail>> ControlServerServiceAsync(Guid serverId, string serviceId, string action, CancellationToken cancellationToken)
@@ -85,11 +113,14 @@ internal class BaionApiClient(HttpClient http, IAccessTokenProvider tokens, ILog
 
     public async Task<ApiResult<PagedResult<ScriptListItem>>> GetScriptsAsync(string? search, int page, int pageSize, CancellationToken cancellationToken)
     {
-        var ruta = "api/scripts" + QueryString([("search", search), ("page", Numero(page)), ("pageSize", Numero(pageSize))]);
+        var ruta = $"api/scripts{QueryString([("search", search), ("page", Numero(page)), ("pageSize", Numero(pageSize))])}";
         return await GetAsync<PagedResult<ScriptListItem>>(ruta, cancellationToken);
     }
 
-    public async Task<ApiResult<ScriptDetail>> GetScriptAsync(Guid scriptId, CancellationToken cancellationToken) => await GetAsync<ScriptDetail>($"api/scripts/{scriptId}", cancellationToken);
+    public async Task<ApiResult<ScriptDetail>> GetScriptAsync(Guid scriptId, CancellationToken cancellationToken)
+    {
+        return await GetAsync<ScriptDetail>($"api/scripts/{scriptId}", cancellationToken);
+    }
 
     public async Task<ApiResult<ScriptDetail>> CreateScriptAsync(CreateScriptRequest request, CancellationToken cancellationToken)
     {
@@ -121,7 +152,10 @@ internal class BaionApiClient(HttpClient http, IAccessTokenProvider tokens, ILog
         return await SendAsync<EnrollmentTokenIssued>(message, authenticated: true, cancellationToken);
     }
 
-    public async Task<ApiResult<IReadOnlyList<EnrollmentTokenSummary>>> GetEnrollmentTokensAsync(CancellationToken cancellationToken) => await GetAsync<IReadOnlyList<EnrollmentTokenSummary>>("api/agents/enrollment-tokens", cancellationToken);
+    public async Task<ApiResult<IReadOnlyList<EnrollmentTokenSummary>>> GetEnrollmentTokensAsync(CancellationToken cancellationToken)
+    {
+        return await GetAsync<IReadOnlyList<EnrollmentTokenSummary>>("api/agents/enrollment-tokens", cancellationToken);
+    }
 
     public async Task<ApiResult<bool>> RevokeEnrollmentTokenAsync(Guid tokenId, CancellationToken cancellationToken)
     {
@@ -129,9 +163,7 @@ internal class BaionApiClient(HttpClient http, IAccessTokenProvider tokens, ILog
         var token = await tokens.GetTokenAsync();
 
         if (string.IsNullOrWhiteSpace(token))
-        {
             return ApiResult<bool>.Failure("No hay sesión iniciada.");
-        }
 
         message.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
@@ -139,11 +171,9 @@ internal class BaionApiClient(HttpClient http, IAccessTokenProvider tokens, ILog
         {
             using var response = await http.SendAsync(message, cancellationToken);
 
+            // La revocación responde 204 sin cuerpo, así que no hay nada que deserializar.
             if (response.IsSuccessStatusCode)
-            {
-                // La revocación responde 204 sin cuerpo, así que no hay nada que deserializar.
                 return ApiResult<bool>.Success(true);
-            }
 
             var (mensaje, codigo) = await DescribeAsync(response, cancellationToken);
             return ApiResult<bool>.Failure(mensaje, codigo);
@@ -177,10 +207,13 @@ internal class BaionApiClient(HttpClient http, IAccessTokenProvider tokens, ILog
             ("pageSize", Numero(pageSize))
         };
 
-        return await GetAsync<PagedResult<ScriptExecutionListItem>>("api/executions" + QueryString(filtros), cancellationToken);
+        return await GetAsync<PagedResult<ScriptExecutionListItem>>($"api/executions{QueryString(filtros)}", cancellationToken);
     }
 
-    public async Task<ApiResult<ScriptExecutionDetail>> GetExecutionAsync(Guid executionId, CancellationToken cancellationToken) => await GetAsync<ScriptExecutionDetail>($"api/executions/{executionId}", cancellationToken);
+    public async Task<ApiResult<ScriptExecutionDetail>> GetExecutionAsync(Guid executionId, CancellationToken cancellationToken)
+    {
+        return await GetAsync<ScriptExecutionDetail>($"api/executions/{executionId}", cancellationToken);
+    }
 
     private async Task<ApiResult<TValue>> GetAsync<TValue>(string path, CancellationToken cancellationToken)
     {
@@ -188,7 +221,6 @@ internal class BaionApiClient(HttpClient http, IAccessTokenProvider tokens, ILog
         return await SendAsync<TValue>(message, authenticated: true, cancellationToken);
     }
 
-    /// <summary>Acción sin cuerpo sobre un recurso; la respuesta trae el recurso ya actualizado.</summary>
     private async Task<ApiResult<TValue>> PostAsync<TValue>(string path, CancellationToken cancellationToken)
     {
         using var message = new HttpRequestMessage(HttpMethod.Post, path);
@@ -197,17 +229,8 @@ internal class BaionApiClient(HttpClient http, IAccessTokenProvider tokens, ILog
 
     private async Task<ApiResult<TValue>> SendAsync<TValue>(HttpRequestMessage message, bool authenticated, CancellationToken cancellationToken)
     {
-        if (authenticated)
-        {
-            var token = await tokens.GetTokenAsync();
-
-            if (string.IsNullOrWhiteSpace(token))
-            {
-                return ApiResult<TValue>.Failure("No hay sesión iniciada.");
-            }
-
-            message.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        }
+        if (authenticated && !await TryAuthorizeAsync(message))
+            return ApiResult<TValue>.Failure("No hay sesión iniciada.");
 
         try
         {
@@ -219,6 +242,18 @@ internal class BaionApiClient(HttpClient http, IAccessTokenProvider tokens, ILog
             logger.LogWarning("Falló la llamada a {Ruta}: {Motivo}", message.RequestUri, exception.Message);
             return ApiResult<TValue>.Failure(UnreachableMessage);
         }
+    }
+
+    // Adjunta el token de la sesión; devuelve false si no hay sesión.
+    private async Task<bool> TryAuthorizeAsync(HttpRequestMessage message)
+    {
+        var token = await tokens.GetTokenAsync();
+
+        if (string.IsNullOrWhiteSpace(token))
+            return false;
+
+        message.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        return true;
     }
 
     private static async Task<ApiResult<TValue>> ReadAsync<TValue>(HttpResponseMessage response, CancellationToken cancellationToken)
@@ -236,21 +271,15 @@ internal class BaionApiClient(HttpClient http, IAccessTokenProvider tokens, ILog
             : ApiResult<TValue>.Success(value);
     }
 
-    /// <summary>
-    /// Traduce el error de la API a un mensaje legible y, si la API lo nombra en el <c>title</c> del
-    /// <c>ProblemDetails</c>, devuelve también ese código para que quien llame lo lleve a un campo.
-    /// </summary>
+    // Traduce el error de la API a un mensaje legible y, si la API lo nombra en el title del
+    // ProblemDetails, devuelve también ese código para que quien llame lo lleve a un campo.
     private static async Task<(string Mensaje, string? Codigo)> DescribeAsync(HttpResponseMessage response, CancellationToken cancellationToken)
     {
         if (response.StatusCode is HttpStatusCode.Unauthorized)
-        {
             return ("La sesión no es válida o expiró.", null);
-        }
 
         if (response.StatusCode is HttpStatusCode.Forbidden)
-        {
             return ("La cuenta no tiene permisos para esta operación.", null);
-        }
 
         try
         {
@@ -258,14 +287,10 @@ internal class BaionApiClient(HttpClient http, IAccessTokenProvider tokens, ILog
             var codigo = string.IsNullOrWhiteSpace(problem?.Title) ? null : problem!.Title;
 
             if (!string.IsNullOrWhiteSpace(problem?.Detail))
-            {
                 return (problem.Detail, codigo);
-            }
 
             if (codigo is not null)
-            {
                 return ($"El orquestador respondió {(int)response.StatusCode}.", codigo);
-            }
         }
         catch (Exception exception) when (exception is JsonException or NotSupportedException)
         {
@@ -275,7 +300,6 @@ internal class BaionApiClient(HttpClient http, IAccessTokenProvider tokens, ILog
         return ($"El orquestador respondió {(int)response.StatusCode}.", null);
     }
 
-    /// <summary>Arma la cadena de consulta descartando los filtros que vienen vacíos.</summary>
     private static string QueryString((string Nombre, string? Valor)[] parametros)
     {
         var partes = parametros
@@ -283,12 +307,11 @@ internal class BaionApiClient(HttpClient http, IAccessTokenProvider tokens, ILog
             .Select(parametro => $"{parametro.Nombre}={Uri.EscapeDataString(parametro.Valor!)}")
             .ToArray();
 
-        return partes.Length == 0 ? string.Empty : "?" + string.Join('&', partes);
+        return partes.Length == 0 ? string.Empty : $"?{string.Join('&', partes)}";
     }
 
-    private static string Numero(int valor) => valor.ToString(CultureInfo.InvariantCulture);
-
-    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
-
-    private const string UnreachableMessage = "No se pudo contactar con el orquestador.";
+    private static string Numero(int valor)
+    {
+        return valor.ToString(CultureInfo.InvariantCulture);
+    }
 }

@@ -6,7 +6,6 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using LIN.Cloud.Enterprise.Baion.Agent.Execution;
 using LIN.Cloud.Enterprise.Baion.Agent.Execution.Implementations;
 using LIN.Cloud.Enterprise.Baion.Contracts.Enums;
 using LIN.Cloud.Enterprise.Baion.Contracts.Messages;
@@ -16,10 +15,8 @@ using Xunit;
 
 namespace LIN.Cloud.Enterprise.Baion.Agent.Execution.Tests;
 
-/// <summary>
-/// Ejecuta procesos de verdad sobre la plataforma en la que corren las pruebas. No se simula el proceso:
-/// lo que hay que verificar es justamente el trato con el sistema operativo.
-/// </summary>
+// Ejecuta procesos de verdad sobre la plataforma en la que corren las pruebas. No se simula el proceso:
+// lo que hay que verificar es justamente el trato con el sistema operativo.
 public class ScriptExecutorTests : IDisposable
 {
     private readonly string _workingRoot = Path.Combine(Path.GetTempPath(), $"baion-exec-tests-{Guid.NewGuid():N}");
@@ -156,21 +153,45 @@ public class ScriptExecutorTests : IDisposable
             : new LinuxScriptExecutor(options, NullLogger<LinuxScriptExecutor>.Instance);
     }
 
-    private static ExecuteScriptMessage NuevaOrden(string contenido) => new(Guid.CreateVersion7(), contenido, Checksum(contenido), PlataformaRuntime, ExecutionMode.Attached, 60, null, null);
+    private static ExecuteScriptMessage NuevaOrden(string contenido)
+    {
+        return new(Guid.CreateVersion7(), contenido, Checksum(contenido), PlataformaRuntime, ExecutionMode.Attached, 60, null, null);
+    }
 
-    private static ExecuteScriptMessage RecalcularChecksum(ExecuteScriptMessage request) => request with { ScriptChecksum = Checksum(request.ScriptContent) };
+    private static ExecuteScriptMessage RecalcularChecksum(ExecuteScriptMessage request)
+    {
+        return request with { ScriptChecksum = Checksum(request.ScriptContent) };
+    }
 
     private static ScriptRuntime PlataformaRuntime => OperatingSystem.IsWindows() ? ScriptRuntime.WindowsPowerShell : ScriptRuntime.Bash;
 
-    private static string EcoScript(string mensaje) => OperatingSystem.IsWindows() ? $"Write-Output '{mensaje}'" : $"echo '{mensaje}'";
+    private static string EcoScript(string mensaje)
+    {
+        return OperatingSystem.IsWindows() ? $"Write-Output '{mensaje}'" : $"echo '{mensaje}'";
+    }
 
-    private static string ExitScript(int codigo) => OperatingSystem.IsWindows() ? $"exit {codigo}" : $"exit {codigo}";
+    private static string ExitScript(int codigo)
+    {
+        return OperatingSystem.IsWindows() ? $"exit {codigo}" : $"exit {codigo}";
+    }
 
-    private static string StderrScript(string mensaje) => OperatingSystem.IsWindows() ? $"[Console]::Error.WriteLine('{mensaje}')" : $"echo '{mensaje}' >&2";
+    private static string StderrScript(string mensaje)
+    {
+        return OperatingSystem.IsWindows() ? $"[Console]::Error.WriteLine('{mensaje}')" : $"echo '{mensaje}' >&2";
+    }
 
-    private static string DormirScript(int segundos) => OperatingSystem.IsWindows() ? $"Start-Sleep -Seconds {segundos}" : $"sleep {segundos}";
+    private static string DormirScript(int segundos)
+    {
+        return OperatingSystem.IsWindows() ? $"Start-Sleep -Seconds {segundos}" : $"sleep {segundos}";
+    }
 
-    private static string LeerVariableScript(string nombre) => OperatingSystem.IsWindows() ? $"Write-Output $env:{nombre}" : $"echo ${nombre}";
+    private static string LeerVariableScript(string nombre)
+    {
+        return OperatingSystem.IsWindows() ? $"Write-Output $env:{nombre}" : $"echo ${nombre}";
+    }
 
-    private static string Checksum(string contenido) => Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(contenido)));
+    private static string Checksum(string contenido)
+    {
+        return Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(contenido)));
+    }
 }

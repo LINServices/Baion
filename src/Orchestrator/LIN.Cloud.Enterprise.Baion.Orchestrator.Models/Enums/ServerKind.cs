@@ -1,8 +1,5 @@
 namespace LIN.Cloud.Enterprise.Baion.Orchestrator.Models.Enums;
 
-/// <summary>
-/// Naturaleza del servidor gestionado.
-/// </summary>
 public enum ServerKind
 {
     Vm = 1,

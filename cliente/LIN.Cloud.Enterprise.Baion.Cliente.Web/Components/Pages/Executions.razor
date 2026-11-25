@@ -42,8 +42,8 @@
             </select>
         </SelectShell>
 
-        <button type="button" class="baion-button-icon @_raton.Clase" title="Actualizar" aria-label="Actualizar"
-                disabled="@_cargando" @onclick="CargarAsync" @attributes="this.EventosRaton(_raton)">
+        <button type="button" class="baion-button-icon @_raton.CssClass" title="Actualizar" aria-label="Actualizar"
+                disabled="@_cargando" @onclick="CargarAsync" @attributes="this.MouseEvents(_raton)">
             <Icon Nombre="refresh-cw" Tamano="20" />
         </button>
     </Acciones>
@@ -101,7 +101,20 @@ else
 }
 
 @code {
-    private readonly EstadoRaton _raton = new();
+    private const int TamanoPagina = 25;
+
+    private static readonly Estado[] Estados =
+    [
+        new("pending", "Pendiente"),
+        new("dispatched", "Enviada"),
+        new("running", "En curso"),
+        new("succeeded", "Correcta"),
+        new("failed", "Fallida"),
+        new("timedOut", "Expirada"),
+        new("canceled", "Cancelada")
+    ];
+
+    private readonly MouseState _raton = new();
 
     private PagedResult<ScriptExecutionListItem>? _resultado;
     private IReadOnlyList<ServerSummary> _servidores = [];
@@ -111,17 +124,6 @@ else
     private string? _error;
     private bool _cargando = true;
     private int _pagina = 1;
-
-    protected override async Task OnInitializedAsync()
-    {
-        var servidores = await Api.GetServersAsync(CancellationToken.None);
-        _servidores = servidores.Value ?? [];
-
-        await CargarAsync();
-
-        // Que no se pueda filtrar por servidor no impide ver el historial: el aviso solo sustituye al de la carga.
-        _error ??= servidores.ErrorMessage;
-    }
 
     private IReadOnlyList<ScriptExecutionListItem> Ejecuciones => _resultado?.Items ?? [];
 
@@ -136,6 +138,17 @@ else
         _ => null
     };
 
+    protected override async Task OnInitializedAsync()
+    {
+        var servidores = await Api.GetServersAsync(CancellationToken.None);
+        _servidores = servidores.Value ?? [];
+
+        await CargarAsync();
+
+        // Que no se pueda filtrar por servidor no impide ver el historial: el aviso solo sustituye al de la carga.
+        _error ??= servidores.ErrorMessage;
+    }
+
     private async Task CargarAsync()
     {
         _cargando = true;
@@ -147,7 +160,7 @@ else
         _cargando = false;
     }
 
-    /// <summary>Cambiar un filtro invalida la página en la que estuviéramos.</summary>
+    // Cambiar un filtro invalida la página en la que estuviéramos.
     private async Task FiltrarAsync()
     {
         _pagina = 1;
@@ -160,28 +173,21 @@ else
         await CargarAsync();
     }
 
-    private void Abrir(Guid executionId) => Navigation.NavigateTo($"/ejecuciones/{executionId}");
+    private void Abrir(Guid executionId)
+    {
+        Navigation.NavigateTo($"/ejecuciones/{executionId}");
+    }
 
     // Un código distinto de cero es lo único que se tiñe: el rojo del sistema va en texto, no en fondo.
-    private static string ClaseSalida(int? codigo) => codigo switch
+    private static string ClaseSalida(int? codigo)
     {
-        null => "text-muted",
-        0 => "text-ink-2",
-        _ => "text-danger"
-    };
+        return codigo switch
+        {
+            null => "text-muted",
+            0 => "text-ink-2",
+            _ => "text-danger"
+        };
+    }
 
     private record Estado(string Clave, string Texto);
-
-    private static readonly Estado[] Estados =
-    [
-        new("pending", "Pendiente"),
-        new("dispatched", "Enviada"),
-        new("running", "En curso"),
-        new("succeeded", "Correcta"),
-        new("failed", "Fallida"),
-        new("timedOut", "Expirada"),
-        new("canceled", "Cancelada")
-    ];
-
-    private const int TamanoPagina = 25;
 }

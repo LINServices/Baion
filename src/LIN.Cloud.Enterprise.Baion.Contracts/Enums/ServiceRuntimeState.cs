@@ -1,6 +1,5 @@
 namespace LIN.Cloud.Enterprise.Baion.Contracts.Enums;
 
-/// <summary>Estado de ejecución de un servicio del sistema, normalizado entre systemd y el SCM de Windows.</summary>
 public enum ServiceRuntimeState
 {
     Unknown = 0,

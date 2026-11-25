@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using LIN.Cloud.Enterprise.Baion.Orchestrator.Models.Dtos;
+using LIN.Cloud.Enterprise.Baion.Orchestrator.Presentacion.Constants;
 using LIN.Cloud.Enterprise.Baion.Orchestrator.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -10,7 +11,7 @@ namespace LIN.Cloud.Enterprise.Baion.Orchestrator.Presentacion.Controllers;
 
 [ApiController]
 [Route("api/agents")]
-[Authorize(Roles = AdminRole)]
+[Authorize(Roles = AuthorizationRoles.Admin)]
 public class AgentsController(IEnrollmentTokenService enrollmentTokens) : ControllerBase
 {
     /// <summary>
@@ -26,7 +27,7 @@ public class AgentsController(IEnrollmentTokenService enrollmentTokens) : Contro
     /// Lista los tokens de instalación del tenant. Nunca devuelve su valor, solo su estado.
     /// </summary>
     [HttpGet("enrollment-tokens")]
-    public async Task<IActionResult> ListarTokensAsync(CancellationToken cancellationToken)
+    public async Task<IActionResult> ListEnrollmentTokensAsync(CancellationToken cancellationToken)
     {
         return Ok(await enrollmentTokens.ListAsync(cancellationToken));
     }
@@ -39,6 +40,4 @@ public class AgentsController(IEnrollmentTokenService enrollmentTokens) : Contro
     {
         return (await enrollmentTokens.RevokeAsync(tokenId, cancellationToken)).ToActionResult();
     }
-
-    private const string AdminRole = "Admin";
 }

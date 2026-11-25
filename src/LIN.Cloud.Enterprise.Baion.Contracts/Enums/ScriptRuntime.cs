@@ -1,6 +1,5 @@
 namespace LIN.Cloud.Enterprise.Baion.Contracts.Enums;
 
-/// <summary>Intérprete con el que se ejecuta un script.</summary>
 public enum ScriptRuntime
 {
     Bash = 1,

@@ -4,12 +4,14 @@ using Microsoft.EntityFrameworkCore.Design;
 
 namespace LIN.Cloud.Enterprise.Baion.Orchestrator.Persistence.Context;
 
-/// <summary>
-/// Construye el contexto para <c>dotnet ef</c>, que no arranca el host ni resuelve un tenant.
-/// La cadena de conexión se toma de <c>BAION_DESIGN_CONNECTION</c> y cae a LocalDB si no está.
-/// </summary>
+// Construye el contexto para dotnet ef, que no arranca el host ni resuelve un tenant.
+// La cadena de conexión se toma de BAION_DESIGN_CONNECTION y cae a LocalDB si no está.
 internal class BaionDbContextFactory : IDesignTimeDbContextFactory<BaionDbContext>
 {
+    private const string ConnectionStringEnvironmentVariable = "BAION_DESIGN_CONNECTION";
+
+    private const string DefaultConnectionString = @"Server=(localdb)\MSSQLLocalDB;Database=lin_baion;Trusted_Connection=True;TrustServerCertificate=True";
+
     public BaionDbContext CreateDbContext(string[] args)
     {
         var connectionString = Environment.GetEnvironmentVariable(ConnectionStringEnvironmentVariable) ?? DefaultConnectionString;
@@ -19,19 +21,5 @@ internal class BaionDbContextFactory : IDesignTimeDbContextFactory<BaionDbContex
             .Options;
 
         return new BaionDbContext(options, new DesignTimeTenantContext());
-    }
-
-    private const string ConnectionStringEnvironmentVariable = "BAION_DESIGN_CONNECTION";
-
-    private const string DefaultConnectionString = @"Server=(localdb)\MSSQLLocalDB;Database=lin_baion;Trusted_Connection=True;TrustServerCertificate=True";
-
-    private sealed class DesignTimeTenantContext : ITenantContext
-    {
-        public Guid? TenantId => null;
-
-        public void SetTenant(Guid tenantId)
-        {
-            throw new NotSupportedException("El contexto de diseño no opera sobre un tenant.");
-        }
     }
 }

@@ -18,8 +18,8 @@
                 </select>
             </SelectShell>
 
-            <button type="button" class="baion-button-icon @_raton.Clase" title="Actualizar" aria-label="Actualizar"
-                    disabled="@(_cargando || _ocupado)" @onclick="RecargarAsync" @attributes="this.EventosRaton(_raton)">
+            <button type="button" class="baion-button-icon @_raton.CssClass" title="Actualizar" aria-label="Actualizar"
+                    disabled="@(_cargando || _ocupado)" @onclick="RecargarAsync" @attributes="this.MouseEvents(_raton)">
                 <Icon Nombre="refresh-cw" Tamano="20" />
             </button>
         }
@@ -86,9 +86,9 @@ else
 
     <nav class="mt-10 flex items-center gap-1" aria-label="Vistas del servidor">
         <button type="button" class="@ClasePestana("metricas")"
-                @onclick='() => _pestana = "metricas"' @attributes="this.EventosRaton(_ratonMetricas)">Métricas</button>
+                @onclick='() => _pestana = "metricas"' @attributes="this.MouseEvents(_ratonMetricas)">Métricas</button>
         <button type="button" class="@ClasePestana("servicios")"
-                @onclick='() => _pestana = "servicios"' @attributes="this.EventosRaton(_ratonServicios)">Servicios</button>
+                @onclick='() => _pestana = "servicios"' @attributes="this.MouseEvents(_ratonServicios)">Servicios</button>
     </nav>
 
     @if (_pestana == "servicios")
@@ -254,19 +254,13 @@ else
 }
 
 @code {
-    /// <summary>Identificador del servidor; llega en la ruta.</summary>
-    [Parameter]
-    public Guid ServerId { get; set; }
+    private const int TamanoPagina = 20;
 
-    /// <summary>Pestaña a abrir; la usa el «Volver» de la pantalla de detalle de un servicio.</summary>
-    [SupplyParameterFromQuery(Name = "vista")]
-    public string? Vista { get; set; }
+    private readonly MouseState _raton = new();
+    private readonly MouseState _ratonMetricas = new();
+    private readonly MouseState _ratonServicios = new();
 
-    private readonly EstadoRaton _raton = new();
-    private readonly EstadoRaton _ratonMetricas = new();
-    private readonly EstadoRaton _ratonServicios = new();
-
-    private Models.ServerDetail? _detalle;
+    private Dtos.Servers.ServerDetail? _detalle;
     private PagedResult<MetricReading>? _historico;
     private string _periodo = "7d";
     private string _pestana = "metricas";
@@ -275,20 +269,19 @@ else
     private bool _ocupado;
     private int _pagina = 1;
 
+    [Parameter]
+    public Guid ServerId { get; set; }
+
+    [SupplyParameterFromQuery(Name = "vista")]
+    public string? Vista { get; set; }
+
     private string Nombre => _detalle?.Server.Name ?? "Servidor";
-
-    private string ClasePestana(string pestana)
-    {
-        var raton = pestana == "metricas" ? _ratonMetricas : _ratonServicios;
-
-        return $"baion-nav-pill {raton.Clase} {(_pestana == pestana ? "baion-nav-pill-active" : string.Empty)}";
-    }
 
     private IReadOnlyList<MetricReading> Muestras => _historico?.Items ?? [];
 
     private int Pagina => _historico?.Page ?? _pagina;
 
-    /// <summary>Muestra más reciente dentro del periodo elegido: la única fuente de discos y carga.</summary>
+    // Muestra más reciente dentro del periodo elegido: la única fuente de discos y carga.
     private MetricReading? Reciente => Muestras.Count > 0 ? Muestras[0] : null;
 
     private DateTimeOffset? UltimaMuestra => Reciente?.CapturedAt ?? _detalle?.LastMetrics?.CapturedAt;
@@ -296,6 +289,14 @@ else
     // La carga media solo viaja en el histórico; sin muestra reciente no hay nada que enseñar, y en
     // Windows el propio agente la deja en null porque no existe ese concepto.
     private string CargaTexto => Reciente?.LoadAverage1m is double carga ? NumberFormat.Fixed(carga) : "—";
+
+    private DateTimeOffset? Desde => _periodo switch
+    {
+        "24h" => DateTimeOffset.UtcNow.AddHours(-24),
+        "7d" => DateTimeOffset.UtcNow.AddDays(-7),
+        "30d" => DateTimeOffset.UtcNow.AddDays(-30),
+        _ => null
+    };
 
     // Saltar de un servidor a otro reutiliza el componente y solo cambia el parámetro de ruta.
     protected override async Task OnParametersSetAsync()
@@ -315,6 +316,13 @@ else
         _cargando = false;
     }
 
+    private string ClasePestana(string pestana)
+    {
+        var raton = pestana == "metricas" ? _ratonMetricas : _ratonServicios;
+
+        return $"baion-nav-pill {raton.CssClass} {(_pestana == pestana ? "baion-nav-pill-active" : string.Empty)}";
+    }
+
     private async Task RecargarAsync()
     {
         _error = null;
@@ -327,7 +335,7 @@ else
         await CargarHistoricoAsync();
     }
 
-    /// <summary>Cambiar el periodo invalida la página en la que estuviéramos.</summary>
+    // Cambiar el periodo invalida la página en la que estuviéramos.
     private async Task CambiarPeriodoAsync()
     {
         _pagina = 1;
@@ -351,28 +359,19 @@ else
 
         // Un fallo del histórico no borra la ficha, pero sí se avisa; el de la ficha manda si lo hubo.
         if (historico.ErrorMessage is not null)
-        {
             _error = historico.ErrorMessage;
-        }
 
         _ocupado = false;
     }
 
-    private DateTimeOffset? Desde => _periodo switch
+    private static string TipoServidor(string kind)
     {
-        "24h" => DateTimeOffset.UtcNow.AddHours(-24),
-        "7d" => DateTimeOffset.UtcNow.AddDays(-7),
-        "30d" => DateTimeOffset.UtcNow.AddDays(-30),
-        _ => null
-    };
-
-    private static string TipoServidor(string kind) => kind switch
-    {
-        "vm" => "Máquina virtual",
-        "vps" => "VPS",
-        "bareMetal" => "Bare metal",
-        _ => kind
-    };
-
-    private const int TamanoPagina = 20;
+        return kind switch
+        {
+            "vm" => "Máquina virtual",
+            "vps" => "VPS",
+            "bareMetal" => "Bare metal",
+            _ => kind
+        };
+    }
 }

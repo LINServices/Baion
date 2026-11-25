@@ -4,14 +4,16 @@ using System.Reflection;
 using System.Text;
 using LIN.Cloud.Enterprise.Baion.Orchestrator.Models.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace LIN.Cloud.Enterprise.Baion.Orchestrator.Persistence.Context;
 
-/// <summary>
-/// Contexto de la base <c>lin_baion</c>. Aplica el aislamiento por tenant a todo el modelo.
-/// </summary>
 public class BaionDbContext(DbContextOptions<BaionDbContext> options, ITenantContext tenantContext) : DbContext(options)
 {
+    public const string MigrationsHistoryTable = "__ef_migrations_history";
+
+    private static readonly MethodInfo TenantFilterMethod = typeof(BaionDbContext).GetMethod(nameof(ApplyTenantFilter), BindingFlags.Instance | BindingFlags.NonPublic)!;
+
     public DbSet<Tenant> Tenants => Set<Tenant>();
 
     public DbSet<Server> Servers => Set<Server>();
@@ -40,10 +42,8 @@ public class BaionDbContext(DbContextOptions<BaionDbContext> options, ITenantCon
 
     public DbSet<EnrollmentToken> EnrollmentTokens => Set<EnrollmentToken>();
 
-    /// <summary>
-    /// Tenant que parametriza el filtro global. Se lee en cada consulta, no al construir el modelo,
-    /// por lo que un modelo compilado sirve a todos los tenants.
-    /// </summary>
+    // Tenant que parametriza el filtro global. Se lee en cada consulta, no al construir el modelo,
+    // por lo que un modelo compilado sirve a todos los tenants.
     public Guid? CurrentTenantId => tenantContext.TenantId;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -63,9 +63,7 @@ public class BaionDbContext(DbContextOptions<BaionDbContext> options, ITenantCon
             .ToList();
 
         foreach (var clrType in tenantOwnedTypes)
-        {
             TenantFilterMethod.MakeGenericMethod(clrType).Invoke(this, [modelBuilder]);
-        }
     }
 
     // Invocado por reflexión desde ApplyTenantFilters.
@@ -74,74 +72,58 @@ public class BaionDbContext(DbContextOptions<BaionDbContext> options, ITenantCon
         modelBuilder.Entity<TEntity>().HasQueryFilter(entity => entity.TenantId == CurrentTenantId);
     }
 
-    /// <summary>
-    /// Historial de migraciones, nombrado con la misma convención que el resto del esquema.
-    /// </summary>
-    public const string MigrationsHistoryTable = "__ef_migrations_history";
-
-    private static readonly MethodInfo TenantFilterMethod = typeof(BaionDbContext).GetMethod(nameof(ApplyTenantFilter), BindingFlags.Instance | BindingFlags.NonPublic)!;
-
     private static void ApplySnakeCaseNames(ModelBuilder modelBuilder)
     {
-        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
-        {
-            if (entityType.IsMappedToJson())
-            {
-                continue;
-            }
+        var entityTypes = modelBuilder.Model
+            .GetEntityTypes()
+            .Where(entityType => !entityType.IsMappedToJson())
+            .ToList();
 
-            var tableName = entityType.GetTableName();
-            if (tableName is not null)
-            {
-                entityType.SetTableName(ToSnakeCase(tableName));
-            }
+        foreach (var entityType in entityTypes)
+            ApplySnakeCaseNames(entityType);
+    }
 
-            foreach (var property in entityType.GetProperties())
-            {
-                property.SetColumnName(ToSnakeCase(property.GetColumnName()));
-            }
+    private static void ApplySnakeCaseNames(IMutableEntityType entityType)
+    {
+        var tableName = entityType.GetTableName();
+        if (tableName is not null)
+            entityType.SetTableName(ToSnakeCase(tableName));
 
-            foreach (var key in entityType.GetKeys().Where(key => key.GetName() is not null))
-            {
-                key.SetName(ToSnakeCase(key.GetName()!));
-            }
+        foreach (var property in entityType.GetProperties())
+            property.SetColumnName(ToSnakeCase(property.GetColumnName()));
 
-            foreach (var foreignKey in entityType.GetForeignKeys().Where(foreignKey => foreignKey.GetConstraintName() is not null))
-            {
-                foreignKey.SetConstraintName(ToSnakeCase(foreignKey.GetConstraintName()!));
-            }
+        foreach (var key in entityType.GetKeys().Where(key => key.GetName() is not null))
+            key.SetName(ToSnakeCase(key.GetName()!));
 
-            foreach (var index in entityType.GetIndexes().Where(index => index.GetDatabaseName() is not null))
-            {
-                index.SetDatabaseName(ToSnakeCase(index.GetDatabaseName()!));
-            }
-        }
+        foreach (var foreignKey in entityType.GetForeignKeys().Where(foreignKey => foreignKey.GetConstraintName() is not null))
+            foreignKey.SetConstraintName(ToSnakeCase(foreignKey.GetConstraintName()!));
+
+        foreach (var index in entityType.GetIndexes().Where(index => index.GetDatabaseName() is not null))
+            index.SetDatabaseName(ToSnakeCase(index.GetDatabaseName()!));
     }
 
     private static string ToSnakeCase(string name)
     {
         if (string.IsNullOrEmpty(name))
-        {
             return name;
-        }
 
         var builder = new StringBuilder(name.Length + 8);
 
         for (var i = 0; i < name.Length; i++)
         {
-            var current = name[i];
-            var previousIsLower = i > 0 && char.IsLower(name[i - 1]);
-            var nextIsLower = i + 1 < name.Length && char.IsLower(name[i + 1]);
-            var needsSeparator = char.IsUpper(current) && i > 0 && name[i - 1] != '_' && (previousIsLower || nextIsLower);
+            var separator = NeedsSeparator(name, i) ? "_" : string.Empty;
 
-            if (needsSeparator)
-            {
-                builder.Append('_');
-            }
-
-            builder.Append(char.ToLowerInvariant(current));
+            builder.Append(separator).Append(char.ToLowerInvariant(name[i]));
         }
 
         return builder.ToString();
+    }
+
+    private static bool NeedsSeparator(string name, int i)
+    {
+        var previousIsLower = i > 0 && char.IsLower(name[i - 1]);
+        var nextIsLower = i + 1 < name.Length && char.IsLower(name[i + 1]);
+
+        return char.IsUpper(name[i]) && i > 0 && name[i - 1] != '_' && (previousIsLower || nextIsLower);
     }
 }

@@ -13,6 +13,10 @@ namespace LIN.Cloud.Enterprise.Baion.Orchestrator.Identity.Tests;
 
 public class LoginSelfManagedTests(IdentityDatabaseFixture fixture) : IClassFixture<IdentityDatabaseFixture>
 {
+    private const string Email = "operador@acme.test";
+
+    private const string Password = "contrasena-de-prueba-larga";
+
     [Fact]
     public async Task Login_ConCredencialesCorrectas_EmiteTokenValido()
     {
@@ -64,9 +68,7 @@ public class LoginSelfManagedTests(IdentityDatabaseFixture fixture) : IClassFixt
         var tenant = await CrearTenantConUsuarioAsync();
 
         for (var intento = 0; intento < 3; intento++)
-        {
             await LoginAsync(tenant.Slug, Email, "contrasena-que-no-es");
-        }
 
         var bloqueado = await LoginAsync(tenant.Slug, Email, Password);
 
@@ -117,7 +119,7 @@ public class LoginSelfManagedTests(IdentityDatabaseFixture fixture) : IClassFixt
         var autenticacion = (await LoginAsync(tenant.Slug, Email, Password)).Value!;
 
         await using var scope = fixture.CreateScope();
-        var manipulado = autenticacion.AccessToken[..^4] + "abcd";
+        var manipulado = $"{autenticacion.AccessToken[..^4]}abcd";
         var principal = await scope.ServiceProvider.GetRequiredService<ITokenService>().ValidateAsync(manipulado);
 
         Assert.True(principal.IsFailure);
@@ -154,8 +156,4 @@ public class LoginSelfManagedTests(IdentityDatabaseFixture fixture) : IClassFixt
 
         return tenant;
     }
-
-    private const string Email = "operador@acme.test";
-
-    private const string Password = "contrasena-de-prueba-larga";
 }

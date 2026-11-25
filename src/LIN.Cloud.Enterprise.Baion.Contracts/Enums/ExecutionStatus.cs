@@ -1,6 +1,5 @@
 namespace LIN.Cloud.Enterprise.Baion.Contracts.Enums;
 
-/// <summary>Estado del ciclo de vida de una ejecución de script.</summary>
 public enum ExecutionStatus
 {
     Pending = 1,

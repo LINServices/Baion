@@ -6,11 +6,9 @@
      aria-hidden="true" focusable="false" @attributes="Atributos">@Trazos</svg>
 
 @code {
-    /// <summary>Nombre del icono en el set de Lucide, en kebab-case.</summary>
     [Parameter, EditorRequired]
     public string Nombre { get; set; } = string.Empty;
 
-    /// <summary>16px en cabeceras y controles, 14px en línea con texto, 20px en botones de icono aislados.</summary>
     [Parameter]
     public int Tamano { get; set; } = 16;
 

@@ -15,7 +15,7 @@ public class DashboardController(IServerService servers) : ControllerBase
     /// Cifras de cabecera del panel: servidores, scripts y ejecuciones de las últimas 24 horas.
     /// </summary>
     [HttpGet("summary")]
-    public async Task<IActionResult> ResumenAsync(CancellationToken cancellationToken)
+    public async Task<IActionResult> GetSummaryAsync(CancellationToken cancellationToken)
     {
         return Ok(await servers.GetDashboardSummaryAsync(cancellationToken));
     }

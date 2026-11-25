@@ -42,25 +42,25 @@ else
             <div class="mb-6 flex flex-wrap items-center gap-2 border-b border-line pb-6">
                 @if (_detalle.State != "running")
                 {
-                    <button type="button" class='baion-button @_ratones["start"].Clase' disabled="@_ejecutandoAccion"
-                            @onclick='() => PulsarAccionAsync("start")' @attributes='this.EventosRaton(_ratones["start"])'>Arrancar</button>
+                    <button type="button" class='baion-button @_ratones["start"].CssClass' disabled="@_ejecutandoAccion"
+                            @onclick='() => PulsarAccionAsync("start")' @attributes='this.MouseEvents(_ratones["start"])'>Arrancar</button>
                 }
                 @if (_detalle.State == "running")
                 {
-                    <button type="button" class='baion-button-ghost @_ratones["restart"].Clase' disabled="@_ejecutandoAccion"
-                            @onclick='() => PulsarAccionAsync("restart")' @attributes='this.EventosRaton(_ratones["restart"])'>Reiniciar</button>
-                    <button type="button" class='baion-button-danger @_ratones["stop"].Clase' disabled="@_ejecutandoAccion"
-                            @onclick='() => PulsarAccionAsync("stop")' @attributes='this.EventosRaton(_ratones["stop"])'>Detener</button>
+                    <button type="button" class='baion-button-ghost @_ratones["restart"].CssClass' disabled="@_ejecutandoAccion"
+                            @onclick='() => PulsarAccionAsync("restart")' @attributes='this.MouseEvents(_ratones["restart"])'>Reiniciar</button>
+                    <button type="button" class='baion-button-danger @_ratones["stop"].CssClass' disabled="@_ejecutandoAccion"
+                            @onclick='() => PulsarAccionAsync("stop")' @attributes='this.MouseEvents(_ratones["stop"])'>Detener</button>
                 }
                 @if (_detalle.StartupMode != "automatic")
                 {
-                    <button type="button" class='baion-button-ghost @_ratones["enable"].Clase' disabled="@_ejecutandoAccion"
-                            @onclick='() => PulsarAccionAsync("enable")' @attributes='this.EventosRaton(_ratones["enable"])'>Habilitar arranque</button>
+                    <button type="button" class='baion-button-ghost @_ratones["enable"].CssClass' disabled="@_ejecutandoAccion"
+                            @onclick='() => PulsarAccionAsync("enable")' @attributes='this.MouseEvents(_ratones["enable"])'>Habilitar arranque</button>
                 }
                 @if (_detalle.StartupMode != "disabled")
                 {
-                    <button type="button" class='baion-button-danger @_ratones["disable"].Clase' disabled="@_ejecutandoAccion"
-                            @onclick='() => PulsarAccionAsync("disable")' @attributes='this.EventosRaton(_ratones["disable"])'>Deshabilitar arranque</button>
+                    <button type="button" class='baion-button-danger @_ratones["disable"].CssClass' disabled="@_ejecutandoAccion"
+                            @onclick='() => PulsarAccionAsync("disable")' @attributes='this.MouseEvents(_ratones["disable"])'>Deshabilitar arranque</button>
                 }
                 @if (_ejecutandoAccion)
                 {
@@ -141,8 +141,8 @@ else
                     <label class="baion-label" for="log-desde">Desde (UTC)</label>
                     <input id="log-desde" type="datetime-local" class="baion-input mt-2" @bind="_desde" />
                 </div>
-                <button type="button" class="baion-button-ghost @_ratonLogs.Clase" disabled="@_cargandoLogs"
-                        @onclick="CargarLogsAsync" @attributes="this.EventosRaton(_ratonLogs)">
+                <button type="button" class="baion-button-ghost @_ratonLogs.CssClass" disabled="@_cargandoLogs"
+                        @onclick="CargarLogsAsync" @attributes="this.MouseEvents(_ratonLogs)">
                     <Icon Nombre="terminal" Tamano="14" />
                     @(_cargandoLogs ? "Cargando…" : "Cargar logs")
                 </button>
@@ -206,24 +206,10 @@ else
                OnConfirmar="EjecutarAccionAsync" />
 
 @code {
-    /// <summary>Servidor al que pertenece el servicio; llega en la ruta.</summary>
-    [Parameter]
-    public Guid ServerId { get; set; }
+    private readonly MouseStateMap _ratones = new();
+    private readonly MouseState _ratonLogs = new();
 
-    /// <summary>
-    /// Identificador del servicio tal cual lo da el agente (p. ej. <c>nginx.service</c>); llega en la ruta
-    /// como un único segmento y Blazor lo entrega ya decodificado.
-    /// </summary>
-    [Parameter]
-    public string ServiceId { get; set; } = string.Empty;
-
-    [CascadingParameter]
-    private Task<AuthenticationState>? EstadoAutenticacion { get; set; }
-
-    private readonly EstadoRatonMapa _ratones = new();
-    private readonly EstadoRaton _ratonLogs = new();
-
-    private Models.ServiceDetail? _detalle;
+    private ServiceDetail? _detalle;
     private string? _servidorNombre;
     private string? _error;
     private string? _errorDetalle;
@@ -243,6 +229,16 @@ else
     private string? _confirmDescripcion;
     private bool _confirmDestructivo;
 
+    [Parameter]
+    public Guid ServerId { get; set; }
+
+    // Llega como un único segmento de ruta y Blazor lo entrega ya decodificado.
+    [Parameter]
+    public string ServiceId { get; set; } = string.Empty;
+
+    [CascadingParameter]
+    private Task<AuthenticationState>? EstadoAutenticacion { get; set; }
+
     private string Titulo => _detalle?.DisplayName ?? ServiceId;
 
     // El eyebrow sitúa el servicio en su servidor, que es el contexto que el título no puede dar.
@@ -251,6 +247,8 @@ else
     private string RutaVolver => $"/servidores/{ServerId}?vista=servicios";
 
     private bool HayAcciones => _detalle is not null;
+
+    private string Nombre => _detalle?.DisplayName ?? _detalle?.Id ?? "el servicio";
 
     protected override async Task OnInitializedAsync()
     {
@@ -298,9 +296,7 @@ else
     private async Task CargarLogsAsync()
     {
         if (_detalle is null)
-        {
             return;
-        }
 
         _cargandoLogs = true;
         _errorLogs = null;
@@ -341,9 +337,7 @@ else
     private async Task EjecutarAccionAsync()
     {
         if (_accionPendiente is null || _detalle is null)
-        {
             return;
-        }
 
         _ejecutandoAccion = true;
         _errorDetalle = null;
@@ -354,22 +348,19 @@ else
         _accionPendiente = null;
 
         if (resultado is { IsSuccess: true, Value: { } detalle })
-        {
             _detalle = detalle;
-        }
         else
-        {
             _errorDetalle = ServiceStates.FriendlyError(resultado.ErrorCode, resultado.ErrorMessage);
-        }
     }
 
-    private (string Titulo, string? Descripcion, bool Destructivo) TextoConfirmacion(string accion) => accion switch
+    private (string Titulo, string? Descripcion, bool Destructivo) TextoConfirmacion(string accion)
     {
-        "stop" => ("Detener el servicio", $"Se detendrá «{Nombre}» en el servidor; puede afectar a lo que dependa de él.", true),
-        "restart" => ("Reiniciar el servicio", $"Se reiniciará «{Nombre}»: quedará unos segundos sin servicio.", false),
-        "disable" => ("Deshabilitar el arranque", $"«{Nombre}» no volverá a arrancar al iniciar la máquina.", true),
-        _ => ("Confirmar la acción", null, false)
-    };
-
-    private string Nombre => _detalle?.DisplayName ?? _detalle?.Id ?? "el servicio";
+        return accion switch
+        {
+            "stop" => ("Detener el servicio", $"Se detendrá «{Nombre}» en el servidor; puede afectar a lo que dependa de él.", true),
+            "restart" => ("Reiniciar el servicio", $"Se reiniciará «{Nombre}»: quedará unos segundos sin servicio.", false),
+            "disable" => ("Deshabilitar el arranque", $"«{Nombre}» no volverá a arrancar al iniciar la máquina.", true),
+            _ => ("Confirmar la acción", null, false)
+        };
+    }
 }

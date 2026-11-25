@@ -1,6 +1,5 @@
 namespace LIN.Cloud.Enterprise.Baion.Contracts.Enums;
 
-/// <summary>Acción que el orquestador pide aplicar sobre un servicio del sistema.</summary>
 public enum ServiceControlAction
 {
     Start = 1,

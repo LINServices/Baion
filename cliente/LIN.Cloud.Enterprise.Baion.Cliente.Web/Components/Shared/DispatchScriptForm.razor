@@ -9,8 +9,8 @@
             <span class="text-ink" aria-hidden="true"><Icon Nombre="play" /></span>
             <h2 class="text-title text-ink">Ejecutar script</h2>
         </div>
-        <button type="button" class="baion-button-icon @_ratonCerrar.Clase" title="Cerrar" aria-label="Cerrar"
-                @onclick="Cancelar" @attributes="this.EventosRaton(_ratonCerrar)">
+        <button type="button" class="baion-button-icon @_ratonCerrar.CssClass" title="Cerrar" aria-label="Cerrar"
+                @onclick="Cancelar" @attributes="this.MouseEvents(_ratonCerrar)">
             <Icon Nombre="x" Tamano="20" />
         </button>
     </div>
@@ -97,12 +97,12 @@
             </details>
 
             <div class="mt-6 flex items-center gap-2">
-                <button type="submit" class="baion-button @_ratonLanzar.Clase" disabled="@_lanzando"
-                        @attributes="this.EventosRaton(_ratonLanzar)">
+                <button type="submit" class="baion-button @_ratonLanzar.CssClass" disabled="@_lanzando"
+                        @attributes="this.MouseEvents(_ratonLanzar)">
                     @(_lanzando ? "Lanzando…" : "Ejecutar ahora")
                 </button>
-                <button type="button" class="baion-button-ghost @_ratonCancelar.Clase" @onclick="Cancelar" disabled="@_lanzando"
-                        @attributes="this.EventosRaton(_ratonCancelar)">Cancelar</button>
+                <button type="button" class="baion-button-ghost @_ratonCancelar.CssClass" @onclick="Cancelar" disabled="@_lanzando"
+                        @attributes="this.MouseEvents(_ratonCancelar)">Cancelar</button>
             </div>
         </EditForm>
     }
@@ -110,9 +110,9 @@
 
 @code {
     private readonly EntradaEjecucion _entrada = new();
-    private readonly EstadoRaton _ratonCerrar = new();
-    private readonly EstadoRaton _ratonLanzar = new();
-    private readonly EstadoRaton _ratonCancelar = new();
+    private readonly MouseState _ratonCerrar = new();
+    private readonly MouseState _ratonLanzar = new();
+    private readonly MouseState _ratonCancelar = new();
 
     private IReadOnlyList<ServerSummary> _compatibles = [];
     private int _incompatibles;
@@ -129,7 +129,6 @@
     [Parameter]
     public int DefaultTimeoutSeconds { get; set; } = 300;
 
-    /// <summary>Se invoca al cerrar el formulario sin lanzar nada.</summary>
     [Parameter]
     public EventCallback Cerrado { get; set; }
 
@@ -148,7 +147,10 @@
         _cargandoServidores = false;
     }
 
-    private bool EsElegible(ServerSummary servidor) => servidor.Status == "online" && ScriptRuntimes.IsSupported(Runtime, servidor.Platform);
+    private bool EsElegible(ServerSummary servidor)
+    {
+        return servidor.Status == "online" && ScriptRuntimes.IsSupported(Runtime, servidor.Platform);
+    }
 
     private async Task LanzarAsync()
     {
@@ -161,7 +163,7 @@
         _lanzando = true;
         _error = null;
 
-        var peticion = new Models.DispatchScriptRequest(
+        var peticion = new DispatchScriptRequest(
             ScriptId,
             _entrada.ServerId,
             _entrada.Mode,
@@ -173,7 +175,7 @@
 
         _lanzando = false;
 
-        if (resultado is not { IsSuccess: true, Value: Models.ScriptExecutionDispatched despacho })
+        if (resultado is not { IsSuccess: true, Value: ScriptExecutionDispatched despacho })
         {
             _error = resultado.ErrorMessage;
             return;
@@ -183,27 +185,25 @@
         Navigation.NavigateTo($"/ejecuciones/{despacho.ExecutionId}");
     }
 
-    private async Task Cancelar() => await Cerrado.InvokeAsync();
+    private async Task Cancelar()
+    {
+        await Cerrado.InvokeAsync();
+    }
 
-    /// <summary>Convierte el bloque de texto en pares CLAVE=valor, ignorando líneas vacías y comentarios.</summary>
     private static bool TryParseEntorno(string? texto, out Dictionary<string, string> entorno, out string lineaInvalida)
     {
         entorno = [];
         lineaInvalida = string.Empty;
 
         if (string.IsNullOrWhiteSpace(texto))
-        {
             return true;
-        }
 
         foreach (var linea in texto.Split('\n'))
         {
             var limpia = linea.Trim();
 
             if (limpia.Length == 0 || limpia.StartsWith('#'))
-            {
                 continue;
-            }
 
             var separador = limpia.IndexOf('=');
 

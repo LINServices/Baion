@@ -17,10 +17,10 @@
             }
 
             <div class="mt-6 flex items-center justify-end gap-2">
-                <button type="button" class="baion-button-ghost @_ratonCancelar.Clase" @onclick="CancelarAsync"
-                        @attributes="this.EventosRaton(_ratonCancelar)">@TextoCancelar</button>
-                <button type="button" class="@(Destructivo ? "baion-button-danger" : "baion-button") @_ratonConfirmar.Clase"
-                        @onclick="ConfirmarAsync" @attributes="this.EventosRaton(_ratonConfirmar)">
+                <button type="button" class="baion-button-ghost @_ratonCancelar.CssClass" @onclick="CancelarAsync"
+                        @attributes="this.MouseEvents(_ratonCancelar)">@TextoCancelar</button>
+                <button type="button" class="@(Destructivo ? "baion-button-danger" : "baion-button") @_ratonConfirmar.CssClass"
+                        @onclick="ConfirmarAsync" @attributes="this.MouseEvents(_ratonConfirmar)">
                     @TextoConfirmar
                 </button>
             </div>
@@ -29,8 +29,8 @@
 }
 
 @code {
-    private readonly EstadoRaton _ratonCancelar = new();
-    private readonly EstadoRaton _ratonConfirmar = new();
+    private readonly MouseState _ratonCancelar = new();
+    private readonly MouseState _ratonConfirmar = new();
 
     [Parameter]
     public bool Visible { get; set; }
@@ -50,7 +50,6 @@
     [Parameter]
     public string TextoCancelar { get; set; } = "Cancelar";
 
-    /// <summary>Pinta el botón de confirmar como destructivo (contorno rojo) en vez de la acción primaria negra.</summary>
     [Parameter]
     public bool Destructivo { get; set; }
 
@@ -63,7 +62,10 @@
         await OnConfirmar.InvokeAsync();
     }
 
-    private async Task CancelarAsync() => await CerrarAsync();
+    private async Task CancelarAsync()
+    {
+        await CerrarAsync();
+    }
 
     private async Task CerrarAsync()
     {

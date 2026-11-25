@@ -1,8 +1,5 @@
 namespace LIN.Cloud.Enterprise.Baion.Orchestrator.Models.Results;
 
-/// <summary>
-/// Resultado de una operación que devuelve un valor cuando tiene éxito.
-/// </summary>
 public class Result<TValue>
 {
     public bool IsSuccess { get; private init; }

@@ -8,9 +8,6 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace LIN.Cloud.Enterprise.Baion.Orchestrator.Persistence.Interceptors;
 
-/// <summary>
-/// Mantiene <c>CreatedAt</c> y <c>UpdatedAt</c> sin que los servicios tengan que acordarse.
-/// </summary>
 internal class AuditTimestampsInterceptor(TimeProvider timeProvider) : SaveChangesInterceptor
 {
     public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
@@ -28,26 +25,15 @@ internal class AuditTimestampsInterceptor(TimeProvider timeProvider) : SaveChang
     private void Stamp(DbContext? context)
     {
         if (context is null)
-        {
             return;
-        }
 
         var now = timeProvider.GetUtcNow();
+        var entries = context.ChangeTracker.Entries<Entity>().ToList();
 
-        var entries = context.ChangeTracker
-            .Entries<Entity>()
-            .Where(entry => entry.State is EntityState.Added or EntityState.Modified)
-            .ToList();
+        foreach (var entry in entries.Where(entry => entry.State is EntityState.Added))
+            entry.Entity.CreatedAt = now;
 
-        foreach (var entry in entries)
-        {
-            if (entry.State is EntityState.Added)
-            {
-                entry.Entity.CreatedAt = now;
-                continue;
-            }
-
+        foreach (var entry in entries.Where(entry => entry.State is EntityState.Modified))
             entry.Entity.UpdatedAt = now;
-        }
     }
 }

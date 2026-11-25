@@ -6,8 +6,8 @@
 
 <div class="flex flex-wrap items-center gap-2">
     <SearchPill @bind-Valor="_filtro" OnBuscar="BuscarAsync" Placeholder="Nombre del servicio" />
-    <button type="button" class="baion-button-icon @_ratonActualizar.Clase" title="Actualizar" aria-label="Actualizar"
-            disabled="@_cargando" @onclick="CargarAsync" @attributes="this.EventosRaton(_ratonActualizar)">
+    <button type="button" class="baion-button-icon @_ratonActualizar.CssClass" title="Actualizar" aria-label="Actualizar"
+            disabled="@_cargando" @onclick="CargarAsync" @attributes="this.MouseEvents(_ratonActualizar)">
         <Icon Nombre="refresh-cw" Tamano="20" />
     </button>
 </div>
@@ -25,8 +25,8 @@
                     Titulo="No se pudieron cargar los servicios"
                     Descripcion="@_error">
             <Accion>
-                <button type="button" class="baion-button @_ratonReintentar.Clase" @onclick="CargarAsync"
-                        @attributes="this.EventosRaton(_ratonReintentar)">Reintentar</button>
+                <button type="button" class="baion-button @_ratonReintentar.CssClass" @onclick="CargarAsync"
+                        @attributes="this.MouseEvents(_ratonReintentar)">Reintentar</button>
             </Accion>
         </EmptyState>
     }
@@ -74,12 +74,8 @@
 </div>
 
 @code {
-    /// <summary>Servidor cuyos servicios se listan; lo pasa la página de detalle del servidor.</summary>
-    [Parameter, EditorRequired]
-    public Guid ServerId { get; set; }
-
-    private readonly EstadoRaton _ratonActualizar = new();
-    private readonly EstadoRaton _ratonReintentar = new();
+    private readonly MouseState _ratonActualizar = new();
+    private readonly MouseState _ratonReintentar = new();
 
     private IReadOnlyList<ServiceSummary>? _servicios;
     private string? _filtro;
@@ -87,9 +83,15 @@
     private string? _error;
     private bool _cargando = true;
 
+    [Parameter, EditorRequired]
+    public Guid ServerId { get; set; }
+
     private IReadOnlyList<ServiceSummary> Servicios => _servicios ?? [];
 
-    protected override async Task OnInitializedAsync() => await CargarAsync();
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarAsync();
+    }
 
     private async Task CargarAsync()
     {
@@ -112,9 +114,18 @@
         _cargando = false;
     }
 
-    private async Task BuscarAsync() => await CargarAsync();
+    private async Task BuscarAsync()
+    {
+        await CargarAsync();
+    }
 
-    private void Abrir(string serviceId) => Navigation.NavigateTo(Ruta(serviceId));
+    private void Abrir(string serviceId)
+    {
+        Navigation.NavigateTo(Ruta(serviceId));
+    }
 
-    private string Ruta(string serviceId) => $"/servidores/{ServerId}/servicios/{Uri.EscapeDataString(serviceId)}";
+    private string Ruta(string serviceId)
+    {
+        return $"/servidores/{ServerId}/servicios/{Uri.EscapeDataString(serviceId)}";
+    }
 }

@@ -2,6 +2,7 @@
 @attribute [Authorize]
 
 @using System.ComponentModel.DataAnnotations
+@using LIN.Cloud.Enterprise.Baion.Cliente.Web.Options
 @using Microsoft.Extensions.Options
 
 @inject IBaionApiClient Api
@@ -85,8 +86,8 @@
                         <ValidationMessage For="() => _entrada.ExpiresInDays" class="mt-2 text-label text-danger" />
                     </div>
 
-                    <button type="submit" class="baion-button w-full @_raton.Clase" disabled="@_emitiendo"
-                            @attributes="this.EventosRaton(_raton)">
+                    <button type="submit" class="baion-button w-full @_raton.CssClass" disabled="@_emitiendo"
+                            @attributes="this.MouseEvents(_raton)">
                         @(_emitiendo ? "Emitiendo…" : "Emitir token")
                     </button>
                 </div>
@@ -140,9 +141,9 @@
                                     <td class="text-right">
                                         @if (token.RevokedAt is null)
                                         {
-                                            <button type="button" class="baion-button-danger @_ratones[token.Id].Clase"
+                                            <button type="button" class="baion-button-danger @_ratones[token.Id].CssClass"
                                                     @onclick="() => RevocarAsync(token.Id)" disabled="@_revocando"
-                                                    @attributes="this.EventosRaton(_ratones[token.Id])">Revocar</button>
+                                                    @attributes="this.MouseEvents(_ratones[token.Id])">Revocar</button>
                                         }
                                     </td>
                                 </tr>
@@ -157,8 +158,8 @@
 
 @code {
     private readonly EntradaToken _entrada = new();
-    private readonly EstadoRaton _raton = new();
-    private readonly EstadoRatonMapa _ratones = new();
+    private readonly MouseState _raton = new();
+    private readonly MouseStateMap _ratones = new();
 
     private IReadOnlyList<EnrollmentTokenSummary> _tokens = [];
     private EnrollmentTokenIssued? _emitido;
@@ -167,13 +168,16 @@
     private bool _emitiendo;
     private bool _revocando;
 
-    /// <summary>El agente habla WebSocket, no HTTP: se deriva del mismo host que usa el panel para la API.</summary>
+    // El agente habla WebSocket, no HTTP: se deriva del mismo host que usa el panel para la API.
     private string SocketUri => ApiOptions.Value.BaseAddress
         .Replace("https://", "wss://", StringComparison.OrdinalIgnoreCase)
         .Replace("http://", "ws://", StringComparison.OrdinalIgnoreCase)
         .TrimEnd('/');
 
-    protected override async Task OnInitializedAsync() => await CargarAsync();
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarAsync();
+    }
 
     private async Task CargarAsync()
     {
@@ -190,12 +194,12 @@
         _error = null;
 
         var caduca = _entrada.ExpiresInDays is int dias ? DateTimeOffset.UtcNow.AddDays(dias) : (DateTimeOffset?)null;
-        var peticion = new Models.CreateEnrollmentTokenRequest(_entrada.Name, _entrada.DefaultServerKind, caduca, _entrada.MaxUses);
+        var peticion = new CreateEnrollmentTokenRequest(_entrada.Name, _entrada.DefaultServerKind, caduca, _entrada.MaxUses);
         var resultado = await Api.CreateEnrollmentTokenAsync(peticion, CancellationToken.None);
 
         _emitiendo = false;
 
-        if (resultado is not { IsSuccess: true, Value: Models.EnrollmentTokenIssued emitido })
+        if (resultado is not { IsSuccess: true, Value: EnrollmentTokenIssued emitido })
         {
             _error = resultado.ErrorMessage;
             return;
@@ -218,27 +222,36 @@
         await CargarAsync();
     }
 
-    private static string Estado(EnrollmentTokenSummary token) => token switch
+    private static string Estado(EnrollmentTokenSummary token)
     {
-        { RevokedAt: not null } => "Revocado",
-        { IsUsable: false } => "Agotado o caducado",
-        _ => "Activo"
-    };
+        return token switch
+        {
+            { RevokedAt: not null } => "Revocado",
+            { IsUsable: false } => "Agotado o caducado",
+            _ => "Activo"
+        };
+    }
 
     // Un token utilizable es «lo activo», y por eso es lo único que lleva el acento aquí.
-    private static string EstadoClase(EnrollmentTokenSummary token) => token switch
+    private static string EstadoClase(EnrollmentTokenSummary token)
     {
-        { RevokedAt: not null } => "baion-chip-danger",
-        { IsUsable: false } => string.Empty,
-        _ => "baion-chip-current"
-    };
+        return token switch
+        {
+            { RevokedAt: not null } => "baion-chip-danger",
+            { IsUsable: false } => string.Empty,
+            _ => "baion-chip-current"
+        };
+    }
 
-    private static string EstadoPunto(EnrollmentTokenSummary token) => token switch
+    private static string EstadoPunto(EnrollmentTokenSummary token)
     {
-        { RevokedAt: not null } => "bg-danger",
-        { IsUsable: false } => "border border-ghost",
-        _ => "bg-current-500"
-    };
+        return token switch
+        {
+            { RevokedAt: not null } => "bg-danger",
+            { IsUsable: false } => "border border-ghost",
+            _ => "bg-current-500"
+        };
+    }
 
     private sealed class EntradaToken
     {

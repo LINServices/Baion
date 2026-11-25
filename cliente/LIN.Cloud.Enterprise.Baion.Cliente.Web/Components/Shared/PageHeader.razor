@@ -23,17 +23,12 @@
 </div>
 
 @code {
-    /// <summary>Eyebrow: una o dos palabras que sitúan la página dentro del producto.</summary>
     [Parameter]
     public string? Seccion { get; set; }
 
     [Parameter, EditorRequired]
     public string Titulo { get; set; } = string.Empty;
 
-    /// <summary>
-    /// El sistema confía en que el título basta, así que esto no es un subtítulo decorativo: se usa
-    /// solo cuando la página necesita explicar algo que no se deduce de su nombre.
-    /// </summary>
     [Parameter]
     public string? Descripcion { get; set; }
 

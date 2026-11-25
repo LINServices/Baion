@@ -1,8 +1,6 @@
 namespace LIN.Cloud.Enterprise.Baion.Orchestrator.Models.Results;
 
-/// <summary>
-/// Resultado de una operación sin valor de retorno. Las excepciones quedan para lo verdaderamente inesperado.
-/// </summary>
+// Resultado de una operación sin valor de retorno. Las excepciones quedan para lo verdaderamente inesperado.
 public class Result
 {
     public bool IsSuccess { get; private init; }

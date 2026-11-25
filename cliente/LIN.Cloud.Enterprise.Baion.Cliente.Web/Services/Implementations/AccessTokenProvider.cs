@@ -1,13 +1,10 @@
 using System.Linq;
 using System.Threading.Tasks;
+using LIN.Cloud.Enterprise.Baion.Cliente.Web.Constants;
 using Microsoft.AspNetCore.Components.Authorization;
 
 namespace LIN.Cloud.Enterprise.Baion.Cliente.Web.Services.Implementations;
 
-/// <summary>
-/// Saca el token de los claims del usuario autenticado, que <see cref="BaionAuthenticationStateProvider"/>
-/// arma a partir de la sesión guardada en el navegador.
-/// </summary>
 internal class AccessTokenProvider(AuthenticationStateProvider authenticationStateProvider) : IAccessTokenProvider
 {
     public async Task<string?> GetTokenAsync()

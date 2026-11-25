@@ -1,6 +1,5 @@
 namespace LIN.Cloud.Enterprise.Baion.Contracts.Enums;
 
-/// <summary>Cómo arranca un servicio al iniciar la máquina.</summary>
 public enum ServiceStartupMode
 {
     Unknown = 0,

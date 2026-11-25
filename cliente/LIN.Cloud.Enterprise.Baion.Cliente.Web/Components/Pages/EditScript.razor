@@ -36,15 +36,14 @@ else
 }
 
 @code {
-    /// <summary>Identificador del script; llega en la ruta.</summary>
-    [Parameter]
-    public Guid ScriptId { get; set; }
-
-    private Models.ScriptDetail? _script;
+    private Dtos.Scripts.ScriptDetail? _script;
     private string? _error;
     private string? _codigo;
     private bool _cargando = true;
     private bool _guardando;
+
+    [Parameter]
+    public Guid ScriptId { get; set; }
 
     private string Titulo => _script?.Name ?? "Editar script";
 
@@ -64,13 +63,13 @@ else
         _cargando = false;
     }
 
-    private async Task GuardarAsync(ScriptFormEntrada entrada)
+    private async Task GuardarAsync(ScriptFormInput entrada)
     {
         _guardando = true;
         _error = null;
         _codigo = null;
 
-        var peticion = new Models.UpdateScriptRequest(entrada.Name, string.IsNullOrWhiteSpace(entrada.Description) ? null : entrada.Description, entrada.Content, entrada.Runtime, entrada.DefaultTimeoutSeconds);
+        var peticion = new UpdateScriptRequest(entrada.Name, string.IsNullOrWhiteSpace(entrada.Description) ? null : entrada.Description, entrada.Content, entrada.Runtime, entrada.DefaultTimeoutSeconds);
         var resultado = await Api.UpdateScriptAsync(ScriptId, peticion, CancellationToken.None);
 
         _guardando = false;

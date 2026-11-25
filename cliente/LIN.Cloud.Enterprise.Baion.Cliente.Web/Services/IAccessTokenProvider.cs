@@ -2,9 +2,13 @@ using System.Threading.Tasks;
 
 namespace LIN.Cloud.Enterprise.Baion.Cliente.Web.Services;
 
-/// <summary>Token de acceso del usuario de la sesión en curso.</summary>
+/// <summary>
+/// Token de acceso del usuario de la sesión en curso.
+/// </summary>
 public interface IAccessTokenProvider
 {
-    /// <summary>Devuelve el token, o null si no hay sesión iniciada.</summary>
+    /// <summary>
+    /// Devuelve el token, o null si no hay sesión iniciada.
+    /// </summary>
     Task<string?> GetTokenAsync();
 }

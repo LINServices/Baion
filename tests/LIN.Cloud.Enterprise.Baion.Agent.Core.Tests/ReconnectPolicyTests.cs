@@ -1,6 +1,5 @@
 using System;
 using System.Linq;
-using LIN.Cloud.Enterprise.Baion.Agent.Core;
 using LIN.Cloud.Enterprise.Baion.Agent.Core.Implementations;
 using Microsoft.Extensions.Options;
 using Xunit;
@@ -61,7 +60,13 @@ public class ReconnectPolicyTests
         Assert.True(espera >= TimeSpan.Zero);
     }
 
-    private static double MaximoObservado(IReconnectPolicy policy, int intento) => Enumerable.Range(0, 200).Max(_ => policy.GetDelay(intento).TotalSeconds);
+    private static double MaximoObservado(IReconnectPolicy policy, int intento)
+    {
+        return Enumerable.Range(0, 200).Max(_ => policy.GetDelay(intento).TotalSeconds);
+    }
 
-    private static IReconnectPolicy CrearPolitica(int minimo, int maximo) => new ExponentialBackoffReconnectPolicy(Options.Create(new AgentOptions { MinReconnectSeconds = minimo, MaxReconnectSeconds = maximo }));
+    private static IReconnectPolicy CrearPolitica(int minimo, int maximo)
+    {
+        return new ExponentialBackoffReconnectPolicy(Options.Create(new AgentOptions { MinReconnectSeconds = minimo, MaxReconnectSeconds = maximo }));
+    }
 }

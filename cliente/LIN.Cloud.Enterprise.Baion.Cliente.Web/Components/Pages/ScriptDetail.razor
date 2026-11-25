@@ -17,8 +17,8 @@
                 <Icon Nombre="sliders-horizontal" Tamano="14" />
                 Editar
             </a>
-            <button type="button" class="baion-button @_raton.Clase" @onclick="() => _mostrandoEjecucion = true"
-                    @attributes="this.EventosRaton(_raton)">
+            <button type="button" class="baion-button @_raton.CssClass" @onclick="() => _mostrandoEjecucion = true"
+                    @attributes="this.MouseEvents(_raton)">
                 <Icon Nombre="play" Tamano="14" />
                 Ejecutar
             </button>
@@ -94,19 +94,18 @@ else
 }
 
 @code {
-    private readonly EstadoRaton _raton = new();
+    private readonly MouseState _raton = new();
 
     private bool _mostrandoEjecucion;
 
-    private Models.ScriptDetail? _script;
+    private Dtos.Scripts.ScriptDetail? _script;
     private string? _error;
     private bool _cargando = true;
 
-    private string Nombre => _script?.Name ?? "Script";
-
-    /// <summary>Identificador del script; llega en la ruta.</summary>
     [Parameter]
     public Guid ScriptId { get; set; }
+
+    private string Nombre => _script?.Name ?? "Script";
 
     // Va en OnParametersSetAsync y no en OnInitializedAsync porque saltar de un script a otro
     // reutiliza el componente y solo cambia el parámetro.
@@ -121,5 +120,8 @@ else
         _cargando = false;
     }
 
-    private static string Lineas(string contenido) => contenido.Length == 0 ? "vacío" : $"{contenido.Split('\n').Length} líneas";
+    private static string Lineas(string contenido)
+    {
+        return contenido.Length == 0 ? "vacío" : $"{contenido.Split('\n').Length} líneas";
+    }
 }

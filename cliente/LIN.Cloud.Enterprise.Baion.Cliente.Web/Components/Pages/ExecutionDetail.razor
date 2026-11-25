@@ -114,13 +114,14 @@ else
 }
 
 @code {
+    private static readonly TimeSpan IntervaloRefresco = TimeSpan.FromSeconds(2);
+
     private ScriptExecutionDetail? _ejecucion;
     private string? _error;
     private bool _cargando = true;
     private PeriodicTimer? _temporizador;
     private CancellationTokenSource? _cancelacion;
 
-    /// <summary>Identificador de la ejecución; llega en la ruta.</summary>
     [Parameter]
     public Guid ExecutionId { get; set; }
 
@@ -151,12 +152,13 @@ else
     protected override void OnAfterRender(bool firstRender)
     {
         if (RendererInfo.IsInteractive && _temporizador is null && EstaViva)
-        {
             _ = SeguirAsync();
-        }
     }
 
-    public void Dispose() => Detener();
+    public void Dispose()
+    {
+        Detener();
+    }
 
     private async Task CargarAsync()
     {
@@ -166,10 +168,8 @@ else
         _error = resultado.ErrorMessage;
     }
 
-    /// <summary>
-    /// Mientras la ejecución sigue viva la API es la única que sabe cómo va: se la sondea hasta que
-    /// termina para ver crecer su salida sin recargar la página.
-    /// </summary>
+    // Mientras la ejecución sigue viva la API es la única que sabe cómo va: se la sondea hasta que
+    // termina para ver crecer su salida sin recargar la página.
     private async Task SeguirAsync()
     {
         _cancelacion = new CancellationTokenSource();
@@ -183,9 +183,7 @@ else
                 await InvokeAsync(StateHasChanged);
 
                 if (!EstaViva)
-                {
                     break;
-                }
             }
         }
         catch (Exception excepcion) when (excepcion is OperationCanceledException or ObjectDisposedException)
@@ -208,14 +206,18 @@ else
         _temporizador = null;
     }
 
-    private static string Modo(string modo) => modo switch
+    private static string Modo(string modo)
     {
-        "attached" => "En primer plano",
-        "detached" => "En segundo plano",
-        _ => modo
-    };
+        return modo switch
+        {
+            "attached" => "En primer plano",
+            "detached" => "En segundo plano",
+            _ => modo
+        };
+    }
 
-    private static string Lineas(string? texto) => string.IsNullOrEmpty(texto) ? "vacía" : $"{texto.Split('\n').Length} líneas";
-
-    private static readonly TimeSpan IntervaloRefresco = TimeSpan.FromSeconds(2);
+    private static string Lineas(string? texto)
+    {
+        return string.IsNullOrEmpty(texto) ? "vacía" : $"{texto.Split('\n').Length} líneas";
+    }
 }

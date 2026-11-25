@@ -17,7 +17,7 @@ public class ScheduledTasksController(IScheduledTaskService tasks) : ControllerB
     /// Programa una tarea por cron sobre un servidor o un grupo.
     /// </summary>
     [HttpPost]
-    public async Task<IActionResult> CrearAsync([FromBody] CreateScheduledTaskRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> CreateAsync([FromBody] CreateScheduledTaskRequest request, CancellationToken cancellationToken)
     {
         return (await tasks.CreateAsync(request, cancellationToken)).ToActionResult();
     }
@@ -26,7 +26,7 @@ public class ScheduledTasksController(IScheduledTaskService tasks) : ControllerB
     /// Obtiene la ficha de una tarea programada.
     /// </summary>
     [HttpGet("{taskId:guid}")]
-    public async Task<IActionResult> ObtenerAsync(Guid taskId, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetAsync(Guid taskId, CancellationToken cancellationToken)
     {
         return (await tasks.GetAsync(taskId, cancellationToken)).ToActionResult();
     }
@@ -35,7 +35,7 @@ public class ScheduledTasksController(IScheduledTaskService tasks) : ControllerB
     /// Dispara la tarea ahora mismo, sin alterar su calendario.
     /// </summary>
     [HttpPost("{taskId:guid}/runs")]
-    public async Task<IActionResult> DispararAsync(Guid taskId, CancellationToken cancellationToken)
+    public async Task<IActionResult> TriggerAsync(Guid taskId, CancellationToken cancellationToken)
     {
         return (await tasks.TriggerAsync(taskId, cancellationToken)).ToActionResult();
     }

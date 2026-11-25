@@ -1,0 +1,15 @@
+using System;
+
+namespace LIN.Cloud.Enterprise.Baion.Orchestrator.Models.Entities;
+
+// Pertenencia de un servidor a un grupo. Se modela explícita para que la fila también lleve tenant.
+public class ServerGroupMember : TenantEntity
+{
+    public Guid ServerGroupId { get; set; }
+
+    public ServerGroup ServerGroup { get; set; } = null!;
+
+    public Guid ServerId { get; set; }
+
+    public Server Server { get; set; } = null!;
+}

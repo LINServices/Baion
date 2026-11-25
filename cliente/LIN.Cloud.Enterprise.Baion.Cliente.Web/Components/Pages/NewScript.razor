@@ -20,18 +20,18 @@
     private string? _codigo;
     private bool _guardando;
 
-    private async Task GuardarAsync(ScriptFormEntrada entrada)
+    private async Task GuardarAsync(ScriptFormInput entrada)
     {
         _guardando = true;
         _error = null;
         _codigo = null;
 
-        var peticion = new Models.CreateScriptRequest(entrada.Name, string.IsNullOrWhiteSpace(entrada.Description) ? null : entrada.Description, entrada.Content, entrada.Runtime, entrada.DefaultTimeoutSeconds);
+        var peticion = new CreateScriptRequest(entrada.Name, string.IsNullOrWhiteSpace(entrada.Description) ? null : entrada.Description, entrada.Content, entrada.Runtime, entrada.DefaultTimeoutSeconds);
         var resultado = await Api.CreateScriptAsync(peticion, CancellationToken.None);
 
         _guardando = false;
 
-        if (resultado is { IsSuccess: true, Value: Models.ScriptDetail creado })
+        if (resultado is { IsSuccess: true, Value: Dtos.Scripts.ScriptDetail creado })
         {
             Navigation.NavigateTo($"/scripts/{creado.Id}");
             return;

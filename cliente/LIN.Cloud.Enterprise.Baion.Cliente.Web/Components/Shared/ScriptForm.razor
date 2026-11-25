@@ -51,8 +51,8 @@
                 <p class="mt-2 text-label text-muted">Al vencer, el agente mata el proceso y todos sus hijos.</p>
             </div>
 
-            <button type="submit" class="baion-button w-full @_raton.Clase" disabled="@Guardando"
-                    @attributes="this.EventosRaton(_raton)">
+            <button type="submit" class="baion-button w-full @_raton.CssClass" disabled="@Guardando"
+                    @attributes="this.MouseEvents(_raton)">
                 @(Guardando ? "Guardando…" : TextoBoton)
             </button>
         </div>
@@ -71,35 +71,37 @@
 </EditForm>
 
 @code {
-    private readonly EstadoRaton _raton = new();
+    private readonly MouseState _raton = new();
 
-    /// <summary>Script a editar. Nulo en el alta: el formulario arranca vacío.</summary>
+    private Guid _precargadoDe;
+
     [Parameter]
-    public Models.ScriptDetail? Original { get; set; }
+    public Dtos.Scripts.ScriptDetail? Original { get; set; }
 
-    /// <summary>La página lo sube mientras la llamada de guardado está en curso.</summary>
     [Parameter]
     public bool Guardando { get; set; }
 
-    /// <summary>Error de la llamada que no cae en un campo concreto.</summary>
     [Parameter]
     public string? ErrorGeneral { get; set; }
 
-    /// <summary>Código de error de la API (<c>title</c> del <c>ProblemDetails</c>), si lo hubo.</summary>
     [Parameter]
     public string? ErrorCodigo { get; set; }
 
-    /// <summary>Se invoca con los campos ya validados en el navegador; la página hace la llamada.</summary>
     [Parameter, EditorRequired]
-    public EventCallback<ScriptFormEntrada> OnGuardar { get; set; }
+    public EventCallback<ScriptFormInput> OnGuardar { get; set; }
 
-    public ScriptFormEntrada Entrada { get; private set; } = new();
-
-    private Guid _precargadoDe;
+    public ScriptFormInput Entrada { get; private set; } = new();
 
     private string TextoBoton => Original is null ? "Crear script" : "Guardar cambios";
 
     private bool EsErrorDeCampo => ErrorCodigo is "script.name_required" or "script.content_required" or "script.timeout_invalid";
+
+    private string Ejemplo => Entrada.Runtime switch
+    {
+        "bash" or "sh" => "#!/usr/bin/env bash\nset -euo pipefail\n\necho \"hola\"",
+        "pythonCross" => "import sys\n\nprint(\"hola\")",
+        _ => "Write-Output 'hola'"
+    };
 
     protected override void OnParametersSet()
     {
@@ -107,7 +109,7 @@
 
         if (Original is not null && _precargadoDe != clave)
         {
-            Entrada = new ScriptFormEntrada
+            Entrada = new ScriptFormInput
             {
                 Name = Original.Name,
                 Description = Original.Description,
@@ -120,20 +122,19 @@
         }
     }
 
-    private async Task EnviarAsync() => await OnGuardar.InvokeAsync(Entrada);
-
-    private string? ErrorDeCampo(string campo) => ErrorCodigo switch
+    private async Task EnviarAsync()
     {
-        "script.name_required" when campo == "nombre" => "Indica un nombre para el script.",
-        "script.content_required" when campo == "contenido" => "El script no puede estar vacío.",
-        "script.timeout_invalid" when campo == "timeout" => "El timeout debe estar entre 1 segundo y 24 horas.",
-        _ => null
-    };
+        await OnGuardar.InvokeAsync(Entrada);
+    }
 
-    private string Ejemplo => Entrada.Runtime switch
+    private string? ErrorDeCampo(string campo)
     {
-        "bash" or "sh" => "#!/usr/bin/env bash\nset -euo pipefail\n\necho \"hola\"",
-        "pythonCross" => "import sys\n\nprint(\"hola\")",
-        _ => "Write-Output 'hola'"
-    };
+        return ErrorCodigo switch
+        {
+            "script.name_required" when campo == "nombre" => "Indica un nombre para el script.",
+            "script.content_required" when campo == "contenido" => "El script no puede estar vacío.",
+            "script.timeout_invalid" when campo == "timeout" => "El timeout debe estar entre 1 segundo y 24 horas.",
+            _ => null
+        };
+    }
 }

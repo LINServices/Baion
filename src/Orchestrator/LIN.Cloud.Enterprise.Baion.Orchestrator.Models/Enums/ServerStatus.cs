@@ -1,8 +1,5 @@
 namespace LIN.Cloud.Enterprise.Baion.Orchestrator.Models.Enums;
 
-/// <summary>
-/// Estado de conexión del servidor frente al orquestador.
-/// </summary>
 public enum ServerStatus
 {
     Provisioning = 1,

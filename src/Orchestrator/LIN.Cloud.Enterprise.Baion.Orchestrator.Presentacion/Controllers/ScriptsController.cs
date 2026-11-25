@@ -17,7 +17,7 @@ public class ScriptsController(IScriptService scripts) : ControllerBase
     /// Da de alta un script en el tenant actual.
     /// </summary>
     [HttpPost]
-    public async Task<IActionResult> CrearAsync([FromBody] CreateScriptRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> CreateAsync([FromBody] CreateScriptRequest request, CancellationToken cancellationToken)
     {
         return (await scripts.CreateAsync(request, cancellationToken)).ToActionResult();
     }
@@ -26,7 +26,7 @@ public class ScriptsController(IScriptService scripts) : ControllerBase
     /// Edita un script del tenant actual. La versión sube solo si cambia el contenido.
     /// </summary>
     [HttpPut("{scriptId:guid}")]
-    public async Task<IActionResult> EditarAsync(Guid scriptId, [FromBody] UpdateScriptRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> UpdateAsync(Guid scriptId, [FromBody] UpdateScriptRequest request, CancellationToken cancellationToken)
     {
         return (await scripts.UpdateAsync(scriptId, request, cancellationToken)).ToActionResult();
     }
@@ -35,7 +35,7 @@ public class ScriptsController(IScriptService scripts) : ControllerBase
     /// Lista los scripts del tenant actual, con búsqueda opcional por nombre.
     /// </summary>
     [HttpGet]
-    public async Task<IActionResult> ListarAsync([FromQuery] string? search, int page = 1, int pageSize = 25, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> ListAsync([FromQuery] string? search, int page = 1, int pageSize = 25, CancellationToken cancellationToken = default)
     {
         return Ok(await scripts.ListAsync(search, page, pageSize, cancellationToken));
     }
@@ -44,7 +44,7 @@ public class ScriptsController(IScriptService scripts) : ControllerBase
     /// Obtiene un script con su contenido.
     /// </summary>
     [HttpGet("{scriptId:guid}")]
-    public async Task<IActionResult> ObtenerAsync(Guid scriptId, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetAsync(Guid scriptId, CancellationToken cancellationToken)
     {
         return (await scripts.GetDetailAsync(scriptId, cancellationToken)).ToActionResult();
     }

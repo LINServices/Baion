@@ -9,8 +9,8 @@
 <PageHeader Seccion="Catálogo" Titulo="Scripts">
     <Acciones>
         <SearchPill @bind-Valor="_busqueda" OnBuscar="BuscarAsync" Placeholder="Nombre del script" />
-        <button type="button" class="baion-button-icon @_raton.Clase" title="Actualizar" aria-label="Actualizar"
-                disabled="@_cargando" @onclick="CargarAsync" @attributes="this.EventosRaton(_raton)">
+        <button type="button" class="baion-button-icon @_raton.CssClass" title="Actualizar" aria-label="Actualizar"
+                disabled="@_cargando" @onclick="CargarAsync" @attributes="this.MouseEvents(_raton)">
             <Icon Nombre="refresh-cw" Tamano="20" />
         </button>
         <a class="baion-button" href="/scripts/nuevo">
@@ -83,7 +83,9 @@ else
 }
 
 @code {
-    private readonly EstadoRaton _raton = new();
+    private const int TamanoPagina = 25;
+
+    private readonly MouseState _raton = new();
 
     private PagedResult<ScriptListItem>? _resultado;
     private string? _busqueda;
@@ -91,11 +93,14 @@ else
     private bool _cargando = true;
     private int _pagina = 1;
 
-    protected override async Task OnInitializedAsync() => await CargarAsync();
-
     private IReadOnlyList<ScriptListItem> Listado => _resultado?.Items ?? [];
 
     private int Pagina => _resultado?.Page ?? _pagina;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarAsync();
+    }
 
     private async Task CargarAsync()
     {
@@ -108,7 +113,7 @@ else
         _cargando = false;
     }
 
-    /// <summary>Una búsqueda nueva empieza por la primera página; la que estuviera abierta ya no aplica.</summary>
+    // Una búsqueda nueva empieza por la primera página; la que estuviera abierta ya no aplica.
     private async Task BuscarAsync()
     {
         _pagina = 1;
@@ -121,7 +126,8 @@ else
         await CargarAsync();
     }
 
-    private void Abrir(Guid scriptId) => Navigation.NavigateTo($"/scripts/{scriptId}");
-
-    private const int TamanoPagina = 25;
+    private void Abrir(Guid scriptId)
+    {
+        Navigation.NavigateTo($"/scripts/{scriptId}");
+    }
 }

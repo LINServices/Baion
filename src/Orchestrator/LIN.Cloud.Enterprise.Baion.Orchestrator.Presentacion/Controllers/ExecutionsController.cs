@@ -18,7 +18,7 @@ public class ExecutionsController(IScriptDispatchService dispatch) : ControllerB
     /// Despacha un script a un servidor y devuelve el identificador de la ejecución.
     /// </summary>
     [HttpPost]
-    public async Task<IActionResult> DespacharAsync([FromBody] DispatchScriptRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> DispatchAsync([FromBody] DispatchScriptRequest request, CancellationToken cancellationToken)
     {
         return (await dispatch.DispatchAsync(request, cancellationToken)).ToActionResult();
     }
@@ -27,7 +27,7 @@ public class ExecutionsController(IScriptDispatchService dispatch) : ControllerB
     /// Lista las ejecuciones del tenant actual, de la más reciente a la más antigua y sin su salida.
     /// </summary>
     [HttpGet]
-    public async Task<IActionResult> ListarAsync([FromQuery] Guid? serverId, Guid? scriptId, ExecutionStatus? status, DateTimeOffset? since, int page = 1, int pageSize = 25, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> ListAsync([FromQuery] Guid? serverId, Guid? scriptId, ExecutionStatus? status, DateTimeOffset? since, int page = 1, int pageSize = 25, CancellationToken cancellationToken = default)
     {
         return Ok(await dispatch.ListAsync(new ExecutionFilter(serverId, scriptId, status, since), page, pageSize, cancellationToken));
     }
@@ -36,7 +36,7 @@ public class ExecutionsController(IScriptDispatchService dispatch) : ControllerB
     /// Consulta el estado y la salida acumulada de una ejecución.
     /// </summary>
     [HttpGet("{executionId:guid}")]
-    public async Task<IActionResult> ObtenerAsync(Guid executionId, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetAsync(Guid executionId, CancellationToken cancellationToken)
     {
         return (await dispatch.GetAsync(executionId, cancellationToken)).ToActionResult();
     }

@@ -6,17 +6,17 @@
         @if (TotalPaginas > 1)
         {
             <div class="flex items-center gap-2">
-                <button type="button" class="baion-button-icon @_ratonAnterior.Clase" disabled="@(!HayAnterior)"
+                <button type="button" class="baion-button-icon @_ratonAnterior.CssClass" disabled="@(!HayAnterior)"
                         aria-label="Página anterior" @onclick="() => IrAsync(Pagina - 1)"
-                        @attributes="this.EventosRaton(_ratonAnterior)">
+                        @attributes="this.MouseEvents(_ratonAnterior)">
                     <Icon Nombre="chevron-left" />
                 </button>
 
                 <span class="px-1 text-label tabular-nums text-muted">Página @Pagina de @TotalPaginas</span>
 
-                <button type="button" class="baion-button-icon @_ratonSiguiente.Clase" disabled="@(!HaySiguiente)"
+                <button type="button" class="baion-button-icon @_ratonSiguiente.CssClass" disabled="@(!HaySiguiente)"
                         aria-label="Página siguiente" @onclick="() => IrAsync(Pagina + 1)"
-                        @attributes="this.EventosRaton(_ratonSiguiente)">
+                        @attributes="this.MouseEvents(_ratonSiguiente)">
                     <Icon Nombre="chevron-right" />
                 </button>
             </div>
@@ -25,8 +25,8 @@
 }
 
 @code {
-    private readonly EstadoRaton _ratonAnterior = new();
-    private readonly EstadoRaton _ratonSiguiente = new();
+    private readonly MouseState _ratonAnterior = new();
+    private readonly MouseState _ratonSiguiente = new();
 
     [Parameter, EditorRequired]
     public int Pagina { get; set; } = 1;
@@ -46,7 +46,6 @@
     [Parameter]
     public bool HaySiguiente { get; set; }
 
-    /// <summary>Recibe la página a la que hay que saltar; recargar es cosa de quien usa el componente.</summary>
     [Parameter, EditorRequired]
     public EventCallback<int> OnCambioPagina { get; set; }
 
@@ -56,5 +55,8 @@
 
     private string Resumen => $"Mostrando {NumberFormat.Count(Primero)}–{NumberFormat.Count(Ultimo)} de {NumberFormat.Count(TotalElementos)}";
 
-    private async Task IrAsync(int pagina) => await OnCambioPagina.InvokeAsync(Math.Clamp(pagina, 1, Math.Max(TotalPaginas, 1)));
+    private async Task IrAsync(int pagina)
+    {
+        await OnCambioPagina.InvokeAsync(Math.Clamp(pagina, 1, Math.Max(TotalPaginas, 1)));
+    }
 }

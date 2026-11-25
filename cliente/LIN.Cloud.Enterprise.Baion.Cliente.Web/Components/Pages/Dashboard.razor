@@ -110,6 +110,11 @@ else if (_resumen is not null)
     private string? _error;
     private bool _cargando = true;
 
+    private int Correctas => Math.Max((_resumen?.ExecutionsLast24Hours ?? 0) - (_resumen?.FailedLast24Hours ?? 0), 0);
+
+    // Sin ejecuciones no hay tasa que enseñar: el arco se queda vacío en lugar de fingir un 100%.
+    private double FraccionCorrectas => NumberFormat.Fraction(Correctas, _resumen?.ExecutionsLast24Hours ?? 0);
+
     protected override async Task OnInitializedAsync()
     {
         var resumen = await Api.GetDashboardSummaryAsync(CancellationToken.None);
@@ -120,9 +125,4 @@ else if (_resumen is not null)
         _error = resumen.ErrorMessage ?? servidores.ErrorMessage;
         _cargando = false;
     }
-
-    private int Correctas => Math.Max((_resumen?.ExecutionsLast24Hours ?? 0) - (_resumen?.FailedLast24Hours ?? 0), 0);
-
-    // Sin ejecuciones no hay tasa que enseñar: el arco se queda vacío en lugar de fingir un 100%.
-    private double FraccionCorrectas => NumberFormat.Fraction(Correctas, _resumen?.ExecutionsLast24Hours ?? 0);
 }

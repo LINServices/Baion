@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using LIN.Cloud.Enterprise.Baion.Orchestrator.Presentacion.Constants;
 using LIN.Cloud.Enterprise.Baion.Orchestrator.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -16,7 +17,7 @@ public class ServersController(IServerService servers) : ControllerBase
     /// Lista los servidores gestionados del tenant actual.
     /// </summary>
     [HttpGet]
-    public async Task<IActionResult> ListarAsync(CancellationToken cancellationToken)
+    public async Task<IActionResult> ListAsync(CancellationToken cancellationToken)
     {
         return Ok(await servers.GetAllAsync(cancellationToken));
     }
@@ -25,7 +26,7 @@ public class ServersController(IServerService servers) : ControllerBase
     /// Obtiene un servidor con su última lectura de métricas.
     /// </summary>
     [HttpGet("{serverId:guid}")]
-    public async Task<IActionResult> ObtenerAsync(Guid serverId, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetAsync(Guid serverId, CancellationToken cancellationToken)
     {
         return (await servers.GetAsync(serverId, cancellationToken)).ToActionResult();
     }
@@ -34,8 +35,8 @@ public class ServersController(IServerService servers) : ControllerBase
     /// Desactiva el servidor y corta la conexión de su agente en el acto.
     /// </summary>
     [HttpPost("{serverId:guid}/disable")]
-    [Authorize(Roles = AdminRole)]
-    public async Task<IActionResult> DesactivarAsync(Guid serverId, CancellationToken cancellationToken)
+    [Authorize(Roles = AuthorizationRoles.Admin)]
+    public async Task<IActionResult> DisableAsync(Guid serverId, CancellationToken cancellationToken)
     {
         return (await servers.DisableAsync(serverId, cancellationToken)).ToActionResult();
     }
@@ -44,11 +45,9 @@ public class ServersController(IServerService servers) : ControllerBase
     /// Reactiva el servidor para que su agente pueda volver a conectarse.
     /// </summary>
     [HttpPost("{serverId:guid}/enable")]
-    [Authorize(Roles = AdminRole)]
-    public async Task<IActionResult> ReactivarAsync(Guid serverId, CancellationToken cancellationToken)
+    [Authorize(Roles = AuthorizationRoles.Admin)]
+    public async Task<IActionResult> EnableAsync(Guid serverId, CancellationToken cancellationToken)
     {
         return (await servers.EnableAsync(serverId, cancellationToken)).ToActionResult();
     }
-
-    private const string AdminRole = "Admin";
 }
