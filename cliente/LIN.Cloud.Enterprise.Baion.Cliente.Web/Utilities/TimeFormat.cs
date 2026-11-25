@@ -24,6 +24,23 @@ public static class TimeFormat
         };
     }
 
+    // Igual que Relative pero para un instante futuro (próxima ejecución): "en 4 h". Si ya pasó, se dice "ahora".
+    public static string Upcoming(DateTimeOffset? instante)
+    {
+        if (instante is not DateTimeOffset valor)
+            return "—";
+
+        var restante = valor - DateTimeOffset.UtcNow;
+
+        return restante switch
+        {
+            { TotalSeconds: < 60 } => "en instantes",
+            { TotalMinutes: < 60 } => string.Create(Cultura, $"en {(int)restante.TotalMinutes} min"),
+            { TotalHours: < 24 } => string.Create(Cultura, $"en {(int)restante.TotalHours} h"),
+            _ => string.Create(Cultura, $"en {(int)restante.TotalDays} d")
+        };
+    }
+
     public static string Absolute(DateTimeOffset? instante)
     {
         return instante is DateTimeOffset valor ? valor.ToString("dd/MM/yyyy HH:mm:ss", Cultura) : "—";

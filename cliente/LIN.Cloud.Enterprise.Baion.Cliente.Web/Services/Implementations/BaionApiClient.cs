@@ -14,7 +14,9 @@ using LIN.Cloud.Enterprise.Baion.Cliente.Web.Dtos.Common;
 using LIN.Cloud.Enterprise.Baion.Cliente.Web.Dtos.Dashboard;
 using LIN.Cloud.Enterprise.Baion.Cliente.Web.Dtos.Enrollment;
 using LIN.Cloud.Enterprise.Baion.Cliente.Web.Dtos.Executions;
+using LIN.Cloud.Enterprise.Baion.Cliente.Web.Dtos.Scheduling;
 using LIN.Cloud.Enterprise.Baion.Cliente.Web.Dtos.Scripts;
+using LIN.Cloud.Enterprise.Baion.Cliente.Web.Dtos.ServerGroups;
 using LIN.Cloud.Enterprise.Baion.Cliente.Web.Dtos.Servers;
 using LIN.Cloud.Enterprise.Baion.Cliente.Web.Dtos.SystemServices;
 using LIN.Cloud.Enterprise.Baion.Cliente.Web.Results;
@@ -213,6 +215,109 @@ internal class BaionApiClient(HttpClient http, IAccessTokenProvider tokens, ILog
     public async Task<ApiResult<ScriptExecutionDetail>> GetExecutionAsync(Guid executionId, CancellationToken cancellationToken)
     {
         return await GetAsync<ScriptExecutionDetail>($"api/executions/{executionId}", cancellationToken);
+    }
+
+    public async Task<ApiResult<IReadOnlyList<ServerGroupSummary>>> GetServerGroupsAsync(CancellationToken cancellationToken)
+    {
+        return await GetAsync<IReadOnlyList<ServerGroupSummary>>("api/server-groups", cancellationToken);
+    }
+
+    public async Task<ApiResult<ServerGroupDetail>> GetServerGroupAsync(Guid groupId, CancellationToken cancellationToken)
+    {
+        return await GetAsync<ServerGroupDetail>($"api/server-groups/{groupId}", cancellationToken);
+    }
+
+    public async Task<ApiResult<ServerGroupDetail>> CreateServerGroupAsync(CreateServerGroupRequest request, CancellationToken cancellationToken)
+    {
+        using var message = new HttpRequestMessage(HttpMethod.Post, "api/server-groups")
+        {
+            Content = JsonContent.Create(request, options: JsonOptions)
+        };
+
+        return await SendAsync<ServerGroupDetail>(message, authenticated: true, cancellationToken);
+    }
+
+    public async Task<ApiResult<ServerGroupDetail>> UpdateServerGroupAsync(Guid groupId, UpdateServerGroupRequest request, CancellationToken cancellationToken)
+    {
+        using var message = new HttpRequestMessage(HttpMethod.Put, $"api/server-groups/{groupId}")
+        {
+            Content = JsonContent.Create(request, options: JsonOptions)
+        };
+
+        return await SendAsync<ServerGroupDetail>(message, authenticated: true, cancellationToken);
+    }
+
+    public async Task<ApiResult<bool>> DeleteServerGroupAsync(Guid groupId, CancellationToken cancellationToken)
+    {
+        using var message = new HttpRequestMessage(HttpMethod.Delete, $"api/server-groups/{groupId}");
+        var token = await tokens.GetTokenAsync();
+
+        if (string.IsNullOrWhiteSpace(token))
+            return ApiResult<bool>.Failure("No hay sesión iniciada.");
+
+        message.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        try
+        {
+            using var response = await http.SendAsync(message, cancellationToken);
+
+            // El borrado responde 204 sin cuerpo, así que no hay nada que deserializar.
+            if (response.IsSuccessStatusCode)
+                return ApiResult<bool>.Success(true);
+
+            var (mensaje, codigo) = await DescribeAsync(response, cancellationToken);
+            return ApiResult<bool>.Failure(mensaje, codigo);
+        }
+        catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException)
+        {
+            logger.LogWarning("Falló el borrado del grupo {GroupId}: {Motivo}", groupId, exception.Message);
+            return ApiResult<bool>.Failure(UnreachableMessage);
+        }
+    }
+
+    public async Task<ApiResult<DispatchGroupResult>> DispatchGroupAsync(DispatchGroupRequest request, CancellationToken cancellationToken)
+    {
+        using var message = new HttpRequestMessage(HttpMethod.Post, "api/executions/batches")
+        {
+            Content = JsonContent.Create(request, options: JsonOptions)
+        };
+
+        return await SendAsync<DispatchGroupResult>(message, authenticated: true, cancellationToken);
+    }
+
+    public async Task<ApiResult<ExecutionBatchDetail>> GetExecutionBatchAsync(Guid batchId, CancellationToken cancellationToken)
+    {
+        return await GetAsync<ExecutionBatchDetail>($"api/executions/batches/{batchId}", cancellationToken);
+    }
+
+    public async Task<ApiResult<IReadOnlyList<ScheduledTaskListItem>>> GetScheduledTasksAsync(CancellationToken cancellationToken)
+    {
+        return await GetAsync<IReadOnlyList<ScheduledTaskListItem>>("api/scheduled-tasks", cancellationToken);
+    }
+
+    public async Task<ApiResult<ScheduledTaskSummary>> CreateScheduledTaskAsync(CreateScheduledTaskRequest request, CancellationToken cancellationToken)
+    {
+        using var message = new HttpRequestMessage(HttpMethod.Post, "api/scheduled-tasks")
+        {
+            Content = JsonContent.Create(request, options: JsonOptions)
+        };
+
+        return await SendAsync<ScheduledTaskSummary>(message, authenticated: true, cancellationToken);
+    }
+
+    public async Task<ApiResult<ScheduledTaskSummary>> EnableScheduledTaskAsync(Guid taskId, CancellationToken cancellationToken)
+    {
+        return await PostAsync<ScheduledTaskSummary>($"api/scheduled-tasks/{taskId}/enable", cancellationToken);
+    }
+
+    public async Task<ApiResult<ScheduledTaskSummary>> DisableScheduledTaskAsync(Guid taskId, CancellationToken cancellationToken)
+    {
+        return await PostAsync<ScheduledTaskSummary>($"api/scheduled-tasks/{taskId}/disable", cancellationToken);
+    }
+
+    public async Task<ApiResult<ScheduledTaskTriggered>> TriggerScheduledTaskAsync(Guid taskId, CancellationToken cancellationToken)
+    {
+        return await PostAsync<ScheduledTaskTriggered>($"api/scheduled-tasks/{taskId}/runs", cancellationToken);
     }
 
     private async Task<ApiResult<TValue>> GetAsync<TValue>(string path, CancellationToken cancellationToken)

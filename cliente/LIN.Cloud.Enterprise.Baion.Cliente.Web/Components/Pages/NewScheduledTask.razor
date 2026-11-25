@@ -1,0 +1,83 @@
+@page "/tareas/nueva"
+@attribute [Authorize]
+@using LIN.Cloud.Enterprise.Baion.Cliente.Web.Dtos.Scheduling
+
+@inject IBaionApiClient Api
+@inject NavigationManager Navigation
+
+<PageTitle>Nueva tarea · Baion</PageTitle>
+
+<PageHeader Seccion="Automatización" Titulo="Nueva tarea programada"
+            Descripcion="Ejecuta un script del catálogo en un servidor o en un grupo, según un cron.">
+    <Acciones>
+        <a class="baion-button-ghost" href="/tareas">Cancelar</a>
+    </Acciones>
+</PageHeader>
+
+<ScheduledTaskForm Guardando="_guardando" ErrorGeneral="@_error" ErrorCodigo="@_codigo" OnGuardar="GuardarAsync" />
+
+@code {
+    private string? _error;
+    private string? _codigo;
+    private bool _guardando;
+
+    private async Task GuardarAsync(ScheduledTaskFormInput entrada)
+    {
+        _error = null;
+        _codigo = null;
+
+        // El destino viaja como «s:guid» (servidor) o «g:guid» (grupo); aquí se separa en los dos campos de la petición.
+        if (!TryParseDestino(entrada.Target, out var servidorId, out var grupoId) || !Guid.TryParse(entrada.ScriptId, out var scriptId))
+        {
+            _error = "El script o el destino elegidos no son válidos.";
+            return;
+        }
+
+        _guardando = true;
+
+        var peticion = new CreateScheduledTaskRequest(
+            entrada.Name.Trim(),
+            entrada.CronExpression.Trim(),
+            entrada.TimeZoneId.Trim(),
+            scriptId,
+            null,
+            servidorId,
+            grupoId,
+            entrada.Mode,
+            entrada.OfflineGraceSeconds);
+
+        var resultado = await Api.CreateScheduledTaskAsync(peticion, CancellationToken.None);
+
+        _guardando = false;
+
+        if (resultado.IsSuccess)
+        {
+            Navigation.NavigateTo("/tareas");
+            return;
+        }
+
+        _error = resultado.ErrorMessage;
+        _codigo = resultado.ErrorCode;
+    }
+
+    private static bool TryParseDestino(string destino, out Guid? servidorId, out Guid? grupoId)
+    {
+        servidorId = null;
+        grupoId = null;
+
+        if (destino.Length < 3 || destino[1] != ':' || !Guid.TryParse(destino.AsSpan(2), out var id))
+            return false;
+
+        switch (destino[0])
+        {
+            case 's':
+                servidorId = id;
+                return true;
+            case 'g':
+                grupoId = id;
+                return true;
+            default:
+                return false;
+        }
+    }
+}

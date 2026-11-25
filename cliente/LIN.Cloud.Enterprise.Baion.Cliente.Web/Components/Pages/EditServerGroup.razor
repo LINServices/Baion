@@ -1,0 +1,88 @@
+@page "/grupos/{Id:guid}/editar"
+@attribute [Authorize]
+
+@using LIN.Cloud.Enterprise.Baion.Cliente.Web.Dtos.ServerGroups
+
+@inject IBaionApiClient Api
+@inject NavigationManager Navigation
+
+<PageTitle>@Titulo · Baion</PageTitle>
+
+<PageHeader Seccion="Grupo" Titulo="@Titulo"
+            Descripcion="La lista de servidores que dejes marcada reemplaza a la anterior.">
+    <Acciones>
+        <a class="baion-button-ghost" href="/grupos">
+            <Icon Nombre="chevron-left" Tamano="14" />
+            Volver a grupos
+        </a>
+    </Acciones>
+</PageHeader>
+
+@if (_cargando)
+{
+    <GhostLoader Descripcion="Cargando el grupo…" />
+}
+else if (_grupo is null)
+{
+    <AlertMessage Mensaje="@_error" />
+
+    <EmptyState Icono="layers"
+                Titulo="No se encontró el grupo"
+                Descripcion="Puede que se haya eliminado o que el enlace esté equivocado.">
+        <Accion>
+            <a class="baion-button" href="/grupos">Ir a grupos</a>
+        </Accion>
+    </EmptyState>
+}
+else
+{
+    <ServerGroupForm Original="_grupo" Guardando="_guardando" ErrorGeneral="@_error" ErrorCodigo="@_codigo" OnGuardar="GuardarAsync" />
+}
+
+@code {
+    private ServerGroupDetail? _grupo;
+    private string? _error;
+    private string? _codigo;
+    private bool _cargando = true;
+    private bool _guardando;
+
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private string Titulo => _grupo?.Name ?? "Editar grupo";
+
+    // En OnParametersSetAsync porque saltar de un grupo a otro reutiliza el componente.
+    protected override async Task OnParametersSetAsync()
+    {
+        _cargando = true;
+        _error = null;
+        _codigo = null;
+
+        var resultado = await Api.GetServerGroupAsync(Id, CancellationToken.None);
+
+        _grupo = resultado.Value;
+        _error = resultado.ErrorMessage;
+        _cargando = false;
+    }
+
+    private async Task GuardarAsync(ServerGroupFormInput entrada)
+    {
+        _guardando = true;
+        _error = null;
+        _codigo = null;
+
+        var peticion = new UpdateServerGroupRequest(entrada.Name, string.IsNullOrWhiteSpace(entrada.Description) ? null : entrada.Description, entrada.ServerIds.ToList());
+        var resultado = await Api.UpdateServerGroupAsync(Id, peticion, CancellationToken.None);
+
+        _guardando = false;
+
+        if (resultado.IsSuccess)
+        {
+            Navigation.NavigateTo("/grupos");
+            return;
+        }
+
+        _error = resultado.ErrorMessage;
+        _codigo = resultado.ErrorCode;
+    }
+}

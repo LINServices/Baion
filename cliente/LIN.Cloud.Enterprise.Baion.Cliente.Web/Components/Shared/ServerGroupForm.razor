@@ -1,0 +1,112 @@
+@using LIN.Cloud.Enterprise.Baion.Cliente.Web.Dtos.ServerGroups
+
+@* Formulario de grupo compartido por el alta (/grupos/nuevo) y la edición (/grupos/{id}/editar).
+   El componente solo gestiona los campos y su validación; guardar y navegar es cosa de la página. *@
+
+@if (!EsErrorDeCampo)
+{
+    <AlertMessage Mensaje="@ErrorGeneral" />
+}
+
+<EditForm Model="Entrada" OnValidSubmit="EnviarAsync">
+    <DataAnnotationsValidator />
+
+    <div class="grid gap-3 lg:grid-cols-3">
+        <div class="baion-card space-y-5 p-5 lg:col-span-1">
+            <div>
+                <label class="baion-label" for="nombre">Nombre</label>
+                <InputText id="nombre" @bind-Value="Entrada.Name" class="baion-input mt-2" placeholder="produccion-web" />
+                <ValidationMessage For="() => Entrada.Name" class="mt-2 text-label text-danger" />
+                @if (ErrorDeCampo() is { } mensajeNombre)
+                {
+                    <p class="mt-2 text-label text-danger">@mensajeNombre</p>
+                }
+            </div>
+
+            <div>
+                <label class="baion-label" for="descripcion">Descripción</label>
+                <InputText id="descripcion" @bind-Value="Entrada.Description" class="baion-input mt-2" placeholder="Opcional" />
+                <ValidationMessage For="() => Entrada.Description" class="mt-2 text-label text-danger" />
+            </div>
+
+            <p class="text-label text-muted tabular-nums">@Contador</p>
+
+            <button type="submit" class="baion-button w-full @_raton.CssClass" disabled="@Guardando"
+                    @attributes="this.MouseEvents(_raton)">
+                @(Guardando ? "Guardando…" : TextoBoton)
+            </button>
+        </div>
+
+        <div class="baion-card p-5 lg:col-span-2">
+            <p class="baion-label mb-3">Servidores</p>
+            <ServerPicker Seleccionados="Entrada.ServerIds" SeleccionadosChanged="AlCambiarSeleccion" />
+        </div>
+    </div>
+</EditForm>
+
+@code {
+    private readonly MouseState _raton = new();
+
+    private Guid _precargadoDe;
+
+    [Parameter]
+    public ServerGroupDetail? Original { get; set; }
+
+    [Parameter]
+    public bool Guardando { get; set; }
+
+    [Parameter]
+    public string? ErrorGeneral { get; set; }
+
+    [Parameter]
+    public string? ErrorCodigo { get; set; }
+
+    [Parameter, EditorRequired]
+    public EventCallback<ServerGroupFormInput> OnGuardar { get; set; }
+
+    public ServerGroupFormInput Entrada { get; private set; } = new();
+
+    private string TextoBoton => Original is null ? "Crear grupo" : "Guardar cambios";
+
+    private bool EsErrorDeCampo => ErrorCodigo is "group.name_required" or "group.name_too_long" or "group.name_taken";
+
+    private string Contador => Entrada.ServerIds.Count == 1 ? "1 seleccionado" : $"{Entrada.ServerIds.Count} seleccionados";
+
+    protected override void OnParametersSet()
+    {
+        var clave = Original?.Id ?? Guid.Empty;
+
+        if (Original is not null && _precargadoDe != clave)
+        {
+            Entrada = new ServerGroupFormInput
+            {
+                Name = Original.Name,
+                Description = Original.Description,
+                ServerIds = Original.Members.Select(miembro => miembro.ServerId).ToHashSet()
+            };
+
+            _precargadoDe = clave;
+        }
+    }
+
+    private void AlCambiarSeleccion(HashSet<Guid> seleccion)
+    {
+        Entrada.ServerIds = seleccion;
+    }
+
+    private async Task EnviarAsync()
+    {
+        await OnGuardar.InvokeAsync(Entrada);
+    }
+
+    private string? ErrorDeCampo()
+    {
+        return ErrorCodigo switch
+        {
+            "group.name_required" => "Indica un nombre para el grupo.",
+            "group.name_too_long" => "El nombre no puede pasar de 200 caracteres.",
+            "group.name_taken" => "Ya existe un grupo con ese nombre.",
+            _ => null
+        };
+    }
+}

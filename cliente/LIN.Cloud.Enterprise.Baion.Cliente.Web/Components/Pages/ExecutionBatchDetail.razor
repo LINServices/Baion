@@ -1,0 +1,156 @@
+@page "/ejecuciones/lote/{Id:guid}"
+@attribute [Authorize]
+@using Lote = LIN.Cloud.Enterprise.Baion.Cliente.Web.Dtos.Executions.ExecutionBatchDetail
+
+@inject IBaionApiClient Api
+
+<PageTitle>@Titulo · Baion</PageTitle>
+
+<PageHeader Seccion="Lote de ejecuciones" Titulo="@Titulo">
+    <Acciones>
+        <a class="baion-button-ghost" href="/ejecuciones">
+            <Icon Nombre="chevron-left" Tamano="14" />
+            Volver al historial
+        </a>
+    </Acciones>
+</PageHeader>
+
+<AlertMessage Mensaje="@_error" />
+
+@if (_cargando)
+{
+    <GhostLoader Descripcion="Cargando el lote…" />
+}
+else if (_lote is null)
+{
+    <EmptyState Icono="history"
+                Titulo="No se encontró el lote"
+                Descripcion="Puede que se haya purgado del historial o que el enlace esté equivocado.">
+        <Accion>
+            <a class="baion-button" href="/ejecuciones">Ir al historial</a>
+        </Accion>
+    </EmptyState>
+}
+else
+{
+    <div class="baion-card p-6">
+        <dl class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            <DetailField Etiqueta="Grupo">
+                @if (_lote.ServerGroupId is null)
+                {
+                    <span class="text-muted">Grupo eliminado (@_lote.ServerGroupName)</span>
+                }
+                else
+                {
+                    @_lote.ServerGroupName
+                }
+            </DetailField>
+            <DetailField Etiqueta="Script">@_lote.ScriptName</DetailField>
+            <DetailField Etiqueta="Modo">@Modo(_lote.Mode)</DetailField>
+            <DetailField Etiqueta="Lanzado por">@(_lote.RequestedBy ?? "—")</DetailField>
+            <DetailField Etiqueta="Fecha">
+                <span class="tabular-nums" title="@TimeFormat.Absolute(_lote.CreatedAt)">@TimeFormat.Relative(_lote.CreatedAt)</span>
+            </DetailField>
+            <DetailField Etiqueta="Miembros"><span class="tabular-nums">@_lote.TotalMembers</span></DetailField>
+            <DetailField Etiqueta="Incompatibles omitidos"><span class="tabular-nums">@_lote.SkippedIncompatibleCount</span></DetailField>
+            <DetailField Etiqueta="Deshabilitados omitidos"><span class="tabular-nums">@_lote.SkippedDisabledCount</span></DetailField>
+        </dl>
+
+        <div class="mt-6">
+            <div class="mb-2 flex flex-wrap items-center justify-between gap-2 text-label text-ink-2">
+                <span class="tabular-nums">@Correctas correctas de @_lote.DispatchedCount lanzadas</span>
+                @if (_lote.FailedCount > 0)
+                {
+                    <span class="tabular-nums text-danger">@_lote.FailedCount fallidas al lanzar</span>
+                }
+            </div>
+            <SegmentedBar Logrado="@Fraccion(Correctas)" EnCurso="@Fraccion(EnCurso)" Pendiente="@Fraccion(Pendientes)"
+                          Descripcion="@($"{Correctas} correctas, {EnCurso} en curso, {Pendientes} pendientes de {_lote.DispatchedCount}")" />
+        </div>
+    </div>
+
+    @if (_lote.Executions.Count == 0)
+    {
+        <div class="mt-3">
+            <EmptyState Icono="history"
+                        Titulo="Este lote no creó ejecuciones"
+                        Descripcion="Ningún miembro del grupo pudo lanzarse." />
+        </div>
+    }
+    else
+    {
+        <div class="baion-card mt-3 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="baion-table">
+                    <thead>
+                        <tr>
+                            <th>Servidor</th>
+                            <th>Estado</th>
+                            <th class="text-right">Salida</th>
+                            <th>Iniciada</th>
+                            <th class="text-right">Duración</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var ejecucion in _lote.Executions)
+                        {
+                            <tr>
+                                <td class="text-title text-ink">@ejecucion.ServerName</td>
+                                <td><ExecutionStatusBadge Estado="@ejecucion.Status" /></td>
+                                <td class="text-right font-mono tabular-nums @(ejecucion.ExitCode is null or 0 ? "text-ink-2" : "text-danger")">@(ejecucion.ExitCode?.ToString() ?? "—")</td>
+                                <td class="text-muted" title="@TimeFormat.Absolute(ejecucion.StartedAt)">@TimeFormat.Relative(ejecucion.StartedAt)</td>
+                                <td class="text-right tabular-nums">@TimeFormat.Elapsed(ejecucion.StartedAt, ejecucion.CompletedAt)</td>
+                                <td class="text-right"><a class="text-body text-ink" href="/ejecuciones/@ejecucion.Id">Ver</a></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+}
+
+@code {
+    private Lote? _lote;
+    private string? _error;
+    private bool _cargando = true;
+
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private string Titulo => _lote?.ScriptName ?? "Lote";
+
+    private int Correctas => _lote?.Executions.Count(e => e.Status == "succeeded") ?? 0;
+
+    private int EnCurso => _lote?.Executions.Count(e => e.Status is "dispatched" or "running") ?? 0;
+
+    // Lo pendiente es lo lanzado que aún no ha terminado bien ni está en marcha (incluye fallos y expiradas).
+    private int Pendientes => Math.Max(0, (_lote?.DispatchedCount ?? 0) - Correctas - EnCurso);
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _cargando = true;
+
+        var resultado = await Api.GetExecutionBatchAsync(Id, CancellationToken.None);
+
+        _lote = resultado.Value;
+        _error = resultado.ErrorMessage;
+        _cargando = false;
+    }
+
+    private double Fraccion(int cantidad)
+    {
+        return _lote is { DispatchedCount: > 0 } ? (double)cantidad / _lote.DispatchedCount : 0;
+    }
+
+    private static string Modo(string modo)
+    {
+        return modo switch
+        {
+            "attached" => "En primer plano",
+            "detached" => "En segundo plano",
+            _ => modo
+        };
+    }
+}

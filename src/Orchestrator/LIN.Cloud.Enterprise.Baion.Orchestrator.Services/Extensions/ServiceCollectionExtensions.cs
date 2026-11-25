@@ -33,6 +33,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IScriptChainService, ScriptChainService>();
         services.AddScoped<IScheduledTaskService, ScheduledTaskService>();
         services.AddScoped<IServerService, ServerService>();
+        services.AddScoped<IServerGroupService, ServerGroupService>();
+        services.AddScoped<IGroupTargetResolver, GroupTargetResolver>();
+        services.AddScoped<IGroupDispatchService, GroupDispatchService>();
         services.AddScoped<IServiceInspectionService, ServiceInspectionService>();
 
         services.AddHostedService<InstancePresenceHostedService>();

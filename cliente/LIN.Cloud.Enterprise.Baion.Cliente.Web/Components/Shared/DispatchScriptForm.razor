@@ -1,4 +1,5 @@
 @using System.ComponentModel.DataAnnotations
+@using LIN.Cloud.Enterprise.Baion.Cliente.Web.Dtos.ServerGroups
 
 @inject IBaionApiClient Api
 @inject NavigationManager Navigation
@@ -19,9 +20,9 @@
 
     @if (_cargandoServidores)
     {
-        <GhostLoader Filas="2" Descripcion="Buscando servidores compatibles…" />
+        <GhostLoader Filas="2" Descripcion="Buscando destinos compatibles…" />
     }
-    else if (_compatibles.Count == 0)
+    else if (_compatibles.Count == 0 && !GruposCompatibles.Any())
     {
         @* El ámbar del sistema solo vive en el icono: un bloque de color aquí está prohibido. *@
         <div class="flex items-start gap-2 rounded-xl border border-line bg-surface-alt px-4 py-3 text-body text-ink-2" role="status">
@@ -35,6 +36,10 @@
             </span>
         </div>
     }
+    else if (_resultadoLote is not null)
+    {
+        <BatchResultCard Resultado="_resultadoLote" />
+    }
     else
     {
         <EditForm Model="_entrada" OnValidSubmit="LanzarAsync">
@@ -42,15 +47,57 @@
 
             <div class="grid gap-5 sm:grid-cols-2">
                 <div>
-                    <label class="baion-label" for="servidor">Servidor</label>
+                    <label class="baion-label" for="destino">Destino</label>
                     <SelectShell Class="mt-2">
-                        <InputSelect id="servidor" @bind-Value="_entrada.ServerId" class="baion-select">
-                            @foreach (var servidor in _compatibles)
+                        <InputSelect id="destino" @bind-Value="_destino" @bind-Value:after="AlCambiarDestinoAsync" class="baion-select">
+                            @if (_compatibles.Count > 0)
                             {
-                                <option value="@servidor.Id">@servidor.Name (@ScriptRuntimes.PlatformLabel(servidor.Platform))</option>
+                                <optgroup label="Servidores">
+                                    @foreach (var servidor in _compatibles)
+                                    {
+                                        <option value="@(PrefijoServidor + servidor.Id)">@servidor.Name (@ScriptRuntimes.PlatformLabel(servidor.Platform))</option>
+                                    }
+                                </optgroup>
+                            }
+                            @if (_grupos.Count > 0)
+                            {
+                                <optgroup label="Grupos">
+                                    @foreach (var grupo in _grupos)
+                                    {
+                                        var compatibles = CompatiblesDe(grupo);
+                                        <option value="@(PrefijoGrupo + grupo.Id)" disabled="@(compatibles == 0)">@grupo.Name — @grupo.MemberCount servidor@(grupo.MemberCount == 1 ? "" : "es") · @compatibles compatible@(compatibles == 1 ? "" : "s")</option>
+                                    }
+                                </optgroup>
                             }
                         </InputSelect>
                     </SelectShell>
+                    @if (_grupoSeleccionado is not null)
+                    {
+                        <div class="mt-2 text-label text-ink-2">
+                            <p class="flex items-start gap-1.5">
+                                @if (_noCompatibles > 0)
+                                {
+                                    <span class="mt-px shrink-0 text-warn" aria-hidden="true"><Icon Nombre="circle-alert" Tamano="14" /></span>
+                                }
+                                <span>
+                                    Se ejecutará en @_compatiblesGrupo de @_grupoSeleccionado.Members.Count servidor@(_grupoSeleccionado.Members.Count == 1 ? "" : "es")@(_noCompatibles > 0 ? $" ({_noCompatibles} no compatible{(_noCompatibles == 1 ? "" : "s")} con {ScriptRuntimes.Label(Runtime)})" : "").
+                                </span>
+                            </p>
+                            @if (_deshabilitados > 0 || _desconectados > 0)
+                            {
+                                <p class="mt-1 text-muted">
+                                    @if (_deshabilitados > 0)
+                                    {
+                                        <span>@_deshabilitados deshabilitado@(_deshabilitados == 1 ? "" : "s") se omitirá@(_deshabilitados == 1 ? "" : "n"). </span>
+                                    }
+                                    @if (_desconectados > 0)
+                                    {
+                                        <span>@_desconectados sin agente conectado fallará@(_desconectados == 1 ? "" : "n").</span>
+                                    }
+                                </p>
+                            }
+                        </div>
+                    }
                 </div>
 
                 <div>
@@ -97,7 +144,7 @@
             </details>
 
             <div class="mt-6 flex items-center gap-2">
-                <button type="submit" class="baion-button @_ratonLanzar.CssClass" disabled="@_lanzando"
+                <button type="submit" class="baion-button @_ratonLanzar.CssClass" disabled="@(_lanzando || _cargandoGrupo || _destino.Length == 0)"
                         @attributes="this.MouseEvents(_ratonLanzar)">
                     @(_lanzando ? "Lanzando…" : "Ejecutar ahora")
                 </button>
@@ -114,7 +161,19 @@
     private readonly MouseState _ratonLanzar = new();
     private readonly MouseState _ratonCancelar = new();
 
+    private const string PrefijoServidor = "s:";
+    private const string PrefijoGrupo = "g:";
+
     private IReadOnlyList<ServerSummary> _compatibles = [];
+    private IReadOnlyList<ServerGroupSummary> _grupos = [];
+    private ServerGroupDetail? _grupoSeleccionado;
+    private DispatchGroupResult? _resultadoLote;
+    private string _destino = string.Empty;
+    private int _compatiblesGrupo;
+    private int _noCompatibles;
+    private int _deshabilitados;
+    private int _desconectados;
+    private bool _cargandoGrupo;
     private int _incompatibles;
     private string? _error;
     private bool _cargandoServidores = true;
@@ -132,19 +191,74 @@
     [Parameter]
     public EventCallback Cerrado { get; set; }
 
+    private IEnumerable<ServerGroupSummary> GruposCompatibles => _grupos.Where(grupo => CompatiblesDe(grupo) > 0);
+
     protected override async Task OnInitializedAsync()
     {
-        var resultado = await Api.GetServersAsync(CancellationToken.None);
+        var tareaServidores = Api.GetServersAsync(CancellationToken.None);
+        var tareaGrupos = Api.GetServerGroupsAsync(CancellationToken.None);
+        await Task.WhenAll(tareaServidores, tareaGrupos);
+
+        var resultado = await tareaServidores;
         var servidores = resultado.Value ?? [];
+
+        // Que falle el listado de grupos no impide lanzar sobre un servidor suelto.
+        _grupos = (await tareaGrupos).Value ?? [];
 
         // Se descartan los que no soportan el intérprete y los que no tienen agente conectado:
         // ofrecerlos solo llevaría a un rechazo del orquestador con el formulario ya enviado.
         _compatibles = servidores.Where(EsElegible).ToList();
         _incompatibles = servidores.Count - _compatibles.Count;
 
-        _entrada.ServerId = _compatibles.FirstOrDefault()?.Id ?? Guid.Empty;
+        _destino = _compatibles.Count > 0
+            ? PrefijoServidor + _compatibles[0].Id
+            : GruposCompatibles.Select(grupo => PrefijoGrupo + grupo.Id).FirstOrDefault() ?? string.Empty;
+
         _error = resultado.ErrorMessage;
         _cargandoServidores = false;
+
+        await AlCambiarDestinoAsync();
+    }
+
+    // Compatibles de un grupo según plataforma; el orquestador revalida siempre.
+    private int CompatiblesDe(ServerGroupSummary grupo)
+    {
+        return (ScriptRuntimes.IsSupported(Runtime, "linux") ? grupo.LinuxCount : 0)
+            + (ScriptRuntimes.IsSupported(Runtime, "windows") ? grupo.WindowsCount : 0);
+    }
+
+    private bool TryGetGrupoId(out Guid grupoId)
+    {
+        grupoId = Guid.Empty;
+        return _destino.StartsWith(PrefijoGrupo, StringComparison.Ordinal)
+            && Guid.TryParse(_destino[PrefijoGrupo.Length..], out grupoId);
+    }
+
+    private async Task AlCambiarDestinoAsync()
+    {
+        _grupoSeleccionado = null;
+
+        if (!TryGetGrupoId(out var grupoId))
+            return;
+
+        _cargandoGrupo = true;
+        var resultado = await Api.GetServerGroupAsync(grupoId, CancellationToken.None);
+        _cargandoGrupo = false;
+
+        if (resultado.Value is not { } grupo)
+        {
+            _error = resultado.ErrorMessage;
+            return;
+        }
+
+        _error = null;
+        _grupoSeleccionado = grupo;
+
+        var compatibles = grupo.Members.Where(miembro => ScriptRuntimes.IsSupported(Runtime, miembro.Platform)).ToList();
+        _compatiblesGrupo = compatibles.Count;
+        _noCompatibles = grupo.Members.Count - compatibles.Count;
+        _deshabilitados = compatibles.Count(miembro => miembro.Status == "disabled");
+        _desconectados = compatibles.Count(miembro => miembro.Status != "disabled" && miembro.Status != "online");
     }
 
     private bool EsElegible(ServerSummary servidor)
@@ -163,9 +277,23 @@
         _lanzando = true;
         _error = null;
 
+        if (TryGetGrupoId(out var grupoId))
+        {
+            await LanzarGrupoAsync(grupoId, entorno);
+            return;
+        }
+
+        if (!_destino.StartsWith(PrefijoServidor, StringComparison.Ordinal)
+            || !Guid.TryParse(_destino[PrefijoServidor.Length..], out var servidorId))
+        {
+            _lanzando = false;
+            _error = "Elige un destino para la ejecución.";
+            return;
+        }
+
         var peticion = new DispatchScriptRequest(
             ScriptId,
-            _entrada.ServerId,
+            servidorId,
             _entrada.Mode,
             _entrada.TimeoutSeconds,
             string.IsNullOrWhiteSpace(_entrada.WorkingDirectory) ? null : _entrada.WorkingDirectory.Trim(),
@@ -183,6 +311,36 @@
 
         // Se va al detalle: es donde la ejecución se sigue en vivo hasta que termina.
         Navigation.NavigateTo($"/ejecuciones/{despacho.ExecutionId}");
+    }
+
+    private async Task LanzarGrupoAsync(Guid grupoId, Dictionary<string, string> entorno)
+    {
+        var peticion = new DispatchGroupRequest(
+            ScriptId,
+            grupoId,
+            _entrada.Mode,
+            _entrada.TimeoutSeconds,
+            string.IsNullOrWhiteSpace(_entrada.WorkingDirectory) ? null : _entrada.WorkingDirectory.Trim(),
+            entorno.Count == 0 ? null : entorno);
+
+        var resultado = await Api.DispatchGroupAsync(peticion, CancellationToken.None);
+
+        _lanzando = false;
+
+        if (resultado.Value is not { } lote)
+        {
+            _error = resultado.ErrorMessage;
+            return;
+        }
+
+        // Si todo salió según lo previsto se va directo al lote; con omitidos o fallidos se explican antes.
+        if (lote.SkippedIncompatible + lote.SkippedDisabled + lote.Failed == 0)
+        {
+            Navigation.NavigateTo($"/ejecuciones/lote/{lote.BatchId}");
+            return;
+        }
+
+        _resultadoLote = lote;
     }
 
     private async Task Cancelar()
@@ -221,8 +379,6 @@
 
     private sealed class EntradaEjecucion
     {
-        public Guid ServerId { get; set; }
-
         public string Mode { get; set; } = "attached";
 
         [Range(1, 86_400, ErrorMessage = "El timeout debe estar entre 1 segundo y 24 horas.")]

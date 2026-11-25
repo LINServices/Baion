@@ -14,5 +14,7 @@ internal record PreparedDispatch(Script Script, Server Server, ExecutionMode Mod
 
     public Guid? ScheduledTaskId { get; init; }
 
+    public Guid? BatchId { get; init; }
+
     public DateTimeOffset? DispatchDeadline { get; init; }
 }

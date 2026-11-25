@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging;
 
 namespace LIN.Cloud.Enterprise.Baion.Orchestrator.Services.Implementations;
 
-internal class ScheduledTaskService(IScheduledTaskRepository tasks, IRepository<Script> scripts, IRepository<ScriptChain> scriptChains, IRepository<Server> servers, IRepository<ServerGroup> serverGroups, IScriptDispatchService dispatch, IScriptChainService chains, IUnitOfWork unitOfWork, TimeProvider timeProvider, ILogger<ScheduledTaskService> logger) : IScheduledTaskService
+internal class ScheduledTaskService(IScheduledTaskRepository tasks, IRepository<Script> scripts, IRepository<ScriptChain> scriptChains, IRepository<Server> servers, IRepository<ServerGroup> serverGroups, IServerGroupRepository groups, IScheduledTaskQueries queries, IGroupTargetResolver resolver, IScriptDispatchService dispatch, IScriptChainService chains, IUnitOfWork unitOfWork, TimeProvider timeProvider, ILogger<ScheduledTaskService> logger) : IScheduledTaskService
 {
     public async Task<Result<ScheduledTaskSummary>> CreateAsync(CreateScheduledTaskRequest request, CancellationToken cancellationToken)
     {
@@ -73,6 +73,51 @@ internal class ScheduledTaskService(IScheduledTaskRepository tasks, IRepository<
             : Result<ScheduledTaskSummary>.Success(ToSummary(task));
     }
 
+    public async Task<Result<IReadOnlyList<ScheduledTaskListItem>>> ListAsync(CancellationToken cancellationToken)
+    {
+        return Result<IReadOnlyList<ScheduledTaskListItem>>.Success(await queries.ListAsync(cancellationToken));
+    }
+
+    public async Task<Result<ScheduledTaskSummary>> EnableAsync(Guid taskId, CancellationToken cancellationToken)
+    {
+        var task = await tasks.GetByIdAsync(taskId, cancellationToken);
+
+        if (task is null)
+            return Result<ScheduledTaskSummary>.Failure(Error.NotFound("task.not_found", "La tarea programada no existe."));
+
+        var next = CronSchedule.GetNextOccurrence(task.CronExpression, task.TimeZoneId, timeProvider.GetUtcNow());
+
+        // La tarea sigue pausada: reactivarla sin próximo disparo la dejaría activa pero muda.
+        if (next is null)
+            return Result<ScheduledTaskSummary>.Failure(Error.Validation("task.cron_never_fires", "La expresión cron no vuelve a cumplirse."));
+
+        task.IsEnabled = true;
+        task.NextRunAt = next;
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        logger.LogInformation("Tarea {TaskId} reactivada; próximo disparo {Proximo}", task.Id, task.NextRunAt);
+
+        return Result<ScheduledTaskSummary>.Success(ToSummary(task));
+    }
+
+    public async Task<Result<ScheduledTaskSummary>> DisableAsync(Guid taskId, CancellationToken cancellationToken)
+    {
+        var task = await tasks.GetByIdAsync(taskId, cancellationToken);
+
+        if (task is null)
+            return Result<ScheduledTaskSummary>.Failure(Error.NotFound("task.not_found", "La tarea programada no existe."));
+
+        if (task.IsEnabled)
+        {
+            task.IsEnabled = false;
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+
+            logger.LogInformation("Tarea {TaskId} pausada", task.Id);
+        }
+
+        return Result<ScheduledTaskSummary>.Success(ToSummary(task));
+    }
+
     public async Task<Result<ScheduledTaskTriggered>> TriggerAsync(Guid taskId, CancellationToken cancellationToken)
     {
         var task = await tasks.GetByIdAsync(taskId, cancellationToken);
@@ -85,12 +130,13 @@ internal class ScheduledTaskService(IScheduledTaskRepository tasks, IRepository<
 
     public async Task<ScheduledTaskTriggered> FireAsync(ScheduledTask task, CancellationToken cancellationToken)
     {
-        var destinos = await ResolveTargetsAsync(task, cancellationToken);
+        var (destinos, omitidos) = await ResolveTargetsAsync(task, cancellationToken);
+        var total = destinos.Count + omitidos;
 
-        if (destinos.Count == 0)
+        if (total == 0)
         {
             logger.LogWarning("La tarea {TaskId} se disparó sin ningún servidor de destino", task.Id);
-            return new ScheduledTaskTriggered(task.Id, 0, 0, 0);
+            return new ScheduledTaskTriggered(task.Id, 0, 0, 0, 0);
         }
 
         var deadline = task.OfflineGraceSeconds > 0 ? timeProvider.GetUtcNow().AddSeconds(task.OfflineGraceSeconds) : (DateTimeOffset?)null;
@@ -103,9 +149,9 @@ internal class ScheduledTaskService(IScheduledTaskRepository tasks, IRepository<
         var entregados = resultados.Where(resultado => resultado).Count();
         var fallidos = resultados.Count - entregados;
 
-        logger.LogInformation("Tarea {TaskId} disparada sobre {Destinos} servidores: {Entregados} aceptados, {Fallidos} con error", task.Id, destinos.Count, entregados, fallidos);
+        logger.LogInformation("Tarea {TaskId} disparada sobre {Destinos} servidores: {Entregados} aceptados, {Fallidos} con error, {Omitidos} omitidos", task.Id, total, entregados, fallidos, omitidos);
 
-        return new ScheduledTaskTriggered(task.Id, destinos.Count, entregados, fallidos);
+        return new ScheduledTaskTriggered(task.Id, total, entregados, fallidos, omitidos);
     }
 
     // Devuelve el error de la primera referencia que no exista, o null si todas son válidas.
@@ -149,15 +195,33 @@ internal class ScheduledTaskService(IScheduledTaskRepository tasks, IRepository<
         return recorrido.IsSuccess;
     }
 
-    private async Task<IReadOnlyList<Guid>> ResolveTargetsAsync(ScheduledTask task, CancellationToken cancellationToken)
+    // Devuelve los servidores a los que hay que despachar y cuántos se omiten por incompatibles o deshabilitados.
+    // Solo las tareas con script sobre un grupo filtran; las cadenas ya rechazan al incompatible por su cuenta.
+    private async Task<(IReadOnlyList<Guid> Targets, int Skipped)> ResolveTargetsAsync(ScheduledTask task, CancellationToken cancellationToken)
     {
         if (task.ServerId is Guid serverId)
-            return [serverId];
+            return ([serverId], 0);
 
-        if (task.ServerGroupId is Guid groupId)
-            return await tasks.GetGroupServerIdsAsync(task.TenantId, groupId, cancellationToken);
+        if (task.ServerGroupId is not Guid groupId)
+            return ([], 0);
 
-        return [];
+        if (task.ScriptId is not Guid scriptId)
+            return (await tasks.GetGroupServerIdsAsync(task.TenantId, groupId, cancellationToken), 0);
+
+        // El barrido del planificador no trae tenant en el scope: se pasa el de la tarea de forma explícita.
+        var members = await groups.GetMemberTargetsAsync(task.TenantId, groupId, cancellationToken);
+        var script = await scripts.GetByIdAsync(scriptId);
+
+        // Sin script no hay intérprete que comparar: se intenta con todos y cada despacho fallará con su motivo.
+        if (script is null)
+            return (members.Select(m => m.ServerId).ToList(), 0);
+
+        var partition = resolver.Partition(script.Runtime, members);
+
+        foreach (var omitido in partition.SkippedIncompatible.Concat(partition.SkippedDisabled))
+            logger.LogWarning("Tarea {TaskId}: servidor {ServerId} omitido por incompatible o desactivado", task.Id, omitido.ServerId);
+
+        return (partition.Dispatchable.Select(m => m.ServerId).ToList(), partition.SkippedIncompatible.Count + partition.SkippedDisabled.Count);
     }
 
     private static ScheduledTaskSummary ToSummary(ScheduledTask task)

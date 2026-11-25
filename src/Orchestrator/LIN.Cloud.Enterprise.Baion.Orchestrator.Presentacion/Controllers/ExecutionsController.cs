@@ -12,8 +12,26 @@ namespace LIN.Cloud.Enterprise.Baion.Orchestrator.Presentacion.Controllers;
 [ApiController]
 [Route("api/executions")]
 [Authorize]
-public class ExecutionsController(IScriptDispatchService dispatch) : ControllerBase
+public class ExecutionsController(IScriptDispatchService dispatch, IGroupDispatchService groupDispatch) : ControllerBase
 {
+    /// <summary>
+    /// Lanza un script sobre todos los miembros de un grupo. El solicitante se toma de la sesión.
+    /// </summary>
+    [HttpPost("batches")]
+    public async Task<IActionResult> DispatchGroupAsync([FromBody] DispatchGroupRequest request, CancellationToken cancellationToken)
+    {
+        return (await groupDispatch.DispatchAsync(request, User.Identity?.Name, cancellationToken)).ToActionResult();
+    }
+
+    /// <summary>
+    /// Consulta un lote con sus ejecuciones, sin su salida.
+    /// </summary>
+    [HttpGet("batches/{batchId:guid}")]
+    public async Task<IActionResult> GetBatchAsync(Guid batchId, CancellationToken cancellationToken)
+    {
+        return (await groupDispatch.GetBatchAsync(batchId, cancellationToken)).ToActionResult();
+    }
+
     /// <summary>
     /// Despacha un script a un servidor y devuelve el identificador de la ejecución.
     /// </summary>

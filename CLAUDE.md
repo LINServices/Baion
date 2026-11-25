@@ -25,7 +25,7 @@ español; sigue lo que veas en el archivo que estés tocando.
 | `cliente/LIN.Cloud.Enterprise.Baion.Cliente.sln` | Panel Blazor + Tailwind | 5100 |
 
 `src/LIN.Cloud.Enterprise.Baion.Contracts` es el **protocolo compartido** entre orquestador y agente: está en ambas soluciones.
-El panel **no** lo referencia: duplica los DTOs a mano en `Models/ApiModels.cs`, a propósito, porque es una
+El panel **no** lo referencia: duplica los DTOs a mano, como archivos sueltos en `cliente/.../Dtos/<Area>/`, a propósito, porque es una
 aplicación aparte que solo habla HTTP y compartir ensamblados la ataría a la versión exacta del servidor.
 
 ## Comandos
@@ -149,6 +149,18 @@ Para evitar ciclos entre capas, `LIN.Cloud.Enterprise.Baion.Orchestrator.Messagi
   `(chain_run_id, script_chain_step_id)` hace idempotente el avance.
 - El planificador corre en todas las instancias y **reserva cada disparo con una escritura condicional**
   sobre `next_run_at`. Sin locks ni líder.
+
+### Grupos de servidores y lotes
+
+- `ServerGroup` / `ServerGroupMember` se gestionan en `api/server-groups`: lectura para cualquier usuario
+  del tenant, **escritura solo Admin**. En el panel: `/grupos`.
+- Lanzar un script sobre un grupo crea un `ExecutionBatch` que agrupa las ejecuciones de ese lanzamiento.
+- **Filtro de compatibilidad por plataforma:** `GroupTargetResolver` resuelve los miembros y aplica
+  `ScriptRuntimeCompatibility`; los incompatibles y los servidores `Disabled` se **omiten** (y se informan),
+  no hacen fallar el lanzamiento.
+- El despacho es **en serie**, con un tope de 500 servidores por lanzamiento.
+- El planificador aplica el mismo filtro a las tareas con script sobre un grupo.
+- Las tareas programadas se ven y se pausan/reanudan desde el panel en `/tareas`.
 
 ### Persistencia
 

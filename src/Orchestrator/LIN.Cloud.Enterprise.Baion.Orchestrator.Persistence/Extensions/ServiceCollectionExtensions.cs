@@ -42,6 +42,10 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAgentPresenceLookup, AgentPresenceLookup>();
         services.AddScoped<IServerQueries, ServerQueries>();
         services.AddScoped<IScriptQueries, ScriptQueries>();
+        services.AddScoped<IServerGroupRepository, ServerGroupRepository>();
+        services.AddScoped<IServerGroupQueries, ServerGroupQueries>();
+        services.AddScoped<IExecutionBatchQueries, ExecutionBatchQueries>();
+        services.AddScoped<IScheduledTaskQueries, ScheduledTaskQueries>();
 
         return services;
     }

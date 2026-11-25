@@ -21,6 +21,7 @@ internal class ScriptExecutionConfiguration : TenantEntityConfiguration<ScriptEx
 
         builder.HasIndex(execution => new { execution.TenantId, execution.ServerId, execution.QueuedAt });
         builder.HasIndex(execution => new { execution.TenantId, execution.Status });
+        builder.HasIndex(execution => execution.BatchId).HasFilter("[batch_id] IS NOT NULL");
         builder.HasIndex(execution => execution.ChainRunId).HasFilter("[chain_run_id] IS NOT NULL");
 
         // Un recorrido no puede tener dos ejecuciones del mismo paso: es lo que hace idempotente el avance

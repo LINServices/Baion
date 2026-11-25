@@ -1,0 +1,205 @@
+@page "/tareas"
+@attribute [Authorize]
+@using LIN.Cloud.Enterprise.Baion.Cliente.Web.Dtos.Scheduling
+
+@inject IBaionApiClient Api
+
+<PageTitle>Tareas programadas · Baion</PageTitle>
+
+<PageHeader Seccion="Automatización" Titulo="Tareas programadas">
+    <Acciones>
+        <button type="button" class="baion-button-icon @_ratonActualizar.CssClass" title="Actualizar" aria-label="Actualizar"
+                disabled="@_cargando" @onclick="CargarAsync" @attributes="this.MouseEvents(_ratonActualizar)">
+            <Icon Nombre="refresh-cw" Tamano="20" />
+        </button>
+        <a class="baion-button" href="/tareas/nueva">
+            <Icon Nombre="plus" Tamano="14" />
+            Nueva tarea
+        </a>
+    </Acciones>
+</PageHeader>
+
+<AlertMessage Mensaje="@_error" />
+
+@if (_cargando && _tareas is null)
+{
+    <GhostLoader Descripcion="Cargando las tareas programadas…" />
+}
+else if (Listado.Count == 0)
+{
+    <EmptyState Icono="calendar-clock"
+                Titulo="No hay tareas programadas"
+                Descripcion="Programa un script para que se ejecute solo, en un servidor o en todo un grupo.">
+        <Accion>
+            <a class="baion-button" href="/tareas/nueva">
+                <Icon Nombre="plus" Tamano="14" />
+                Nueva tarea
+            </a>
+        </Accion>
+    </EmptyState>
+}
+else
+{
+    <div class="baion-card overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="baion-table">
+                <thead>
+                    <tr>
+                        <th>Tarea</th>
+                        <th>Cron</th>
+                        <th>Qué</th>
+                        <th>Dónde</th>
+                        <th>Última</th>
+                        <th>Próxima</th>
+                        <th>Estado</th>
+                        <th class="text-right">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var tarea in Listado)
+                    {
+                        <tr>
+                            <td><span class="text-title text-ink">@tarea.Name</span></td>
+                            <td>
+                                <span class="tabular-nums text-ink">@tarea.CronExpression</span>
+                                <div class="mt-1 text-label text-muted">@tarea.TimeZoneId</div>
+                            </td>
+                            <td>
+                                <span class="text-label text-muted">@(tarea.PayloadKind == "chain" ? "Cadena" : "Script")</span>
+                                <div class="text-ink">@tarea.PayloadName</div>
+                            </td>
+                            <td>
+                                <span class="text-label text-muted">@(tarea.TargetKind == "group" ? "Grupo" : "Servidor")</span>
+                                <div class="text-ink">@tarea.TargetName</div>
+                            </td>
+                            <td class="text-muted" title="@TimeFormat.Absolute(tarea.LastRunAt)">@(tarea.LastRunAt is null ? "Nunca" : TimeFormat.Relative(tarea.LastRunAt))</td>
+                            <td class="text-muted" title="@TimeFormat.Absolute(tarea.NextRunAt)">@(tarea.NextRunAt is null || !tarea.IsEnabled ? "—" : TimeFormat.Upcoming(tarea.NextRunAt))</td>
+                            <td>
+                                @* Activa es lo vivo y lleva el acento; pausada se queda en contorno con la viñeta fantasma. *@
+                                <span class="baion-chip @(tarea.IsEnabled ? "baion-chip-current" : string.Empty)">
+                                    <span class="baion-chip-dot @(tarea.IsEnabled ? "bg-current-500" : "border border-ghost")" aria-hidden="true"></span>
+                                    @(tarea.IsEnabled ? "Activa" : "Pausada")
+                                </span>
+                            </td>
+                            <td>
+                                <div class="flex items-center justify-end gap-2">
+                                    <button type="button" class="baion-button-ghost @Raton(tarea.Id, AccionAlternar).CssClass" disabled="@(_ocupada == tarea.Id)"
+                                            @onclick="() => AlternarAsync(tarea)" @attributes="this.MouseEvents(Raton(tarea.Id, AccionAlternar))">
+                                        <Icon Nombre="@(tarea.IsEnabled ? "pause" : "play")" Tamano="14" />
+                                        @(tarea.IsEnabled ? "Pausar" : "Reanudar")
+                                    </button>
+                                    <button type="button" class="baion-button @Raton(tarea.Id, AccionEjecutar).CssClass" disabled="@(_ocupada == tarea.Id)"
+                                            @onclick="() => EjecutarAsync(tarea)" @attributes="this.MouseEvents(Raton(tarea.Id, AccionEjecutar))">
+                                        Ejecutar ahora
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+
+                        @if (_resultados.TryGetValue(tarea.Id, out var disparo))
+                        {
+                            <tr>
+                                <td colspan="8">
+                                    <div class="flex items-center justify-between gap-4 text-body text-ink-2" role="status">
+                                        <span>
+                                            @disparo.TargetCount @(disparo.TargetCount == 1 ? "destino" : "destinos"):
+                                            <span class="text-ink">@disparo.DispatchedCount @(disparo.DispatchedCount == 1 ? "lanzada" : "lanzadas")</span>,
+                                            <span class="@(disparo.FailedCount > 0 ? "text-danger" : string.Empty)">@disparo.FailedCount @(disparo.FailedCount == 1 ? "fallida" : "fallidas")</span>,
+                                            @disparo.SkippedCount @(disparo.SkippedCount == 1 ? "omitida" : "omitidas").
+                                        </span>
+                                        <button type="button" class="baion-button-icon @Raton(tarea.Id, AccionCerrar).CssClass" title="Cerrar" aria-label="Cerrar"
+                                                @onclick="() => _resultados.Remove(tarea.Id)" @attributes="this.MouseEvents(Raton(tarea.Id, AccionCerrar))">
+                                            <Icon Nombre="x" Tamano="14" />
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@code {
+    private const string AccionAlternar = "alternar";
+    private const string AccionEjecutar = "ejecutar";
+    private const string AccionCerrar = "cerrar";
+
+    private readonly MouseState _ratonActualizar = new();
+    private readonly Dictionary<string, MouseState> _ratones = [];
+    private readonly Dictionary<Guid, ScheduledTaskTriggered> _resultados = [];
+
+    private IReadOnlyList<ScheduledTaskListItem>? _tareas;
+    private string? _error;
+    private bool _cargando = true;
+    private Guid _ocupada;
+
+    private IReadOnlyList<ScheduledTaskListItem> Listado => _tareas ?? [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarAsync();
+    }
+
+    private async Task CargarAsync()
+    {
+        _cargando = true;
+
+        var resultado = await Api.GetScheduledTasksAsync(CancellationToken.None);
+
+        _tareas = resultado.Value;
+        _error = resultado.ErrorMessage;
+        _cargando = false;
+    }
+
+    private MouseState Raton(Guid tareaId, string accion)
+    {
+        var clave = $"{tareaId:N}:{accion}";
+
+        if (!_ratones.TryGetValue(clave, out var estado))
+            _ratones[clave] = estado = new MouseState();
+
+        return estado;
+    }
+
+    private async Task AlternarAsync(ScheduledTaskListItem tarea)
+    {
+        _ocupada = tarea.Id;
+        _error = null;
+
+        var resultado = tarea.IsEnabled
+            ? await Api.DisableScheduledTaskAsync(tarea.Id, CancellationToken.None)
+            : await Api.EnableScheduledTaskAsync(tarea.Id, CancellationToken.None);
+
+        _ocupada = Guid.Empty;
+
+        if (resultado.IsFailure)
+        {
+            _error = resultado.ErrorCode == "task.cron_never_fires"
+                ? $"La tarea «{tarea.Name}» no se puede reanudar: su cron ya no tiene próximos disparos."
+                : resultado.ErrorMessage;
+            return;
+        }
+
+        await CargarAsync();
+    }
+
+    private async Task EjecutarAsync(ScheduledTaskListItem tarea)
+    {
+        _ocupada = tarea.Id;
+        _error = null;
+
+        var resultado = await Api.TriggerScheduledTaskAsync(tarea.Id, CancellationToken.None);
+
+        _ocupada = Guid.Empty;
+
+        if (resultado is { IsSuccess: true, Value: ScheduledTaskTriggered disparo })
+            _resultados[tarea.Id] = disparo;
+        else
+            _error = resultado.ErrorMessage;
+
+        await CargarAsync();
+    }
+}

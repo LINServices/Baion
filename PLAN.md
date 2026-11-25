@@ -289,8 +289,9 @@ el disparo de 19:59 quedó en espera con su plazo, y al volver el agente se entr
 las dos rutas de agente caído, tareas con cadena, la reserva exclusiva entre instancias, la zona horaria y
 el rechazo de cron, destino y referencias inválidos.
 
-> Pendiente: pausar y reprogramar tareas desde la API (hoy solo alta, consulta y disparo manual), y decidir
-> qué hacer si un disparo se solapa con el anterior todavía en curso.
+> Pendiente: **editar y eliminar** tareas desde la API (pausar y reanudar ya están hechos, ver Fase 11; hoy
+> hay alta, consulta, disparo manual, pausa y reanudación), y decidir qué hacer si un disparo se solapa con
+> el anterior todavía en curso.
 
 ### Fase 8 — RabbitMQ multi-instancia
 Exchange direct/topic por agente + fanout para presencia. Registro de presencia distribuido.
@@ -338,6 +339,25 @@ API: `GET/POST api/servers/{serverId:guid}/services[...]` (`ServerServicesContro
 **Aceptación:** 10 tests de round-trip del contrato + 9 de integración con `FakeAgent` (listado, filtro por
 nombre, detalle, `service-query-failed` → 404, recorte de líneas al tope, control con acción, agente en otra
 instancia → 409, servidor inexistente → 404, timeout → 409).
+
+### Fase 11 — Grupos de servidores y panel de tareas ✅
+Gestión de `ServerGroup` / `ServerGroupMember` desde la API y el panel, lanzamientos de scripts sobre un
+grupo entero y un panel para las tareas programadas.
+
+- **API `api/server-groups`:** lectura para cualquier usuario del tenant, escritura (crear, renombrar,
+  eliminar, añadir y quitar miembros) solo para el rol Admin.
+- **`ExecutionBatch`:** agrupa las ejecuciones de un mismo lanzamiento sobre un grupo, para poder consultar
+  "cómo fue ese lanzamiento" sin recorrer ejecuciones sueltas.
+- **Compatibilidad por plataforma:** al lanzar sobre un grupo se aplica `ScriptRuntimeCompatibility` a cada
+  miembro; los incompatibles y los servidores `Disabled` se omiten (no fallan el lanzamiento) y se informan.
+  `GroupTargetResolver` resuelve el destino y aplica el filtro.
+- **Despacho en serie** con un tope de 500 servidores por lanzamiento.
+- **Planificador:** las tareas con script sobre un grupo aplican el mismo filtro de compatibilidad al
+  dispararse.
+- **Tareas:** pausar y reanudar desde la API y el panel (cubre parcialmente el pendiente de la Fase 7;
+  editar y eliminar siguen pendientes).
+- **Panel:** nuevas vistas `/grupos` (gestión de grupos y miembros) y `/tareas` (listado, pausa/reanudación y
+  disparo manual de tareas programadas); el formulario de lanzamiento admite un grupo como destino.
 
 ---
 

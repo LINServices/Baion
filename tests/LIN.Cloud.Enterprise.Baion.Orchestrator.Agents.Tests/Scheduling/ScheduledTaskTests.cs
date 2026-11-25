@@ -224,6 +224,111 @@ public class ScheduledTaskTests(OrchestratorFactory factory) : IClassFixture<Orc
         Assert.Equal("task.server_not_found", tarea.Error!.Code);
     }
 
+    [Fact]
+    public async Task TareaProgramada_PausadaConHorarioVencido_NoSeDispara()
+    {
+        var tenantId = await CrearTenantAsync();
+        await using var agente = await FakeAgent.ConnectAsync(factory, await EmitirTokenAsync(tenantId));
+
+        var grupoId = await CrearGrupoAsync(tenantId, [agente.ServerId]);
+        var tarea = await CrearTareaAsync(tenantId, await CrearScriptAsync(tenantId), serverGroupId: grupoId, cron: "0 3 * * *");
+        await PausarAsync(tenantId, tarea.Value!.Id);
+        await AdelantarHorarioAsync(tenantId, tarea.Value.Id);
+
+        // El planificador da varias vueltas (TickSeconds = 1) sin encontrar nada que reservar.
+        await Task.Delay(TimeSpan.FromSeconds(4));
+
+        var refrescada = await ObtenerTareaAsync(tenantId, tarea.Value.Id);
+        Assert.False(refrescada.IsEnabled);
+        Assert.Null(refrescada.LastRunAt);
+        Assert.Equal(0, await ContarEjecucionesAsync(tenantId));
+    }
+
+    [Fact]
+    public async Task TareaProgramada_ReanudadaTrasLaPausa_VuelveADispararseAlVencerElHorario()
+    {
+        var tenantId = await CrearTenantAsync();
+        await using var agente = await FakeAgent.ConnectAsync(factory, await EmitirTokenAsync(tenantId));
+
+        var grupoId = await CrearGrupoAsync(tenantId, [agente.ServerId]);
+        var tarea = await CrearTareaAsync(tenantId, await CrearScriptAsync(tenantId), serverGroupId: grupoId, cron: "0 3 * * *");
+        await PausarAsync(tenantId, tarea.Value!.Id);
+
+        await using (var scope = factory.CreateTenantScope(tenantId))
+        {
+            var reanudada = await scope.ServiceProvider.GetRequiredService<IScheduledTaskService>().EnableAsync(tarea.Value.Id, CancellationToken.None);
+            Assert.True(reanudada.IsSuccess, reanudada.Error?.Message);
+        }
+
+        await AdelantarHorarioAsync(tenantId, tarea.Value.Id);
+
+        var orden = await agente.NextOrderAsync();
+        await agente.ReportCompletedAsync(orden.ExecutionId, ExecutionStatus.Succeeded, 0);
+
+        var ejecuciones = await EsperarEjecucionesAsync(tenantId, 1);
+        Assert.Equal(tarea.Value.Id, Assert.Single(ejecuciones).ScheduledTaskId);
+    }
+
+    [Fact]
+    public async Task TareaProgramada_ConScriptSoloLinuxSobreGrupoMixto_OmiteLosIncompatiblesYDeshabilitados()
+    {
+        var tenantId = await CrearTenantAsync();
+        var token = await EmitirTokenAsync(tenantId);
+
+        await using var uno = await FakeAgent.ConnectAsync(factory, token);
+        await using var dos = await FakeAgent.ConnectAsync(factory, token);
+        var windows = await CrearServidorAsync(tenantId, ServerPlatform.Windows, ServerStatus.Online);
+        var deshabilitado = await CrearServidorAsync(tenantId, ServerPlatform.Linux, ServerStatus.Disabled);
+
+        var grupoId = await CrearGrupoAsync(tenantId, [uno.ServerId, dos.ServerId, windows, deshabilitado]);
+        var tarea = await CrearTareaAsync(tenantId, await CrearScriptAsync(tenantId), serverGroupId: grupoId);
+
+        var disparo = await DispararAsync(tenantId, tarea.Value!.Id);
+
+        Assert.True(disparo.IsSuccess, disparo.Error?.Message);
+        Assert.Equal((4, 2, 0, 2), (disparo.Value!.TargetCount, disparo.Value.DispatchedCount, disparo.Value.FailedCount, disparo.Value.SkippedCount));
+        Assert.Equal(disparo.Value.TargetCount, disparo.Value.DispatchedCount + disparo.Value.FailedCount + disparo.Value.SkippedCount);
+        Assert.Equal(2, await ContarEjecucionesAsync(tenantId));
+    }
+
+    [Fact]
+    public async Task TareaProgramada_ConCadenaSobreGrupoMixto_ContinuaContandoElIncompatibleComoFallido()
+    {
+        var tenantId = await CrearTenantAsync();
+        await using var linux = await FakeAgent.ConnectAsync(factory, await EmitirTokenAsync(tenantId));
+        var windows = await CrearServidorAsync(tenantId, ServerPlatform.Windows, ServerStatus.Online);
+
+        var grupoId = await CrearGrupoAsync(tenantId, [linux.ServerId, windows]);
+        var cadenaId = await CrearCadenaAsync(tenantId, [await CrearScriptAsync(tenantId), await CrearScriptAsync(tenantId)]);
+        var tarea = await CrearTareaAsync(tenantId, scriptId: null, serverGroupId: grupoId, scriptChainId: cadenaId);
+
+        var disparo = await DispararAsync(tenantId, tarea.Value!.Id);
+
+        Assert.True(disparo.IsSuccess, disparo.Error?.Message);
+        Assert.Equal((2, 1, 1, 0), (disparo.Value!.TargetCount, disparo.Value.DispatchedCount, disparo.Value.FailedCount, disparo.Value.SkippedCount));
+    }
+
+    private async Task PausarAsync(Guid tenantId, Guid taskId)
+    {
+        await using var scope = factory.CreateTenantScope(tenantId);
+        var pausada = await scope.ServiceProvider.GetRequiredService<IScheduledTaskService>().DisableAsync(taskId, CancellationToken.None);
+
+        Assert.True(pausada.IsSuccess, pausada.Error?.Message);
+    }
+
+    private async Task<Guid> CrearServidorAsync(Guid tenantId, ServerPlatform platform, ServerStatus status)
+    {
+        var servidor = new Server { Name = $"srv-{Guid.NewGuid():N}", Hostname = "10.0.0.1", Kind = ServerKind.Vps, Platform = platform, Status = status, MachineId = Guid.NewGuid().ToString("N") };
+
+        await using var scope = factory.CreateTenantScope(tenantId);
+        var context = scope.ServiceProvider.GetRequiredService<BaionDbContext>();
+
+        context.Servers.Add(servidor);
+        await context.SaveChangesAsync();
+
+        return servidor.Id;
+    }
+
     private async Task<Result<ScheduledTaskSummary>> CrearTareaAsync(Guid tenantId, Guid? scriptId, Guid? serverId = null, Guid? serverGroupId = null, Guid? scriptChainId = null, string cron = "0 3 * * *", string timeZoneId = "UTC", int graceSeconds = 60)
     {
         await using var scope = factory.CreateTenantScope(tenantId);

@@ -30,6 +30,8 @@ public class BaionDbContext(DbContextOptions<BaionDbContext> options, ITenantCon
 
     public DbSet<ScriptExecution> ScriptExecutions => Set<ScriptExecution>();
 
+    public DbSet<ExecutionBatch> ExecutionBatches => Set<ExecutionBatch>();
+
     public DbSet<ScheduledTask> ScheduledTasks => Set<ScheduledTask>();
 
     public DbSet<Metric> Metrics => Set<Metric>();

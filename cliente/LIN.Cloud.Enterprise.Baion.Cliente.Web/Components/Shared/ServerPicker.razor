@@ -1,0 +1,106 @@
+@* Multiselección de servidores con búsqueda. Carga la lista por su cuenta y filtra en el navegador;
+   la selección vive en el HashSet del padre y se avisa con SeleccionadosChanged. *@
+
+@inject IBaionApiClient Api
+
+<AlertMessage Mensaje="@_error" />
+
+@if (_cargando)
+{
+    <GhostLoader Descripcion="Cargando servidores…" />
+}
+else if (_servidores.Count == 0)
+{
+    <EmptyState Icono="server"
+                Titulo="Todavía no hay servidores"
+                Descripcion="Enrola un servidor para poder añadirlo a un grupo." />
+}
+else
+{
+    <div class="mb-3">
+        <SearchPill @bind-Valor="_busqueda" OnBuscar="RefrescarAsync" Placeholder="Nombre o host" />
+    </div>
+
+    @if (Visibles.Count == 0)
+    {
+        <p class="py-6 text-center text-body text-muted">Ningún servidor coincide con la búsqueda.</p>
+    }
+    else
+    {
+        <div class="max-h-96 overflow-y-auto rounded-xl border border-line">
+            <table class="baion-table">
+                <thead>
+                    <tr>
+                        <th class="w-10"></th>
+                        <th>Servidor</th>
+                        <th>Plataforma</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var servidor in Visibles)
+                    {
+                        <tr class="cursor-pointer" @onclick="() => AlternarAsync(servidor.Id)">
+                            <td>
+                                <input type="checkbox" class="accent-ink" aria-label="@($"Seleccionar {servidor.Name}")"
+                                       checked="@Seleccionados.Contains(servidor.Id)"
+                                       @onclick:stopPropagation="true"
+                                       @onchange="() => AlternarAsync(servidor.Id)" />
+                            </td>
+                            <td>
+                                <span class="text-title text-ink">@servidor.Name</span>
+                                <div class="mt-1 text-label text-muted">@servidor.Hostname</div>
+                            </td>
+                            <td class="text-body text-ink-2">@ScriptRuntimes.PlatformLabel(servidor.Platform)</td>
+                            <td><StatusBadge Estado="@servidor.Status" /></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+}
+
+@code {
+    private IReadOnlyList<ServerSummary> _servidores = [];
+    private string? _busqueda;
+    private string? _error;
+    private bool _cargando = true;
+
+    [Parameter]
+    public HashSet<Guid> Seleccionados { get; set; } = [];
+
+    [Parameter]
+    public EventCallback<HashSet<Guid>> SeleccionadosChanged { get; set; }
+
+    private IReadOnlyList<ServerSummary> Visibles => string.IsNullOrWhiteSpace(_busqueda)
+        ? _servidores
+        : _servidores
+            .Where(servidor => servidor.Name.Contains(_busqueda.Trim(), StringComparison.OrdinalIgnoreCase)
+                || servidor.Hostname.Contains(_busqueda.Trim(), StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var resultado = await Api.GetServersAsync(CancellationToken.None);
+
+        _servidores = resultado.Value ?? [];
+        _error = resultado.ErrorMessage;
+        _cargando = false;
+    }
+
+    // El filtro ya se aplica al teclear; la lupa solo fuerza el repintado.
+    private Task RefrescarAsync()
+    {
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private async Task AlternarAsync(Guid servidorId)
+    {
+        if (!Seleccionados.Add(servidorId))
+            Seleccionados.Remove(servidorId);
+
+        await SeleccionadosChanged.InvokeAsync(Seleccionados);
+    }
+}

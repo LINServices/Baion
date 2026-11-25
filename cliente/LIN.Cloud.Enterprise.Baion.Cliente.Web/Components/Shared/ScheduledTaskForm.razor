@@ -1,0 +1,186 @@
+@* Formulario de tarea programada de /tareas/nueva. Solo gestiona los campos y su validación;
+   crear y navegar es cosa de la página. Las tareas del panel siempre ejecutan un script suelto:
+   las cadenas no se crean desde aquí. *@
+@using LIN.Cloud.Enterprise.Baion.Cliente.Web.Dtos.ServerGroups
+
+@inject IBaionApiClient Api
+
+@if (!EsErrorDeCampo)
+{
+    <AlertMessage Mensaje="@ErrorGeneral" />
+}
+
+<AlertMessage Mensaje="@_errorCarga" />
+
+@if (_cargando)
+{
+    <GhostLoader Filas="3" Descripcion="Cargando scripts, servidores y grupos…" />
+}
+else
+{
+    <EditForm Model="Entrada" OnValidSubmit="EnviarAsync">
+        <DataAnnotationsValidator />
+
+        <div class="grid gap-3 lg:grid-cols-2">
+            <div class="baion-card space-y-5 p-5">
+                <div>
+                    <label class="baion-label" for="nombre">Nombre</label>
+                    <InputText id="nombre" @bind-Value="Entrada.Name" class="baion-input mt-2" placeholder="limpieza-nocturna" />
+                    <ValidationMessage For="() => Entrada.Name" class="mt-2 text-label text-danger" />
+                    @if (ErrorDeCampo("nombre") is { } mensajeNombre)
+                    {
+                        <p class="mt-2 text-label text-danger">@mensajeNombre</p>
+                    }
+                </div>
+
+                <div>
+                    <label class="baion-label" for="script">Script</label>
+                    <SelectShell Class="mt-2">
+                        <InputSelect id="script" @bind-Value="Entrada.ScriptId" class="baion-select">
+                            <option value="">Elige un script</option>
+                            @foreach (var script in _scripts)
+                            {
+                                <option value="@script.Id">@script.Name (@ScriptRuntimes.Label(script.Runtime))</option>
+                            }
+                        </InputSelect>
+                    </SelectShell>
+                    <ValidationMessage For="() => Entrada.ScriptId" class="mt-2 text-label text-danger" />
+                    @if (_scripts.Count == 0)
+                    {
+                        <p class="mt-2 text-label text-muted">No hay scripts activos en el catálogo.</p>
+                    }
+                </div>
+
+                <div>
+                    <label class="baion-label" for="destino">Destino</label>
+                    <SelectShell Class="mt-2">
+                        <InputSelect id="destino" @bind-Value="Entrada.Target" class="baion-select">
+                            <option value="">Elige un destino</option>
+                            <optgroup label="Servidores">
+                                @foreach (var servidor in _servidores)
+                                {
+                                    <option value="@($"s:{servidor.Id}")">@servidor.Name (@ScriptRuntimes.PlatformLabel(servidor.Platform))</option>
+                                }
+                            </optgroup>
+                            <optgroup label="Grupos">
+                                @foreach (var grupo in _grupos)
+                                {
+                                    <option value="@($"g:{grupo.Id}")">@grupo.Name (@grupo.MemberCount @(grupo.MemberCount == 1 ? "miembro" : "miembros"))</option>
+                                }
+                            </optgroup>
+                        </InputSelect>
+                    </SelectShell>
+                    <ValidationMessage For="() => Entrada.Target" class="mt-2 text-label text-danger" />
+                    <p class="mt-2 text-label text-muted">En un grupo se omiten los servidores deshabilitados y los que no soportan el intérprete del script.</p>
+                </div>
+
+                <div>
+                    <label class="baion-label" for="modo">Modo</label>
+                    <SelectShell Class="mt-2">
+                        <InputSelect id="modo" @bind-Value="Entrada.Mode" class="baion-select">
+                            <option value="attached">Adjunto — espera el resultado</option>
+                            <option value="detached">Desatendido — lanza y no espera</option>
+                        </InputSelect>
+                    </SelectShell>
+                </div>
+            </div>
+
+            <div class="baion-card space-y-5 p-5">
+                <div>
+                    <label class="baion-label" for="cron">Expresión cron</label>
+                    <InputText id="cron" @bind-Value="Entrada.CronExpression" class="baion-input mt-2 tabular-nums" placeholder="0 3 * * *" spellcheck="false" />
+                    <ValidationMessage For="() => Entrada.CronExpression" class="mt-2 text-label text-danger" />
+                    @if (ErrorDeCampo("cron") is { } mensajeCron)
+                    {
+                        <p class="mt-2 text-label text-danger">@mensajeCron</p>
+                    }
+                    <p class="mt-2 text-label text-muted">
+                        Cinco campos estándar (minuto hora día-del-mes mes día-de-la-semana) o seis con segundos al principio.
+                        Ejemplos: <span class="tabular-nums">*/15 * * * *</span> cada 15 minutos, <span class="tabular-nums">0 3 * * 1-5</span> a las 03:00 de lunes a viernes.
+                    </p>
+                </div>
+
+                <div>
+                    <label class="baion-label" for="zona">Zona horaria</label>
+                    <InputText id="zona" @bind-Value="Entrada.TimeZoneId" class="baion-input mt-2" placeholder="UTC" spellcheck="false" />
+                    <ValidationMessage For="() => Entrada.TimeZoneId" class="mt-2 text-label text-danger" />
+                    <p class="mt-2 text-label text-muted">Identificador IANA, por ejemplo America/Bogota o Europe/Madrid. Por defecto, UTC. El cron se evalúa en esta zona.</p>
+                </div>
+
+                <div>
+                    <label class="baion-label" for="margen">Margen offline (s)</label>
+                    <InputNumber id="margen" @bind-Value="Entrada.OfflineGraceSeconds" class="baion-input mt-2 tabular-nums" />
+                    <ValidationMessage For="() => Entrada.OfflineGraceSeconds" class="mt-2 text-label text-danger" />
+                    @if (ErrorDeCampo("margen") is { } mensajeMargen)
+                    {
+                        <p class="mt-2 text-label text-danger">@mensajeMargen</p>
+                    }
+                    <p class="mt-2 text-label text-muted">Segundos que se espera a que un servidor desconectado vuelva antes de dar el disparo por fallido. 0 no espera.</p>
+                </div>
+
+                <button type="submit" class="baion-button w-full @_raton.CssClass" disabled="@Guardando"
+                        @attributes="this.MouseEvents(_raton)">
+                    @(Guardando ? "Creando…" : "Crear tarea")
+                </button>
+            </div>
+        </div>
+    </EditForm>
+}
+
+@code {
+    private readonly MouseState _raton = new();
+
+    private IReadOnlyList<ScriptListItem> _scripts = [];
+    private IReadOnlyList<ServerSummary> _servidores = [];
+    private IReadOnlyList<ServerGroupSummary> _grupos = [];
+    private string? _errorCarga;
+    private bool _cargando = true;
+
+    [Parameter]
+    public bool Guardando { get; set; }
+
+    [Parameter]
+    public string? ErrorGeneral { get; set; }
+
+    [Parameter]
+    public string? ErrorCodigo { get; set; }
+
+    [Parameter, EditorRequired]
+    public EventCallback<ScheduledTaskFormInput> OnGuardar { get; set; }
+
+    public ScheduledTaskFormInput Entrada { get; private set; } = new();
+
+    private bool EsErrorDeCampo => ErrorCodigo is "task.name_required" or "task.cron_invalid" or "task.cron_never_fires" or "task.grace_invalid";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var scripts = Api.GetScriptsAsync(null, 1, 100, CancellationToken.None);
+        var servidores = Api.GetServersAsync(CancellationToken.None);
+        var grupos = Api.GetServerGroupsAsync(CancellationToken.None);
+
+        await Task.WhenAll(scripts, servidores, grupos);
+
+        _scripts = (scripts.Result.Value?.Items ?? []).Where(script => script.IsActive).ToList();
+        _servidores = servidores.Result.Value ?? [];
+        _grupos = grupos.Result.Value ?? [];
+        _errorCarga = scripts.Result.ErrorMessage ?? servidores.Result.ErrorMessage ?? grupos.Result.ErrorMessage;
+        _cargando = false;
+    }
+
+    private async Task EnviarAsync()
+    {
+        await OnGuardar.InvokeAsync(Entrada);
+    }
+
+    private string? ErrorDeCampo(string campo)
+    {
+        return ErrorCodigo switch
+        {
+            "task.name_required" when campo == "nombre" => "Indica un nombre para la tarea.",
+            "task.cron_invalid" when campo == "cron" => "La expresión cron no es válida. Usa 5 campos, o 6 con segundos.",
+            "task.cron_never_fires" when campo == "cron" => "Con esa expresión y zona la tarea no se dispararía nunca.",
+            "task.grace_invalid" when campo == "margen" => "El margen offline debe ser de 0 segundos o más.",
+            _ => null
+        };
+    }
+}

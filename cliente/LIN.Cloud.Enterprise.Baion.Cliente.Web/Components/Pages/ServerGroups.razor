@@ -1,0 +1,170 @@
+@page "/grupos"
+@attribute [Authorize]
+
+@using LIN.Cloud.Enterprise.Baion.Cliente.Web.Dtos.ServerGroups
+
+@inject IBaionApiClient Api
+
+<PageTitle>Grupos · Baion</PageTitle>
+
+<PageHeader Seccion="Infraestructura" Titulo="Grupos"
+            Descripcion="Conjuntos de servidores sobre los que se lanzan scripts y tareas programadas.">
+    <Acciones>
+        <button type="button" class="baion-button-icon @_raton.CssClass" title="Actualizar" aria-label="Actualizar"
+                disabled="@_cargando" @onclick="CargarAsync" @attributes="this.MouseEvents(_raton)">
+            <Icon Nombre="refresh-cw" Tamano="20" />
+        </button>
+        <a class="baion-button" href="/grupos/nuevo">
+            <Icon Nombre="plus" Tamano="14" />
+            Nuevo grupo
+        </a>
+    </Acciones>
+</PageHeader>
+
+<AlertMessage Mensaje="@_error" />
+
+@if (_cargando && _grupos is null)
+{
+    <GhostLoader Descripcion="Cargando los grupos…" />
+}
+else if (Listado.Count == 0)
+{
+    <EmptyState Icono="layers"
+                Titulo="Todavía no hay grupos"
+                Descripcion="Crea un grupo para ejecutar un script sobre varios servidores de una vez.">
+        <Accion>
+            <a class="baion-button" href="/grupos/nuevo">
+                <Icon Nombre="plus" Tamano="14" />
+                Nuevo grupo
+            </a>
+        </Accion>
+    </EmptyState>
+}
+else
+{
+    <div class="baion-card overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="baion-table">
+                <thead>
+                    <tr>
+                        <th>Grupo</th>
+                        <th>Servidores</th>
+                        <th>Creado</th>
+                        <th class="text-right">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var grupo in Listado)
+                    {
+                        <tr>
+                            <td>
+                                <a class="text-title text-ink hover:underline" href="/grupos/@grupo.Id/editar">@grupo.Name</a>
+                                @if (!string.IsNullOrWhiteSpace(grupo.Description))
+                                {
+                                    <div class="mt-1 max-w-[62ch] truncate text-label text-muted">@grupo.Description</div>
+                                }
+                            </td>
+                            <td class="text-body text-ink-2">@Composicion(grupo)</td>
+                            <td class="text-muted" title="@TimeFormat.Absolute(grupo.CreatedAt)">@TimeFormat.Relative(grupo.CreatedAt)</td>
+                            <td class="whitespace-nowrap text-right">
+                                <a class="baion-button-ghost" href="/grupos/@grupo.Id/editar">
+                                    <Icon Nombre="pencil" Tamano="14" />
+                                    Editar
+                                </a>
+                                <button type="button" class='baion-button-ghost @(RatonAccion(grupo.Id).CssClass)' disabled="@(_ocupado == grupo.Id)"
+                                        @onclick="() => _porEliminar = grupo" @attributes='this.MouseEvents(RatonAccion(grupo.Id))'>
+                                    <Icon Nombre="trash-2" Tamano="14" />
+                                    Eliminar
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+<ConfirmDialog Visible="@(_porEliminar is not null)" VisibleChanged="AlCambiarDialogo" Destructivo="true"
+               Titulo="@($"¿Eliminar «{_porEliminar?.Name}»?")"
+               Descripcion="Los servidores del grupo no se borran. Las ejecuciones ya lanzadas conservan su historial."
+               TextoConfirmar="Eliminar grupo" OnConfirmar="EliminarAsync" />
+
+@code {
+    private readonly MouseState _raton = new();
+    private readonly MouseStateMap _ratones = new();
+
+    private IReadOnlyList<ServerGroupSummary>? _grupos;
+    private ServerGroupSummary? _porEliminar;
+    private ServerGroupSummary? _confirmado;
+    private Guid? _ocupado;
+    private string? _error;
+    private bool _cargando = true;
+
+    private IReadOnlyList<ServerGroupSummary> Listado => _grupos ?? [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarAsync();
+    }
+
+    private async Task CargarAsync()
+    {
+        _cargando = true;
+
+        var resultado = await Api.GetServerGroupsAsync(CancellationToken.None);
+
+        _grupos = resultado.Value;
+        _error = resultado.ErrorMessage;
+        _cargando = false;
+    }
+
+    private MouseState RatonAccion(Guid grupoId)
+    {
+        return _ratones[(grupoId, "eliminar")];
+    }
+
+    private static string Composicion(ServerGroupSummary grupo)
+    {
+        if (grupo.MemberCount == 0)
+            return "Sin servidores";
+
+        var cantidad = grupo.MemberCount == 1 ? "1 servidor" : $"{grupo.MemberCount} servidores";
+        return $"{cantidad} ({grupo.LinuxCount} Linux, {grupo.WindowsCount} Windows)";
+    }
+
+    private void AlCambiarDialogo(bool visible)
+    {
+        if (visible)
+            return;
+
+        _confirmado = _porEliminar;
+        _porEliminar = null;
+    }
+
+    // ConfirmDialog cierra (VisibleChanged) antes de invocar OnConfirmar, así que el grupo
+    // pendiente se conserva en _confirmado hasta aquí.
+    private async Task EliminarAsync()
+    {
+        if (_confirmado is null)
+            return;
+
+        var grupo = _confirmado;
+        _confirmado = null;
+        _ocupado = grupo.Id;
+        _error = null;
+
+        var resultado = await Api.DeleteServerGroupAsync(grupo.Id, CancellationToken.None);
+
+        _ocupado = null;
+
+        if (resultado.IsFailure)
+        {
+            // El 409 por tareas programadas y el 403 por rol llegan con su mensaje y se muestran tal cual.
+            _error = resultado.ErrorMessage;
+            return;
+        }
+
+        await CargarAsync();
+    }
+}

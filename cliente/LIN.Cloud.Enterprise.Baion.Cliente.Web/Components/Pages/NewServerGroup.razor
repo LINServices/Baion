@@ -1,0 +1,45 @@
+@page "/grupos/nuevo"
+@attribute [Authorize]
+
+@using LIN.Cloud.Enterprise.Baion.Cliente.Web.Dtos.ServerGroups
+
+@inject IBaionApiClient Api
+@inject NavigationManager Navigation
+
+<PageTitle>Nuevo grupo · Baion</PageTitle>
+
+<PageHeader Seccion="Grupos" Titulo="Nuevo grupo"
+            Descripcion="Reúne servidores para lanzar un script sobre todos a la vez.">
+    <Acciones>
+        <a class="baion-button-ghost" href="/grupos">Cancelar</a>
+    </Acciones>
+</PageHeader>
+
+<ServerGroupForm Guardando="_guardando" ErrorGeneral="@_error" ErrorCodigo="@_codigo" OnGuardar="GuardarAsync" />
+
+@code {
+    private string? _error;
+    private string? _codigo;
+    private bool _guardando;
+
+    private async Task GuardarAsync(ServerGroupFormInput entrada)
+    {
+        _guardando = true;
+        _error = null;
+        _codigo = null;
+
+        var peticion = new CreateServerGroupRequest(entrada.Name, string.IsNullOrWhiteSpace(entrada.Description) ? null : entrada.Description, entrada.ServerIds.ToList());
+        var resultado = await Api.CreateServerGroupAsync(peticion, CancellationToken.None);
+
+        _guardando = false;
+
+        if (resultado.IsSuccess)
+        {
+            Navigation.NavigateTo("/grupos");
+            return;
+        }
+
+        _error = resultado.ErrorMessage;
+        _codigo = resultado.ErrorCode;
+    }
+}

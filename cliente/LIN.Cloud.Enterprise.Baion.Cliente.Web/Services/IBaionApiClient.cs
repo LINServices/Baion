@@ -7,7 +7,9 @@ using LIN.Cloud.Enterprise.Baion.Cliente.Web.Dtos.Common;
 using LIN.Cloud.Enterprise.Baion.Cliente.Web.Dtos.Dashboard;
 using LIN.Cloud.Enterprise.Baion.Cliente.Web.Dtos.Enrollment;
 using LIN.Cloud.Enterprise.Baion.Cliente.Web.Dtos.Executions;
+using LIN.Cloud.Enterprise.Baion.Cliente.Web.Dtos.Scheduling;
 using LIN.Cloud.Enterprise.Baion.Cliente.Web.Dtos.Scripts;
+using LIN.Cloud.Enterprise.Baion.Cliente.Web.Dtos.ServerGroups;
 using LIN.Cloud.Enterprise.Baion.Cliente.Web.Dtos.Servers;
 using LIN.Cloud.Enterprise.Baion.Cliente.Web.Dtos.SystemServices;
 using LIN.Cloud.Enterprise.Baion.Cliente.Web.Results;
@@ -123,4 +125,64 @@ public interface IBaionApiClient
     /// Una ejecución con su salida completa.
     /// </summary>
     Task<ApiResult<ScriptExecutionDetail>> GetExecutionAsync(Guid executionId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Grupos de servidores del tenant, con el recuento de miembros por plataforma.
+    /// </summary>
+    Task<ApiResult<IReadOnlyList<ServerGroupSummary>>> GetServerGroupsAsync(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Un grupo con sus miembros.
+    /// </summary>
+    Task<ApiResult<ServerGroupDetail>> GetServerGroupAsync(Guid groupId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Crea un grupo de servidores. Requiere rol Admin.
+    /// </summary>
+    Task<ApiResult<ServerGroupDetail>> CreateServerGroupAsync(CreateServerGroupRequest request, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Edita un grupo; la lista de miembros reemplaza a la anterior por completo. Requiere rol Admin.
+    /// </summary>
+    Task<ApiResult<ServerGroupDetail>> UpdateServerGroupAsync(Guid groupId, UpdateServerGroupRequest request, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Elimina un grupo; falla si alguna tarea programada lo usa. Requiere rol Admin.
+    /// </summary>
+    Task<ApiResult<bool>> DeleteServerGroupAsync(Guid groupId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Despacha un script a todos los miembros de un grupo y devuelve el resultado por servidor.
+    /// </summary>
+    Task<ApiResult<DispatchGroupResult>> DispatchGroupAsync(DispatchGroupRequest request, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Un lote de ejecuciones con sus contadores y las ejecuciones que lo componen.
+    /// </summary>
+    Task<ApiResult<ExecutionBatchDetail>> GetExecutionBatchAsync(Guid batchId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Tareas programadas del tenant.
+    /// </summary>
+    Task<ApiResult<IReadOnlyList<ScheduledTaskListItem>>> GetScheduledTasksAsync(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Da de alta una tarea programada sobre un script y un servidor o un grupo.
+    /// </summary>
+    Task<ApiResult<ScheduledTaskSummary>> CreateScheduledTaskAsync(CreateScheduledTaskRequest request, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Reactiva una tarea programada y recalcula su próximo disparo.
+    /// </summary>
+    Task<ApiResult<ScheduledTaskSummary>> EnableScheduledTaskAsync(Guid taskId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Pausa una tarea programada.
+    /// </summary>
+    Task<ApiResult<ScheduledTaskSummary>> DisableScheduledTaskAsync(Guid taskId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Dispara una tarea programada al instante y devuelve cuántos destinos se despacharon, fallaron u omitieron.
+    /// </summary>
+    Task<ApiResult<ScheduledTaskTriggered>> TriggerScheduledTaskAsync(Guid taskId, CancellationToken cancellationToken);
 }

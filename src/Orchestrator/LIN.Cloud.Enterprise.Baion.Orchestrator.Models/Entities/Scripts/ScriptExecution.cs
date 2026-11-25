@@ -30,6 +30,11 @@ public class ScriptExecution : TenantEntity
     // las ejecuciones que nacieron de un disparo programado; las pedidas por API fallan en el acto.
     public DateTimeOffset? DispatchDeadline { get; set; }
 
+    // Lote de ejecución sobre un grupo que originó la ejecución, cuando la pidió un lanzamiento por grupo.
+    public Guid? BatchId { get; set; }
+
+    public ExecutionBatch? Batch { get; set; }
+
     public ExecutionStatus Status { get; set; } = ExecutionStatus.Pending;
 
     public ExecutionMode Mode { get; set; } = ExecutionMode.Attached;

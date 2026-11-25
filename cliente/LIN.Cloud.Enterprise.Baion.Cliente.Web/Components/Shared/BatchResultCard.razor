@@ -1,0 +1,58 @@
+@* Resumen de un lanzamiento sobre un grupo: contadores y, solo de los servidores que no llegaron
+   a ejecutar, el motivo. Lo despachado con éxito se ve en el detalle del lote. *@
+
+<div class="baion-card p-6">
+    <div class="flex items-center gap-2">
+        <span class="text-ink" aria-hidden="true"><Icon Nombre="layers" /></span>
+        <h3 class="text-title text-ink">Lote lanzado</h3>
+    </div>
+
+    <dl class="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
+        <DetailField Etiqueta="Miembros"><span class="tabular-nums">@Resultado.Total</span></DetailField>
+        <DetailField Etiqueta="Lanzadas"><span class="tabular-nums">@Resultado.Dispatched</span></DetailField>
+        <DetailField Etiqueta="Incompatibles"><span class="tabular-nums">@Resultado.SkippedIncompatible</span></DetailField>
+        <DetailField Etiqueta="Deshabilitados"><span class="tabular-nums">@Resultado.SkippedDisabled</span></DetailField>
+        <DetailField Etiqueta="Fallidas">
+            <span class="tabular-nums @(Resultado.Failed > 0 ? "text-danger" : string.Empty)">@Resultado.Failed</span>
+        </DetailField>
+    </dl>
+
+    @if (NoLanzados.Count > 0)
+    {
+        <ul class="mt-6 divide-y divide-line border-t border-line">
+            @foreach (var destino in NoLanzados)
+            {
+                <li class="flex items-start gap-2 py-3 text-body">
+                    <span class="mt-px shrink-0 @(destino.Outcome == "failed" ? "text-danger" : "text-warn")" aria-hidden="true"><Icon Nombre="circle-alert" Tamano="14" /></span>
+                    <span class="text-ink">@destino.ServerName</span>
+                    <span class="text-ink-2">@Motivo(destino)</span>
+                </li>
+            }
+        </ul>
+    }
+
+    <div class="mt-6">
+        <a class="baion-button" href="/ejecuciones/lote/@Resultado.BatchId">Ver lote</a>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public DispatchGroupResult Resultado { get; set; } = default!;
+
+    private IReadOnlyList<BatchTargetResult> NoLanzados => Resultado.Targets.Where(destino => destino.Outcome != "dispatched").ToList();
+
+    private static string Motivo(BatchTargetResult destino)
+    {
+        return destino.Outcome switch
+        {
+            "skippedIncompatible" => "Plataforma no compatible con el script",
+            "skippedDisabled" => "Servidor deshabilitado",
+            _ => destino.ErrorCode switch
+            {
+                "agent.not_connected" => "Agente desconectado",
+                _ => destino.Message ?? "No se pudo lanzar"
+            }
+        };
+    }
+}

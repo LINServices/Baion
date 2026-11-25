@@ -22,6 +22,11 @@ public interface IScriptDispatchService
     Task<Result<ScriptExecutionDispatched>> DispatchScheduledAsync(ScheduledDispatch request, CancellationToken cancellationToken);
 
     /// <summary>
+    /// Despacha una ejecución nacida de un lote sobre un grupo, dejándola enlazada con él.
+    /// </summary>
+    Task<Result<ScriptExecutionDispatched>> DispatchBatchItemAsync(BatchDispatch request, CancellationToken cancellationToken);
+
+    /// <summary>
     /// Reintenta entregar una ejecución que quedó esperando a que su agente volviera. Si venció el plazo,
     /// la marca fallida.
     /// </summary>

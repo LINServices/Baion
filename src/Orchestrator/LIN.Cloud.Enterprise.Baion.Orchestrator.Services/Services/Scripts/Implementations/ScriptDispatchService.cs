@@ -57,6 +57,26 @@ internal class ScriptDispatchService(IRepository<Script> scripts, IRepository<Se
         return await SendAsync(prepared, cancellationToken);
     }
 
+    public async Task<Result<ScriptExecutionDispatched>> DispatchBatchItemAsync(BatchDispatch request, CancellationToken cancellationToken)
+    {
+        var script = await scripts.GetByIdAsync(request.ScriptId);
+
+        if (script is null || !script.IsActive)
+            return Result<ScriptExecutionDispatched>.Failure(Error.NotFound("script.not_found", "El script no existe o está inactivo."));
+
+        var server = await servers.GetByIdAsync(request.ServerId);
+
+        if (server is null)
+            return Result<ScriptExecutionDispatched>.Failure(Error.NotFound("server.not_found", "El servidor no existe."));
+
+        var prepared = new PreparedDispatch(script, server, request.Mode, request.TimeoutSeconds ?? script.DefaultTimeoutSeconds, request.WorkingDirectory, request.EnvironmentVariables)
+        {
+            BatchId = request.BatchId
+        };
+
+        return await SendAsync(prepared, cancellationToken);
+    }
+
     public async Task<Result<ScriptExecutionDispatched>> DispatchChainStepAsync(ChainStepDispatch request, CancellationToken cancellationToken)
     {
         var script = await scripts.GetByIdAsync(request.ScriptId);
@@ -249,6 +269,7 @@ internal class ScriptDispatchService(IRepository<Script> scripts, IRepository<Se
             ChainRunId = prepared.ChainRunId,
             ScriptChainStepId = prepared.ScriptChainStepId,
             ScheduledTaskId = prepared.ScheduledTaskId,
+            BatchId = prepared.BatchId,
             DispatchDeadline = prepared.DispatchDeadline,
             Mode = prepared.Mode,
             Status = ExecutionStatus.Pending,

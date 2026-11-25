@@ -87,6 +87,88 @@ namespace LIN.Cloud.Enterprise.Baion.Orchestrator.Persistence.Migrations
                     b.ToTable("enrollment_tokens");
                 });
 
+            modelBuilder.Entity("LIN.Cloud.Enterprise.Baion.Orchestrator.Models.Entities.ExecutionBatch", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("DispatchedCount")
+                        .HasColumnType("int")
+                        .HasColumnName("dispatched_count");
+
+                    b.Property<int>("FailedCount")
+                        .HasColumnType("int")
+                        .HasColumnName("failed_count");
+
+                    b.Property<int>("Mode")
+                        .HasColumnType("int")
+                        .HasColumnName("mode");
+
+                    b.Property<string>("RequestedBy")
+                        .HasMaxLength(320)
+                        .HasColumnType("nvarchar(320)")
+                        .HasColumnName("requested_by");
+
+                    b.Property<Guid>("ScriptId")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("script_id");
+
+                    b.Property<string>("ScriptName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("script_name");
+
+                    b.Property<Guid?>("ServerGroupId")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("server_group_id");
+
+                    b.Property<string>("ServerGroupName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("server_group_name");
+
+                    b.Property<int>("SkippedDisabledCount")
+                        .HasColumnType("int")
+                        .HasColumnName("skipped_disabled_count");
+
+                    b.Property<int>("SkippedIncompatibleCount")
+                        .HasColumnType("int")
+                        .HasColumnName("skipped_incompatible_count");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<int>("TotalMembers")
+                        .HasColumnType("int")
+                        .HasColumnName("total_members");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("datetimeoffset")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_execution_batches");
+
+                    b.HasIndex("ScriptId")
+                        .HasDatabaseName("ix_execution_batches_script_id");
+
+                    b.HasIndex("ServerGroupId")
+                        .HasDatabaseName("ix_execution_batches_server_group_id");
+
+                    b.HasIndex("TenantId", "CreatedAt")
+                        .HasDatabaseName("ix_execution_batches_tenant_id_created_at");
+
+                    b.ToTable("execution_batches");
+                });
+
             modelBuilder.Entity("LIN.Cloud.Enterprise.Baion.Orchestrator.Models.Entities.Metric", b =>
                 {
                     b.Property<long>("Id")
@@ -462,6 +544,10 @@ namespace LIN.Cloud.Enterprise.Baion.Orchestrator.Persistence.Migrations
                         .HasColumnType("uniqueidentifier")
                         .HasColumnName("id");
 
+                    b.Property<Guid?>("BatchId")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("batch_id");
+
                     b.Property<Guid?>("ChainRunId")
                         .HasColumnType("uniqueidentifier")
                         .HasColumnName("chain_run_id");
@@ -537,6 +623,10 @@ namespace LIN.Cloud.Enterprise.Baion.Orchestrator.Persistence.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_script_executions");
+
+                    b.HasIndex("BatchId")
+                        .HasDatabaseName("ix_script_executions_batch_id")
+                        .HasFilter("[batch_id] IS NOT NULL");
 
                     b.HasIndex("ChainRunId")
                         .HasDatabaseName("ix_script_executions_chain_run_id")
@@ -941,6 +1031,35 @@ namespace LIN.Cloud.Enterprise.Baion.Orchestrator.Persistence.Migrations
                     b.Navigation("Tenant");
                 });
 
+            modelBuilder.Entity("LIN.Cloud.Enterprise.Baion.Orchestrator.Models.Entities.ExecutionBatch", b =>
+                {
+                    b.HasOne("LIN.Cloud.Enterprise.Baion.Orchestrator.Models.Entities.Script", "Script")
+                        .WithMany()
+                        .HasForeignKey("ScriptId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_execution_batches_scripts_script_id");
+
+                    b.HasOne("LIN.Cloud.Enterprise.Baion.Orchestrator.Models.Entities.ServerGroup", "ServerGroup")
+                        .WithMany()
+                        .HasForeignKey("ServerGroupId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_execution_batches_server_groups_server_group_id");
+
+                    b.HasOne("LIN.Cloud.Enterprise.Baion.Orchestrator.Models.Entities.Tenant", "Tenant")
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_execution_batches_tenants_tenant_id");
+
+                    b.Navigation("Script");
+
+                    b.Navigation("ServerGroup");
+
+                    b.Navigation("Tenant");
+                });
+
             modelBuilder.Entity("LIN.Cloud.Enterprise.Baion.Orchestrator.Models.Entities.Metric", b =>
                 {
                     b.HasOne("LIN.Cloud.Enterprise.Baion.Orchestrator.Models.Entities.Server", "Server")
@@ -1100,6 +1219,12 @@ namespace LIN.Cloud.Enterprise.Baion.Orchestrator.Persistence.Migrations
 
             modelBuilder.Entity("LIN.Cloud.Enterprise.Baion.Orchestrator.Models.Entities.ScriptExecution", b =>
                 {
+                    b.HasOne("LIN.Cloud.Enterprise.Baion.Orchestrator.Models.Entities.ExecutionBatch", "Batch")
+                        .WithMany("Executions")
+                        .HasForeignKey("BatchId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .HasConstraintName("fk_script_executions_execution_batches_batch_id");
+
                     b.HasOne("LIN.Cloud.Enterprise.Baion.Orchestrator.Models.Entities.ScheduledTask", "ScheduledTask")
                         .WithMany()
                         .HasForeignKey("ScheduledTaskId")
@@ -1132,6 +1257,8 @@ namespace LIN.Cloud.Enterprise.Baion.Orchestrator.Persistence.Migrations
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired()
                         .HasConstraintName("fk_script_executions_tenants_tenant_id");
+
+                    b.Navigation("Batch");
 
                     b.Navigation("ScheduledTask");
 
@@ -1238,6 +1365,11 @@ namespace LIN.Cloud.Enterprise.Baion.Orchestrator.Persistence.Migrations
                     b.Navigation("Tenant");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("LIN.Cloud.Enterprise.Baion.Orchestrator.Models.Entities.ExecutionBatch", b =>
+                {
+                    b.Navigation("Executions");
                 });
 
             modelBuilder.Entity("LIN.Cloud.Enterprise.Baion.Orchestrator.Models.Entities.Role", b =>
