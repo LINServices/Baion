@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <UserSecretsId>dotnet-LIN.Cloud.Enterprise.Baion.Agent.Host-49133fe0-791a-4049-af06-a111920431f3</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Systemd" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\LIN.Cloud.Enterprise.Baion.Agent.Core\LIN.Cloud.Enterprise.Baion.Agent.Core.csproj" />
+    <ProjectReference Include="..\LIN.Cloud.Enterprise.Baion.Agent.Execution\LIN.Cloud.Enterprise.Baion.Agent.Execution.csproj" />
+    <ProjectReference Include="..\LIN.Cloud.Enterprise.Baion.Agent.Metrics\LIN.Cloud.Enterprise.Baion.Agent.Metrics.csproj" />
+    <ProjectReference Include="..\LIN.Cloud.Enterprise.Baion.Agent.Services\LIN.Cloud.Enterprise.Baion.Agent.Services.csproj" />
+  </ItemGroup>
+</Project>

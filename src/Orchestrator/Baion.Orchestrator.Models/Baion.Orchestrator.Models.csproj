@@ -1,8 +1,0 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-
-  <ItemGroup>
-    <ProjectReference Include="..\..\Baion.Contracts\Baion.Contracts.csproj" />
-  </ItemGroup>
-
-
-</Project>

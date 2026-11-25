@@ -1,0 +1,8 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\LIN.Cloud.Enterprise.Baion.Contracts\LIN.Cloud.Enterprise.Baion.Contracts.csproj" />
+  </ItemGroup>
+
+
+</Project>

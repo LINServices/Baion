@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 env:
-  PROJECT_PATH: "src/Orchestrator/Baion.Orchestrator.Presentacion/Baion.Orchestrator.Presentacion.csproj"
+  PROJECT_PATH: "src/Orchestrator/LIN.Cloud.Enterprise.Baion.Orchestrator.Presentacion/LIN.Cloud.Enterprise.Baion.Orchestrator.Presentacion.csproj"
   PUBLISH_DIR: "publish"
   RUNTIME_ID: "win-x64"
 

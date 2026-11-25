@@ -7,7 +7,7 @@
 
 .NOTES
     Publica antes el binario:
-    dotnet publish src/Agent/Baion.Agent.Host -c Release -r win-x64 -o .\publish
+    dotnet publish src/Agent/LIN.Cloud.Enterprise.Baion.Agent.Host -c Release -r win-x64 -o .\publish
 #>
 [CmdletBinding()]
 param(
@@ -22,14 +22,14 @@ $ErrorActionPreference = 'Stop'
 $ServiceName = 'BaionAgent'
 $DisplayName = 'Baion Agent'
 $StateDir = Join-Path $env:ProgramData 'Baion\Agent'
-$Executable = Join-Path $InstallDir 'Baion.Agent.Host.exe'
+$Executable = Join-Path $InstallDir 'LIN.Cloud.Enterprise.Baion.Agent.Host.exe'
 
 $identity = [Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()
 if (-not $identity.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
     throw 'Este script necesita ejecutarse como administrador.'
 }
 
-if (-not (Test-Path (Join-Path $Source 'Baion.Agent.Host.exe'))) {
+if (-not (Test-Path (Join-Path $Source 'LIN.Cloud.Enterprise.Baion.Agent.Host.exe'))) {
     throw "No se encontró el binario publicado en $Source"
 }
 

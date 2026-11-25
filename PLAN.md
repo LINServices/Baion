@@ -69,29 +69,29 @@ El `tenant_id` de Baion es agnóstico del proveedor; opcionalmente referencia un
 
 ```
 Baion/
-├── Baion.Orchestrator.sln
-├── Baion.Agent.sln
+├── LIN.Cloud.Enterprise.Baion.Orchestrator.sln
+├── LIN.Cloud.Enterprise.Baion.Agent.sln
 ├── Directory.Build.props          (net10.0, nullable, warnings-as-errors)
 ├── Directory.Packages.props       (versiones centralizadas de NuGet)
 ├── nuget.config                   (nuget.org + feed LI con package source mapping)
 ├── .editorconfig                  (CODING_STYLE.md aplicado en build)
 ├── src/
-│   ├── Baion.Contracts/           (DTOs/records del protocolo WS, compartido por ambas soluciones)
+│   ├── LIN.Cloud.Enterprise.Baion.Contracts/           (DTOs/records del protocolo WS, compartido por ambas soluciones)
 │   ├── Orchestrator/
-│   │   ├── Baion.Orchestrator.Presentacion/   (Controllers, Filters, endpoint WebSocket — proyecto de arranque)
-│   │   ├── Baion.Orchestrator.Services/       (interfaces raíz públicas + Implementations/ internal)
-│   │   ├── Baion.Orchestrator.Identity/       (IIdentityProvider + LinIdentityProvider / SelfManagedIdentityProvider)
-│   │   ├── Baion.Orchestrator.Messaging/      (IRabbitMqPublisher/Consumer + Implementations/)
-│   │   ├── Baion.Orchestrator.Persistence/    (BaionDbContext, repositorios raíz públicos + Implementations/)
-│   │   ├── Baion.Orchestrator.Extensions/
-│   │   └── Baion.Orchestrator.Models/         (Entities/, Dtos/)
+│   │   ├── LIN.Cloud.Enterprise.Baion.Orchestrator.Presentacion/   (Controllers, Filters, endpoint WebSocket — proyecto de arranque)
+│   │   ├── LIN.Cloud.Enterprise.Baion.Orchestrator.Services/       (interfaces raíz públicas + Implementations/ internal)
+│   │   ├── LIN.Cloud.Enterprise.Baion.Orchestrator.Identity/       (IIdentityProvider + LinIdentityProvider / SelfManagedIdentityProvider)
+│   │   ├── LIN.Cloud.Enterprise.Baion.Orchestrator.Messaging/      (IRabbitMqPublisher/Consumer + Implementations/)
+│   │   ├── LIN.Cloud.Enterprise.Baion.Orchestrator.Persistence/    (BaionDbContext, repositorios raíz públicos + Implementations/)
+│   │   ├── LIN.Cloud.Enterprise.Baion.Orchestrator.Extensions/
+│   │   └── LIN.Cloud.Enterprise.Baion.Orchestrator.Models/         (Entities/, Dtos/)
 │   └── Agent/
-│       ├── Baion.Agent.Core/       (websocket client, protocolo, coordinador de concurrencia)
-│       ├── Baion.Agent.Execution/  (IScriptExecutor + Linux/Windows en Implementations/)
-│       ├── Baion.Agent.Metrics/    (IMetricsCollector + Linux/Windows en Implementations/)
-│       └── Baion.Agent.Host/       (Program.cs, resuelve plataforma, arma DI, publish per-RID)
+│       ├── LIN.Cloud.Enterprise.Baion.Agent.Core/       (websocket client, protocolo, coordinador de concurrencia)
+│       ├── LIN.Cloud.Enterprise.Baion.Agent.Execution/  (IScriptExecutor + Linux/Windows en Implementations/)
+│       ├── LIN.Cloud.Enterprise.Baion.Agent.Metrics/    (IMetricsCollector + Linux/Windows en Implementations/)
+│       └── LIN.Cloud.Enterprise.Baion.Agent.Host/       (Program.cs, resuelve plataforma, arma DI, publish per-RID)
 └── tests/
-    └── Baion.Contracts.Tests/
+    └── LIN.Cloud.Enterprise.Baion.Contracts.Tests/
 ```
 
 Cada capa expone su propia extensión `AddXxx(this IServiceCollection)`. Interfaces públicas a nivel raíz de cada proyecto; implementaciones `internal` en `Implementations/`.
@@ -113,8 +113,8 @@ y escalarse por su cuenta.
 
 ```
 cliente/
-├── Baion.Cliente.sln
-└── Baion.Cliente.Web/
+├── LIN.Cloud.Enterprise.Baion.Cliente.sln
+└── LIN.Cloud.Enterprise.Baion.Cliente.Web/
     ├── Components/
     │   ├── Layout/     (MainLayout, NavMenu, TopBar, EmptyLayout)
     │   ├── Pages/      (Login, Dashboard, Servers)
@@ -142,8 +142,8 @@ Endpoints añadidos al orquestador para alimentarlo: `GET /api/servers`, `GET /a
 ## Plan de trabajo por fases
 
 ### Fase 0 — Setup y contratos ✅
-Ambas soluciones compilan; mensajes base (`ExecuteScriptMessage`, `MetricsReportMessage`, `ForceUpdateMessage`) definidos en `Baion.Contracts` sobre dos jerarquías polimórficas (`ServerToAgentMessage` / `AgentToServerMessage`) con discriminador `type` y `BaionProtocol.JsonOptions` compartidas por ambos extremos.
-**Aceptación:** build limpio en ambas soluciones (0 warnings, `TreatWarningsAsErrors`), sin tipos duplicados; round-trip del protocolo verificado en `Baion.Contracts.Tests`.
+Ambas soluciones compilan; mensajes base (`ExecuteScriptMessage`, `MetricsReportMessage`, `ForceUpdateMessage`) definidos en `LIN.Cloud.Enterprise.Baion.Contracts` sobre dos jerarquías polimórficas (`ServerToAgentMessage` / `AgentToServerMessage`) con discriminador `type` y `BaionProtocol.JsonOptions` compartidas por ambos extremos.
+**Aceptación:** build limpio en ambas soluciones (0 warnings, `TreatWarningsAsErrors`), sin tipos duplicados; round-trip del protocolo verificado en `LIN.Cloud.Enterprise.Baion.Contracts.Tests`.
 
 ### Fase 1 — Persistencia `lin_baion` ✅
 `BaionDbContext` con las 10 entidades y convención `snake_case` en tablas, columnas, claves e índices.
@@ -182,7 +182,7 @@ Handshake en dos tiempos: las credenciales viajan en cabeceras y se validan **an
 con plataforma, RID y `MachineId`, y el orquestador responde `WelcomeMessage`. El token de instalación solo se
 usa una vez: en el enrolamiento el agente recibe una **credencial permanente** que persiste con permisos
 restringidos y con la que reconecta a partir de ahí. `MachineId` hace idempotente el reenrolamiento, de modo que
-reinstalar el agente no duplica el servidor. `BaionMessageChannel` vive en `Baion.Contracts` y encuadra los
+reinstalar el agente no duplica el servidor. `BaionMessageChannel` vive en `LIN.Cloud.Enterprise.Baion.Contracts` y encuadra los
 mensajes en los dos extremos, para que el formato de trama no pueda divergir.
 Reconexión con retroceso exponencial y jitter completo dentro de la ventana; `InstancePresenceHostedService`
 suelta al arrancar la presencia que la instancia dejó colgada tras una caída.
@@ -313,7 +313,7 @@ guarda un `TaskCompletionSource` por petición en vuelo y lo completa cuando lle
 socket solo despierta la espera (`case IAgentQueryReply` en `AgentConnectionHandler.DispatchAsync`), nunca
 bloquea ni escribe en la base.
 
-Contrato en `Baion.Contracts`:
+Contrato en `LIN.Cloud.Enterprise.Baion.Contracts`:
 - Peticiones (`ServerToAgentMessage`): `services-list-request`, `service-describe-request`,
   `service-logs-request`, `service-control-request`.
 - Respuestas (`AgentToServerMessage`, todas `IAgentQueryReply`): `services-listed`, `service-described`,

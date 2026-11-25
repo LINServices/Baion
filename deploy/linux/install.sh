@@ -30,9 +30,9 @@ if [[ $EUID -ne 0 ]]; then
   exit 1
 fi
 
-if [[ ! -x "$SOURCE_DIR/Baion.Agent.Host" ]]; then
+if [[ ! -x "$SOURCE_DIR/LIN.Cloud.Enterprise.Baion.Agent.Host" ]]; then
   echo "No se encontró el binario publicado en $SOURCE_DIR" >&2
-  echo "Publícalo antes con: dotnet publish src/Agent/Baion.Agent.Host -c Release -r linux-x64 -o $SOURCE_DIR" >&2
+  echo "Publícalo antes con: dotnet publish src/Agent/LIN.Cloud.Enterprise.Baion.Agent.Host -c Release -r linux-x64 -o $SOURCE_DIR" >&2
   exit 1
 fi
 
@@ -42,7 +42,7 @@ systemctl stop "$UNIT_NAME" 2>/dev/null || true
 echo "==> Copiando binarios a $INSTALL_DIR"
 install -d -m 0755 "$INSTALL_DIR"
 cp -a "$SOURCE_DIR"/. "$INSTALL_DIR"/
-chmod 0755 "$INSTALL_DIR/Baion.Agent.Host"
+chmod 0755 "$INSTALL_DIR/LIN.Cloud.Enterprise.Baion.Agent.Host"
 
 echo "==> Preparando $STATE_DIR"
 install -d -m 0700 "$STATE_DIR"

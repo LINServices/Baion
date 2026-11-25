@@ -20,11 +20,11 @@ español; sigue lo que veas en el archivo que estés tocando.
 
 | Solución | Qué es | Puerto local |
 |---|---|---|
-| `Baion.Orchestrator.sln` | API + endpoint WebSocket de agentes | 5199 |
-| `Baion.Agent.sln` | Agente que se instala en cada servidor | — |
-| `cliente/Baion.Cliente.sln` | Panel Blazor + Tailwind | 5100 |
+| `LIN.Cloud.Enterprise.Baion.Orchestrator.sln` | API + endpoint WebSocket de agentes | 5199 |
+| `LIN.Cloud.Enterprise.Baion.Agent.sln` | Agente que se instala en cada servidor | — |
+| `cliente/LIN.Cloud.Enterprise.Baion.Cliente.sln` | Panel Blazor + Tailwind | 5100 |
 
-`src/Baion.Contracts` es el **protocolo compartido** entre orquestador y agente: está en ambas soluciones.
+`src/LIN.Cloud.Enterprise.Baion.Contracts` es el **protocolo compartido** entre orquestador y agente: está en ambas soluciones.
 El panel **no** lo referencia: duplica los DTOs a mano en `Models/ApiModels.cs`, a propósito, porque es una
 aplicación aparte que solo habla HTTP y compartir ensamblados la ataría a la versión exacta del servidor.
 
@@ -32,34 +32,34 @@ aplicación aparte que solo habla HTTP y compartir ensamblados la ataría a la v
 
 ```bash
 # Compilar (los tres han de quedar con 0 warnings)
-dotnet build Baion.Orchestrator.sln
-dotnet build Baion.Agent.sln
-dotnet build cliente/Baion.Cliente.sln
+dotnet build LIN.Cloud.Enterprise.Baion.Orchestrator.sln
+dotnet build LIN.Cloud.Enterprise.Baion.Agent.sln
+dotnet build cliente/LIN.Cloud.Enterprise.Baion.Cliente.sln
 
 # Arrancar en local (ver "Arranque local" más abajo para el orden)
-dotnet run --project src/Orchestrator/Baion.Orchestrator.Presentacion
-dotnet run --project cliente/Baion.Cliente.Web
-dotnet run --project src/Agent/Baion.Agent.Host
+dotnet run --project src/Orchestrator/LIN.Cloud.Enterprise.Baion.Orchestrator.Presentacion
+dotnet run --project cliente/LIN.Cloud.Enterprise.Baion.Cliente.Web
+dotnet run --project src/Agent/LIN.Cloud.Enterprise.Baion.Agent.Host
 
 # Tests: por proyecto
-dotnet test tests/Baion.Orchestrator.Persistence.Tests/Baion.Orchestrator.Persistence.Tests.csproj
+dotnet test tests/LIN.Cloud.Enterprise.Baion.Orchestrator.Persistence.Tests/LIN.Cloud.Enterprise.Baion.Orchestrator.Persistence.Tests.csproj
 
 # Tests: una clase o un caso concreto
-dotnet test tests/Baion.Orchestrator.Agents.Tests/Baion.Orchestrator.Agents.Tests.csproj \
+dotnet test tests/LIN.Cloud.Enterprise.Baion.Orchestrator.Agents.Tests/LIN.Cloud.Enterprise.Baion.Orchestrator.Agents.Tests.csproj \
   --filter "FullyQualifiedName~ScriptChainTests"
-dotnet test tests/Baion.Agent.Execution.Tests/Baion.Agent.Execution.Tests.csproj \
+dotnet test tests/LIN.Cloud.Enterprise.Baion.Agent.Execution.Tests/LIN.Cloud.Enterprise.Baion.Agent.Execution.Tests.csproj \
   --filter "FullyQualifiedName~ExecuteAsync_AlVencerElTimeout"
 
 # Migraciones (proyecto y startup son el mismo: Persistence tiene su IDesignTimeDbContextFactory)
 dotnet ef migrations add <Nombre> \
-  --project src/Orchestrator/Baion.Orchestrator.Persistence \
-  --startup-project src/Orchestrator/Baion.Orchestrator.Persistence --output-dir Migrations
+  --project src/Orchestrator/LIN.Cloud.Enterprise.Baion.Orchestrator.Persistence \
+  --startup-project src/Orchestrator/LIN.Cloud.Enterprise.Baion.Orchestrator.Persistence --output-dir Migrations
 dotnet ef database update \
-  --project src/Orchestrator/Baion.Orchestrator.Persistence \
-  --startup-project src/Orchestrator/Baion.Orchestrator.Persistence
+  --project src/Orchestrator/LIN.Cloud.Enterprise.Baion.Orchestrator.Persistence \
+  --startup-project src/Orchestrator/LIN.Cloud.Enterprise.Baion.Orchestrator.Persistence
 
 # Tailwind al vuelo mientras editas componentes (el build ya lo compila solo)
-cd cliente/Baion.Cliente.Web && npm run css:watch
+cd cliente/LIN.Cloud.Enterprise.Baion.Cliente.Web && npm run css:watch
 ```
 
 Variables de entorno útiles: `BAION_DESIGN_CONNECTION` (cadena para `dotnet ef`),
@@ -68,7 +68,7 @@ Variables de entorno útiles: `BAION_DESIGN_CONNECTION` (cadena para `dotnet ef`
 ## Restricciones del build que muerden
 
 - **`ImplicitUsings` está desactivado** en todo el repo (`Directory.Build.props`). Declara todos los `using`.
-  En Razor el equivalente es `cliente/Baion.Cliente.Web/Components/_Imports.razor`.
+  En Razor el equivalente es `cliente/LIN.Cloud.Enterprise.Baion.Cliente.Web/Components/_Imports.razor`.
 - **`TreatWarningsAsErrors` está activo.** Un warning rompe el build.
 - **Gestión central de paquetes**: las versiones van en `Directory.Packages.props`. Un `PackageReference`
   con `Version=` inline falla. `dotnet add package` deja `Version="*"`, que también falla (NU1011): fija la
@@ -91,7 +91,7 @@ código HTTP en `Presentacion/ResultExtensions.cs`.
 
 ### Multi-tenancy — el invariante más importante
 
-Aislamiento en **dos frentes**, ambos en `Baion.Orchestrator.Persistence`:
+Aislamiento en **dos frentes**, ambos en `LIN.Cloud.Enterprise.Baion.Orchestrator.Persistence`:
 
 1. **Lectura**: filtro global aplicado por reflexión a todo lo que implemente `ITenantOwned`, parametrizado
    contra `ITenantContext` en cada consulta. **Sin tenant resuelto, no devuelve filas** (deny by default).
@@ -114,7 +114,7 @@ puertos. Una vez abierto, el canal es bidireccional.
   nunca se establece (`AgentSocketController`).
 - Dos credenciales: token de instalación (una sola vez) y credencial permanente que el agente persiste.
   `MachineId` hace idempotente el reenrolamiento.
-- `BaionMessageChannel` (en `Baion.Contracts`) encuadra los mensajes en **los dos extremos**, para que el
+- `BaionMessageChannel` (en `LIN.Cloud.Enterprise.Baion.Contracts`) encuadra los mensajes en **los dos extremos**, para que el
   formato de trama no pueda divergir. Dos jerarquías polimórficas separadas por dirección
   (`ServerToAgentMessage` / `AgentToServerMessage`) con discriminador `type`.
 - `ScriptRuntimeCompatibility` (también en Contracts) la aplican ambos lados: el orquestador para rechazar
@@ -139,7 +139,7 @@ presencia (`IAgentPresenceLookup`, sobre las columnas de `servers`) y publica en
 
 Con `RabbitMq:Enabled=false` todo funciona, pero cada instancia solo alcanza a **sus propios** agentes.
 
-Para evitar ciclos entre capas, `Baion.Orchestrator.Messaging` **declara** `ILocalAgentDelivery` e
+Para evitar ciclos entre capas, `LIN.Cloud.Enterprise.Baion.Orchestrator.Messaging` **declara** `ILocalAgentDelivery` e
 `IAgentPresenceLookup`, y los implementan Services y Persistence respectivamente.
 
 ### Cadenas y programación
@@ -189,7 +189,7 @@ compila sin Node.
 
 #### Sistema de diseño
 
-El panel sigue el sistema **«Quiet Data»**, y `cliente/Baion.Cliente.Web/Styles/app.css` es su única
+El panel sigue el sistema **«Quiet Data»**, y `cliente/LIN.Cloud.Enterprise.Baion.Cliente.Web/Styles/app.css` es su única
 fuente de verdad: ahí están los tokens, la escala tipográfica y las clases `.baion-*`.
 
 - **Monocromo con un solo acento**, llamado `current` y consumido siempre por escala
@@ -206,19 +206,19 @@ fuente de verdad: ahí están los tokens, la escala tipográfica y las clases `.
 - Primitivas de dato en `Components/Shared`: `SegmentedBar`, `Gauge`, `DataBullet`, `MetricValue`,
   `GlassInsight`, `GhostLoader`. Los iconos son Lucide embebidos (`Icon` + `LucideIcons`), trazo 1.5.
 - La tipografía es **Gilroy, autoalojada**: es comercial y sus `.woff2` no están en el repositorio.
-  Ver `cliente/Baion.Cliente.Web/wwwroot/fonts/README.md`. Sin ellos el panel usa el fallback con
+  Ver `cliente/LIN.Cloud.Enterprise.Baion.Cliente.Web/wwwroot/fonts/README.md`. Sin ellos el panel usa el fallback con
   métricas ajustadas y no salta el layout.
 
 ## Tests
 
 Los de integración son **contra SQL Server de verdad** (LocalDB), con una base desechable por fixture.
-`tests/Baion.TestSupport` tiene el fixture compartido. `Baion.Orchestrator.Agents.Tests` levanta la
+`tests/LIN.Cloud.Enterprise.Baion.TestSupport` tiene el fixture compartido. `LIN.Cloud.Enterprise.Baion.Orchestrator.Agents.Tests` levanta la
 aplicación entera con `WebApplicationFactory` y habla por **WebSockets reales**; `FakeAgent` es un agente
 simulado que deja a la prueba decidir qué responde.
 
 Tres cosas que hay que saber:
 
-- `xunit.runner.json` de `Baion.Orchestrator.Agents.Tests` **serializa las colecciones**. No lo quites: cada
+- `xunit.runner.json` de `LIN.Cloud.Enterprise.Baion.Orchestrator.Agents.Tests` **serializa las colecciones**. No lo quites: cada
   clase levanta aplicaciones completas con su base, y en paralelo saturan LocalDB hasta colgar la suite.
 - Los tests marcados con `[RequiresRabbitMqFact]` se **omiten solos** si no hay broker en `localhost:5672`.
   Para ejecutarlos: `docker run -d --name baion-rabbit -p 5672:5672 rabbitmq:4-management-alpine`.

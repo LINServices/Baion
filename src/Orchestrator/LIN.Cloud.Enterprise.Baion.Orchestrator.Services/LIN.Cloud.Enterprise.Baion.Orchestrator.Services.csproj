@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\LIN.Cloud.Enterprise.Baion.Orchestrator.Persistence\LIN.Cloud.Enterprise.Baion.Orchestrator.Persistence.csproj" />
+    <ProjectReference Include="..\LIN.Cloud.Enterprise.Baion.Orchestrator.Identity\LIN.Cloud.Enterprise.Baion.Orchestrator.Identity.csproj" />
+    <ProjectReference Include="..\LIN.Cloud.Enterprise.Baion.Orchestrator.Messaging\LIN.Cloud.Enterprise.Baion.Orchestrator.Messaging.csproj" />
+    <ProjectReference Include="..\LIN.Cloud.Enterprise.Baion.Orchestrator.Extensions\LIN.Cloud.Enterprise.Baion.Orchestrator.Extensions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Cronos" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
+  </ItemGroup>
+
+
+</Project>

@@ -54,7 +54,7 @@ jobs:
       # el target net10.0/<rid> y publish falla con NETSDK1047.
       - name: Restaurar
         run: >
-          dotnet restore src/Agent/Baion.Agent.Host/Baion.Agent.Host.csproj
+          dotnet restore src/Agent/LIN.Cloud.Enterprise.Baion.Agent.Host/LIN.Cloud.Enterprise.Baion.Agent.Host.csproj
           --runtime ${{ matrix.rid }}
 
       - name: Preparar la carpeta de despliegue
@@ -68,7 +68,7 @@ jobs:
 
       - name: Publicar (self-contained)
         run: >
-          dotnet publish src/Agent/Baion.Agent.Host/Baion.Agent.Host.csproj
+          dotnet publish src/Agent/LIN.Cloud.Enterprise.Baion.Agent.Host/LIN.Cloud.Enterprise.Baion.Agent.Host.csproj
           --configuration Release
           --runtime ${{ matrix.rid }}
           --self-contained true
@@ -80,7 +80,7 @@ jobs:
         run: |
           set -euo pipefail
           stage="baion-agent-${{ matrix.rid }}"
-          chmod +x "$stage/publish/Baion.Agent.Host"
+          chmod +x "$stage/publish/LIN.Cloud.Enterprise.Baion.Agent.Host"
           chmod +x "$stage/install.sh"
 
       # El zip se hace desde dentro de la carpeta: al descomprimir quedan directamente

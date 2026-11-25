@@ -7,7 +7,7 @@ Wants=network-online.target
 [Service]
 # El host llama a AddSystemd(), así que notifica su arranque y sus latidos a systemd.
 Type=notify
-ExecStart=/opt/baion-agent/Baion.Agent.Host
+ExecStart=/opt/baion-agent/LIN.Cloud.Enterprise.Baion.Agent.Host
 WorkingDirectory=/opt/baion-agent
 
 # Reconecta solo, pero si el proceso muere systemd lo levanta igualmente.

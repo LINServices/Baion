@@ -1,0 +1,9 @@
+using System;
+using LIN.Cloud.Enterprise.Baion.Orchestrator.Models.Enums;
+
+namespace LIN.Cloud.Enterprise.Baion.Orchestrator.Models.Dtos;
+
+/// <summary>
+/// Datos para emitir un token de instalación.
+/// </summary>
+public record CreateEnrollmentTokenRequest(string Name, ServerKind DefaultServerKind, DateTimeOffset? ExpiresAt, int? MaxUses);

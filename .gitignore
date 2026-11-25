@@ -27,7 +27,7 @@ coverage*.info
 *.coverage
 *.coveragexml
 
-# === Node / Tailwind (cliente/Baion.Cliente.Web) ===
+# === Node / Tailwind (cliente/LIN.Cloud.Enterprise.Baion.Cliente.Web) ===
 node_modules/
 npm-debug.log*
 yarn-error.log*
@@ -47,4 +47,4 @@ secrets.json
 .DS_Store
 Thumbs.db
 desktop.ini
-/src/Orchestrator/Baion.Orchestrator.Presentacion/appsettings.json
+/src/Orchestrator/LIN.Cloud.Enterprise.Baion.Orchestrator.Presentacion/appsettings.json
