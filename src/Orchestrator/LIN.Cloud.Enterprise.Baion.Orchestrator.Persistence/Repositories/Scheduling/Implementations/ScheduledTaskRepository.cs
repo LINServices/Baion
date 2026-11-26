@@ -21,6 +21,16 @@ internal class ScheduledTaskRepository(BaionDbContext context) : IScheduledTaskR
         await context.ScheduledTasks.AddAsync(task);
     }
 
+    public void Remove(ScheduledTask task)
+    {
+        context.ScheduledTasks.Remove(task);
+    }
+
+    public async Task<bool> NameExistsAsync(string name, Guid? excludeTaskId, CancellationToken cancellationToken)
+    {
+        return await context.ScheduledTasks.AnyAsync(task => task.Name == name && task.Id != excludeTaskId, cancellationToken);
+    }
+
     public async Task<IReadOnlyList<ScheduledTask>> GetDueAsync(DateTimeOffset now, int limit, CancellationToken cancellationToken)
     {
         return await context.ScheduledTasks

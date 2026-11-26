@@ -1,0 +1,137 @@
+@page "/tareas/{Id:guid}/editar"
+@attribute [Authorize]
+
+@using LIN.Cloud.Enterprise.Baion.Cliente.Web.Dtos.Scheduling
+
+@inject IBaionApiClient Api
+@inject NavigationManager Navigation
+
+<PageTitle>@Titulo · Baion</PageTitle>
+
+<PageHeader Seccion="Automatización" Titulo="@Titulo"
+            Descripcion="Los cambios se aplican desde el próximo disparo. El historial de ejecuciones no se toca.">
+    <Acciones>
+        <a class="baion-button-ghost" href="/tareas/@Id">
+            <Icon Nombre="chevron-left" Tamano="14" />
+            Volver a la tarea
+        </a>
+    </Acciones>
+</PageHeader>
+
+@if (_cargando)
+{
+    <GhostLoader Descripcion="Cargando la tarea…" />
+}
+else if (_tarea is null)
+{
+    <AlertMessage Mensaje="@_error" />
+
+    <EmptyState Icono="calendar-clock"
+                Titulo="No se encontró la tarea"
+                Descripcion="Puede que se haya eliminado o que el enlace esté equivocado.">
+        <Accion>
+            <a class="baion-button" href="/tareas">Ir a tareas</a>
+        </Accion>
+    </EmptyState>
+}
+else if (_tarea.ScriptId is null)
+{
+    <EmptyState Icono="calendar-clock"
+                Titulo="Esta tarea ejecuta una cadena"
+                Descripcion="Desde el panel solo se pueden editar las tareas que ejecutan un script suelto.">
+        <Accion>
+            <a class="baion-button" href="/tareas/@Id">Volver a la tarea</a>
+        </Accion>
+    </EmptyState>
+}
+else
+{
+    <ScheduledTaskForm Original="_tarea" Guardando="_guardando" ErrorGeneral="@_error" ErrorCodigo="@_codigo" OnGuardar="GuardarAsync" />
+}
+
+@code {
+    private ScheduledTaskSummary? _tarea;
+    private string? _error;
+    private string? _codigo;
+    private bool _cargando = true;
+    private bool _guardando;
+
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private string Titulo => _tarea?.Name ?? "Editar tarea";
+
+    // En OnParametersSetAsync porque saltar de una tarea a otra reutiliza el componente.
+    protected override async Task OnParametersSetAsync()
+    {
+        _cargando = true;
+        _error = null;
+        _codigo = null;
+
+        var resultado = await Api.GetScheduledTaskAsync(Id, CancellationToken.None);
+
+        _tarea = resultado.Value;
+        _error = resultado.ErrorMessage;
+        _cargando = false;
+    }
+
+    private async Task GuardarAsync(ScheduledTaskFormInput entrada)
+    {
+        _error = null;
+        _codigo = null;
+
+        // El destino viaja como «s:guid» (servidor) o «g:guid» (grupo); aquí se separa en los dos campos de la petición.
+        if (!TryParseDestino(entrada.Target, out var servidorId, out var grupoId) || !Guid.TryParse(entrada.ScriptId, out var scriptId))
+        {
+            _error = "El script o el destino elegidos no son válidos.";
+            return;
+        }
+
+        _guardando = true;
+
+        var peticion = new UpdateScheduledTaskRequest(
+            entrada.Name.Trim(),
+            entrada.CronExpression.Trim(),
+            entrada.TimeZoneId.Trim(),
+            scriptId,
+            null,
+            servidorId,
+            grupoId,
+            entrada.Mode,
+            entrada.OfflineGraceSeconds);
+
+        var resultado = await Api.UpdateScheduledTaskAsync(Id, peticion, CancellationToken.None);
+
+        _guardando = false;
+
+        if (resultado.IsSuccess)
+        {
+            Navigation.NavigateTo($"/tareas/{Id}");
+            return;
+        }
+
+        _error = resultado.ErrorMessage;
+        _codigo = resultado.ErrorCode;
+    }
+
+    private static bool TryParseDestino(string destino, out Guid? servidorId, out Guid? grupoId)
+    {
+        servidorId = null;
+        grupoId = null;
+
+        if (destino.Length < 3 || destino[1] != ':' || !Guid.TryParse(destino.AsSpan(2), out var id))
+            return false;
+
+        switch (destino[0])
+        {
+            case 's':
+                servidorId = id;
+                return true;
+            case 'g':
+                grupoId = id;
+                return true;
+            default:
+                return false;
+        }
+    }
+}

@@ -1,6 +1,7 @@
-@* Formulario de tarea programada de /tareas/nueva. Solo gestiona los campos y su validación;
-   crear y navegar es cosa de la página. Las tareas del panel siempre ejecutan un script suelto:
+@* Formulario de tarea programada compartido por el alta (/tareas/nueva) y la edición (/tareas/{id}/editar).
+   Solo gestiona los campos y su validación; guardar y navegar es cosa de la página. Las tareas del panel siempre ejecutan un script suelto:
    las cadenas no se crean desde aquí. *@
+@using LIN.Cloud.Enterprise.Baion.Cliente.Web.Dtos.Scheduling
 @using LIN.Cloud.Enterprise.Baion.Cliente.Web.Dtos.ServerGroups
 
 @inject IBaionApiClient Api
@@ -120,7 +121,7 @@ else
 
                 <button type="submit" class="baion-button w-full @_raton.CssClass" disabled="@Guardando"
                         @attributes="this.MouseEvents(_raton)">
-                    @(Guardando ? "Creando…" : "Crear tarea")
+                    @(Guardando ? "Guardando…" : TextoBoton)
                 </button>
             </div>
         </div>
@@ -136,6 +137,11 @@ else
     private string? _errorCarga;
     private bool _cargando = true;
 
+    private Guid _precargadoDe;
+
+    [Parameter]
+    public ScheduledTaskSummary? Original { get; set; }
+
     [Parameter]
     public bool Guardando { get; set; }
 
@@ -150,7 +156,30 @@ else
 
     public ScheduledTaskFormInput Entrada { get; private set; } = new();
 
+    private string TextoBoton => Original is null ? "Crear tarea" : "Guardar cambios";
+
     private bool EsErrorDeCampo => ErrorCodigo is "task.name_required" or "task.cron_invalid" or "task.cron_never_fires" or "task.grace_invalid";
+
+    protected override void OnParametersSet()
+    {
+        var clave = Original?.Id ?? Guid.Empty;
+
+        if (Original is not null && _precargadoDe != clave)
+        {
+            Entrada = new ScheduledTaskFormInput
+            {
+                Name = Original.Name,
+                CronExpression = Original.CronExpression,
+                TimeZoneId = Original.TimeZoneId,
+                ScriptId = Original.ScriptId?.ToString() ?? string.Empty,
+                Target = Original.ServerId is { } servidor ? $"s:{servidor}" : Original.ServerGroupId is { } grupo ? $"g:{grupo}" : string.Empty,
+                Mode = Original.Mode,
+                OfflineGraceSeconds = Original.OfflineGraceSeconds
+            };
+
+            _precargadoDe = clave;
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {

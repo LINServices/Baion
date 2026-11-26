@@ -23,6 +23,16 @@ public interface IScheduledTaskRepository
     Task AddAsync(ScheduledTask task);
 
     /// <summary>
+    /// Marca una tarea para borrado. Las ejecuciones que lanzó se conservan con su referencia a la tarea a null.
+    /// </summary>
+    void Remove(ScheduledTask task);
+
+    /// <summary>
+    /// Indica si otra tarea del tenant actual ya usa ese nombre, excluyendo la indicada si se pasa.
+    /// </summary>
+    Task<bool> NameExistsAsync(string name, Guid? excludeTaskId, CancellationToken cancellationToken);
+
+    /// <summary>
     /// Tareas activas de todos los tenants cuyo próximo disparo ya venció.
     /// </summary>
     Task<IReadOnlyList<ScheduledTask>> GetDueAsync(DateTimeOffset now, int limit, CancellationToken cancellationToken);

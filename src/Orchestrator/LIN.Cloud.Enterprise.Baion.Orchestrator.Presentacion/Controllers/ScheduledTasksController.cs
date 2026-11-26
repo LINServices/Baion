@@ -59,6 +59,33 @@ public class ScheduledTasksController(IScheduledTaskService tasks) : ControllerB
     }
 
     /// <summary>
+    /// Reemplaza la definición de una tarea programada.
+    /// </summary>
+    [HttpPut("{taskId:guid}")]
+    public async Task<IActionResult> UpdateAsync(Guid taskId, [FromBody] UpdateScheduledTaskRequest request, CancellationToken cancellationToken)
+    {
+        return (await tasks.UpdateAsync(taskId, request, cancellationToken)).ToActionResult();
+    }
+
+    /// <summary>
+    /// Elimina una tarea programada y conserva el historial de sus ejecuciones.
+    /// </summary>
+    [HttpDelete("{taskId:guid}")]
+    public async Task<IActionResult> DeleteAsync(Guid taskId, CancellationToken cancellationToken)
+    {
+        return (await tasks.DeleteAsync(taskId, cancellationToken)).ToActionResult();
+    }
+
+    /// <summary>
+    /// Últimas ejecuciones lanzadas por la tarea; take se acota a 1..100.
+    /// </summary>
+    [HttpGet("{taskId:guid}/executions")]
+    public async Task<IActionResult> ListExecutionsAsync(Guid taskId, [FromQuery] int take = 20, CancellationToken cancellationToken = default)
+    {
+        return (await tasks.ListExecutionsAsync(taskId, take, cancellationToken)).ToActionResult();
+    }
+
+    /// <summary>
     /// Dispara la tarea ahora mismo, sin alterar su calendario.
     /// </summary>
     [HttpPost("{taskId:guid}/runs")]

@@ -59,7 +59,7 @@ else
                     @foreach (var tarea in Listado)
                     {
                         <tr>
-                            <td><span class="text-title text-ink">@tarea.Name</span></td>
+                            <td><a class="text-title text-ink" href="/tareas/@tarea.Id">@tarea.Name</a></td>
                             <td>
                                 <span class="tabular-nums text-ink">@tarea.CronExpression</span>
                                 <div class="mt-1 text-label text-muted">@tarea.TimeZoneId</div>
@@ -88,6 +88,10 @@ else
                                         <Icon Nombre="@(tarea.IsEnabled ? "pause" : "play")" Tamano="14" />
                                         @(tarea.IsEnabled ? "Pausar" : "Reanudar")
                                     </button>
+                                    <a class="baion-button-ghost" href="/tareas/@tarea.Id/editar">
+                                        <Icon Nombre="pencil" Tamano="14" />
+                                        Editar
+                                    </a>
                                     <button type="button" class="baion-button @Raton(tarea.Id, AccionEjecutar).CssClass" disabled="@(_ocupada == tarea.Id)"
                                             @onclick="() => EjecutarAsync(tarea)" @attributes="this.MouseEvents(Raton(tarea.Id, AccionEjecutar))">
                                         Ejecutar ahora

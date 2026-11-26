@@ -160,7 +160,7 @@ Para evitar ciclos entre capas, `LIN.Cloud.Enterprise.Baion.Orchestrator.Messagi
   no hacen fallar el lanzamiento.
 - El despacho es **en serie**, con un tope de 500 servidores por lanzamiento.
 - El planificador aplica el mismo filtro a las tareas con script sobre un grupo.
-- Las tareas programadas se ven y se pausan/reanudan desde el panel en `/tareas`.
+- Las tareas programadas se gestionan desde el panel en `/tareas`: detalle (`/tareas/{id}`, con sus últimas ejecuciones), edición, pausa/reanudación, «Ejecutar ahora» y eliminación. Eliminar **conserva el historial**: la FK `script_executions.scheduled_task_id` es `ON DELETE SET NULL`. Crear y editar validan la compatibilidad de plataforma con grupos (`task.no_compatible_servers`) y rechazan nombres duplicados (409 `task.name_taken`). El panel no edita tareas que ejecutan una cadena (el formulario solo maneja scripts).
 
 ### Persistencia
 

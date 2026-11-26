@@ -185,4 +185,24 @@ public interface IBaionApiClient
     /// Dispara una tarea programada al instante y devuelve cuántos destinos se despacharon, fallaron u omitieron.
     /// </summary>
     Task<ApiResult<ScheduledTaskTriggered>> TriggerScheduledTaskAsync(Guid taskId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Ficha de una tarea programada.
+    /// </summary>
+    Task<ApiResult<ScheduledTaskSummary>> GetScheduledTaskAsync(Guid taskId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Reemplaza la configuración de una tarea programada.
+    /// </summary>
+    Task<ApiResult<ScheduledTaskSummary>> UpdateScheduledTaskAsync(Guid taskId, UpdateScheduledTaskRequest request, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Elimina una tarea programada. Su historial de ejecuciones se conserva sin tarea asociada.
+    /// </summary>
+    Task<ApiResult<bool>> DeleteScheduledTaskAsync(Guid taskId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Últimas ejecuciones lanzadas por una tarea programada.
+    /// </summary>
+    Task<ApiResult<IReadOnlyList<ScheduledTaskExecutionItem>>> GetScheduledTaskExecutionsAsync(Guid taskId, int take, CancellationToken cancellationToken);
 }

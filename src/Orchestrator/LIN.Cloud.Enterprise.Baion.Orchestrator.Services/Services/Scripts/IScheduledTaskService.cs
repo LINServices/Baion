@@ -19,6 +19,21 @@ public interface IScheduledTaskService
     Task<Result<ScheduledTaskSummary>> CreateAsync(CreateScheduledTaskRequest request, CancellationToken cancellationToken);
 
     /// <summary>
+    /// Reemplaza la definición de una tarea con las validaciones de la creación. Si está habilitada recalcula el próximo disparo desde ahora; si está pausada lo deja en null.
+    /// </summary>
+    Task<Result<ScheduledTaskSummary>> UpdateAsync(Guid taskId, UpdateScheduledTaskRequest request, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Elimina una tarea. Sus ejecuciones se conservan con la referencia a la tarea a null.
+    /// </summary>
+    Task<Result> DeleteAsync(Guid taskId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Últimas ejecuciones lanzadas por la tarea, de la más reciente a la más antigua. El tope se acota a 1..100.
+    /// </summary>
+    Task<Result<IReadOnlyList<ScheduledTaskExecutionItem>>> ListExecutionsAsync(Guid taskId, int take, CancellationToken cancellationToken);
+
+    /// <summary>
     /// Obtiene la ficha de una tarea.
     /// </summary>
     Task<Result<ScheduledTaskSummary>> GetAsync(Guid taskId, CancellationToken cancellationToken);

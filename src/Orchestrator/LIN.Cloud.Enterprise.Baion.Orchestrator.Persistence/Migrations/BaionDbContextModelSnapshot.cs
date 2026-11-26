@@ -1228,7 +1228,7 @@ namespace LIN.Cloud.Enterprise.Baion.Orchestrator.Persistence.Migrations
                     b.HasOne("LIN.Cloud.Enterprise.Baion.Orchestrator.Models.Entities.ScheduledTask", "ScheduledTask")
                         .WithMany()
                         .HasForeignKey("ScheduledTaskId")
-                        .OnDelete(DeleteBehavior.NoAction)
+                        .OnDelete(DeleteBehavior.SetNull)
                         .HasConstraintName("fk_script_executions_scheduled_tasks_scheduled_task_id");
 
                     b.HasOne("LIN.Cloud.Enterprise.Baion.Orchestrator.Models.Entities.ScriptChainStep", "ScriptChainStep")

@@ -14,7 +14,7 @@ internal class ScriptExecutionConfiguration : TenantEntityConfiguration<ScriptEx
         builder.HasOne(execution => execution.Server).WithMany(server => server.Executions).HasForeignKey(execution => execution.ServerId).OnDelete(DeleteBehavior.Cascade);
         builder.HasOne(execution => execution.Script).WithMany(script => script.Executions).HasForeignKey(execution => execution.ScriptId).OnDelete(DeleteBehavior.NoAction);
         builder.HasOne(execution => execution.ScriptChainStep).WithMany().HasForeignKey(execution => execution.ScriptChainStepId).OnDelete(DeleteBehavior.NoAction);
-        builder.HasOne(execution => execution.ScheduledTask).WithMany().HasForeignKey(execution => execution.ScheduledTaskId).OnDelete(DeleteBehavior.NoAction);
+        builder.HasOne(execution => execution.ScheduledTask).WithMany().HasForeignKey(execution => execution.ScheduledTaskId).OnDelete(DeleteBehavior.SetNull);
 
         // Barrido de entregas pendientes: solo interesan las que llevan plazo de entrega.
         builder.HasIndex(execution => new { execution.Status, execution.DispatchDeadline }).HasFilter("[dispatch_deadline] IS NOT NULL");

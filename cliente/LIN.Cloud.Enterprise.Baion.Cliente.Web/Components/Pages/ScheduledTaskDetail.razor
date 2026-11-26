@@ -1,0 +1,279 @@
+@page "/tareas/{Id:guid}"
+@attribute [Authorize]
+@using LIN.Cloud.Enterprise.Baion.Cliente.Web.Dtos.Scheduling
+
+@inject IBaionApiClient Api
+@inject NavigationManager Navigation
+
+<PageTitle>@Titulo · Baion</PageTitle>
+
+<PageHeader Seccion="Tarea programada" Titulo="@Titulo">
+    <Acciones>
+        <a class="baion-button-ghost" href="/tareas">
+            <Icon Nombre="chevron-left" Tamano="14" />
+            Volver a tareas
+        </a>
+        @if (_tarea is not null)
+        {
+            <button type="button" class="baion-button-ghost @_ratones[AccionAlternar].CssClass" disabled="@_ocupada"
+                    @onclick="AlternarAsync" @attributes="this.MouseEvents(_ratones[AccionAlternar])">
+                <Icon Nombre="@(_tarea.IsEnabled ? "pause" : "play")" Tamano="14" />
+                @(_tarea.IsEnabled ? "Pausar" : "Reanudar")
+            </button>
+            @if (_tarea.ScriptId is not null)
+            {
+                <a class="baion-button-ghost" href="/tareas/@Id/editar">
+                    <Icon Nombre="pencil" Tamano="14" />
+                    Editar
+                </a>
+            }
+            <button type="button" class="baion-button-ghost text-danger @_ratones[AccionEliminar].CssClass" disabled="@_ocupada"
+                    @onclick="() => _confirmando = true" @attributes="this.MouseEvents(_ratones[AccionEliminar])">
+                <Icon Nombre="trash-2" Tamano="14" />
+                Eliminar
+            </button>
+            <button type="button" class="baion-button @_ratones[AccionEjecutar].CssClass" disabled="@_ocupada"
+                    @onclick="EjecutarAsync" @attributes="this.MouseEvents(_ratones[AccionEjecutar])">
+                Ejecutar ahora
+            </button>
+        }
+    </Acciones>
+</PageHeader>
+
+<AlertMessage Mensaje="@_error" />
+
+@if (_disparo is not null)
+{
+    <div class="baion-card mb-6 flex items-center justify-between gap-4 px-5 py-4 text-body text-ink-2" role="status">
+        <span>
+            @_disparo.TargetCount @(_disparo.TargetCount == 1 ? "destino" : "destinos"):
+            <span class="text-ink">@_disparo.DispatchedCount @(_disparo.DispatchedCount == 1 ? "lanzada" : "lanzadas")</span>,
+            <span class="@(_disparo.FailedCount > 0 ? "text-danger" : string.Empty)">@_disparo.FailedCount @(_disparo.FailedCount == 1 ? "fallida" : "fallidas")</span>,
+            @_disparo.SkippedCount @(_disparo.SkippedCount == 1 ? "omitida" : "omitidas").
+        </span>
+        <button type="button" class="baion-button-icon @_ratones[AccionCerrar].CssClass" title="Cerrar" aria-label="Cerrar"
+                @onclick="() => _disparo = null" @attributes="this.MouseEvents(_ratones[AccionCerrar])">
+            <Icon Nombre="x" Tamano="14" />
+        </button>
+    </div>
+}
+
+@if (_cargando && _tarea is null)
+{
+    <GhostLoader Descripcion="Cargando la tarea…" />
+}
+else if (_tarea is null)
+{
+    <EmptyState Icono="calendar-clock"
+                Titulo="No se encontró la tarea"
+                Descripcion="Puede que se haya eliminado o que el enlace esté equivocado.">
+        <Accion>
+            <a class="baion-button" href="/tareas">Ir a tareas</a>
+        </Accion>
+    </EmptyState>
+}
+else
+{
+    <div class="baion-card p-6">
+        <dl class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            <DetailField Etiqueta="Estado">
+                @* Activa es lo vivo y lleva el acento; pausada se queda en contorno con la viñeta fantasma. *@
+                <span class="baion-chip @(_tarea.IsEnabled ? "baion-chip-current" : string.Empty)">
+                    <span class="baion-chip-dot @(_tarea.IsEnabled ? "bg-current-500" : "border border-ghost")" aria-hidden="true"></span>
+                    @(_tarea.IsEnabled ? "Activa" : "Pausada")
+                </span>
+            </DetailField>
+            <DetailField Etiqueta="@(_tarea.PayloadKind == "chain" ? "Cadena" : "Script")">
+                @_tarea.PayloadName
+            </DetailField>
+            <DetailField Etiqueta="@(_tarea.TargetKind == "group" ? "Grupo" : "Servidor")">
+                @_tarea.TargetName
+            </DetailField>
+            <DetailField Etiqueta="Modo">
+                @(_tarea.Mode == "detached" ? "Desatendido" : "Adjunto")
+            </DetailField>
+            <DetailField Etiqueta="Expresión cron">
+                <span class="tabular-nums">@_tarea.CronExpression</span>
+            </DetailField>
+            <DetailField Etiqueta="Zona horaria">
+                @_tarea.TimeZoneId
+            </DetailField>
+            <DetailField Etiqueta="Margen offline">
+                <span class="tabular-nums">@_tarea.OfflineGraceSeconds s</span>
+            </DetailField>
+            <DetailField Etiqueta="Última ejecución">
+                <span title="@TimeFormat.Absolute(_tarea.LastRunAt)">@(_tarea.LastRunAt is null ? "Nunca" : TimeFormat.Relative(_tarea.LastRunAt))</span>
+            </DetailField>
+            <DetailField Etiqueta="Próxima ejecución">
+                <span title="@TimeFormat.Absolute(_tarea.NextRunAt)">@(_tarea.NextRunAt is null || !_tarea.IsEnabled ? "—" : TimeFormat.Upcoming(_tarea.NextRunAt))</span>
+            </DetailField>
+        </dl>
+    </div>
+
+    <h2 class="mb-4 mt-10 text-heading text-ink">Últimas ejecuciones</h2>
+
+    @if (Ejecuciones.Count == 0)
+    {
+        <EmptyState Icono="history"
+                    Titulo="Todavía no se ha ejecutado"
+                    Descripcion="Cuando la tarea se dispare, o la lances con «Ejecutar ahora», sus ejecuciones aparecerán aquí." />
+    }
+    else
+    {
+        <div class="baion-card overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="baion-table">
+                    <thead>
+                        <tr>
+                            <th>Estado</th>
+                            <th>Servidor</th>
+                            <th>Script</th>
+                            <th>Encolada</th>
+                            <th class="text-right">Duración</th>
+                            <th class="text-right">Lote</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var ejecucion in Ejecuciones)
+                        {
+                            <tr>
+                                <td><ExecutionStatusBadge Estado="@ejecucion.Status" /></td>
+                                <td class="text-title text-ink">@ejecucion.ServerName</td>
+                                <td><a class="text-body text-ink" href="/ejecuciones/@ejecucion.Id">@ejecucion.ScriptName</a></td>
+                                <td class="text-muted" title="@TimeFormat.Absolute(ejecucion.QueuedAt)">@TimeFormat.Relative(ejecucion.QueuedAt)</td>
+                                <td class="text-right tabular-nums">@TimeFormat.Elapsed(ejecucion.StartedAt, ejecucion.CompletedAt)</td>
+                                <td class="text-right">
+                                    @if (ejecucion.BatchId is { } lote)
+                                    {
+                                        <a class="text-body text-ink" href="/ejecuciones/lote/@lote">Ver lote</a>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+}
+
+<ConfirmDialog Visible="_confirmando" VisibleChanged="AlCambiarDialogo" Destructivo="true"
+               Titulo="@($"¿Eliminar «{_tarea?.Name}»?")"
+               Descripcion="La tarea deja de dispararse. Las ejecuciones ya lanzadas conservan su historial."
+               TextoConfirmar="Eliminar tarea" OnConfirmar="EliminarAsync" />
+
+@code {
+    private const string AccionAlternar = "alternar";
+    private const string AccionEjecutar = "ejecutar";
+    private const string AccionEliminar = "eliminar";
+    private const string AccionCerrar = "cerrar";
+
+    private readonly MouseStateMap _ratones = new();
+
+    private ScheduledTaskSummary? _tarea;
+    private IReadOnlyList<ScheduledTaskExecutionItem>? _ejecuciones;
+    private ScheduledTaskTriggered? _disparo;
+    private string? _error;
+    private bool _cargando = true;
+    private bool _ocupada;
+    private bool _confirmando;
+
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private string Titulo => _tarea?.Name ?? "Tarea programada";
+
+    private IReadOnlyList<ScheduledTaskExecutionItem> Ejecuciones => _ejecuciones ?? [];
+
+    // En OnParametersSetAsync porque saltar de una tarea a otra reutiliza el componente.
+    protected override async Task OnParametersSetAsync()
+    {
+        _tarea = null;
+        _disparo = null;
+        await CargarAsync();
+    }
+
+    private async Task CargarAsync()
+    {
+        _cargando = true;
+
+        var tarea = Api.GetScheduledTaskAsync(Id, CancellationToken.None);
+        var ejecuciones = Api.GetScheduledTaskExecutionsAsync(Id, 20, CancellationToken.None);
+
+        await Task.WhenAll(tarea, ejecuciones);
+
+        _tarea = tarea.Result.Value;
+        _ejecuciones = ejecuciones.Result.Value;
+        _error = tarea.Result.ErrorMessage ?? ejecuciones.Result.ErrorMessage;
+        _cargando = false;
+    }
+
+    private async Task AlternarAsync()
+    {
+        if (_tarea is null)
+            return;
+
+        _ocupada = true;
+        _error = null;
+
+        var resultado = _tarea.IsEnabled
+            ? await Api.DisableScheduledTaskAsync(Id, CancellationToken.None)
+            : await Api.EnableScheduledTaskAsync(Id, CancellationToken.None);
+
+        _ocupada = false;
+
+        if (resultado.IsFailure)
+        {
+            _error = resultado.ErrorCode == "task.cron_never_fires"
+                ? $"La tarea «{_tarea.Name}» no se puede reanudar: su cron ya no tiene próximos disparos."
+                : resultado.ErrorMessage;
+            return;
+        }
+
+        await CargarAsync();
+    }
+
+    private async Task EjecutarAsync()
+    {
+        _ocupada = true;
+        _error = null;
+
+        var resultado = await Api.TriggerScheduledTaskAsync(Id, CancellationToken.None);
+
+        _ocupada = false;
+
+        if (resultado is { IsSuccess: true, Value: ScheduledTaskTriggered disparo })
+            _disparo = disparo;
+        else
+            _error = resultado.ErrorMessage;
+
+        await CargarAsync();
+    }
+
+    private void AlCambiarDialogo(bool visible)
+    {
+        _confirmando = visible;
+    }
+
+    private async Task EliminarAsync()
+    {
+        _ocupada = true;
+        _error = null;
+
+        var resultado = await Api.DeleteScheduledTaskAsync(Id, CancellationToken.None);
+
+        _ocupada = false;
+
+        if (resultado.IsFailure)
+        {
+            _error = resultado.ErrorMessage;
+            return;
+        }
+
+        Navigation.NavigateTo("/tareas");
+    }
+}

@@ -320,6 +320,54 @@ internal class BaionApiClient(HttpClient http, IAccessTokenProvider tokens, ILog
         return await PostAsync<ScheduledTaskTriggered>($"api/scheduled-tasks/{taskId}/runs", cancellationToken);
     }
 
+    public async Task<ApiResult<ScheduledTaskSummary>> GetScheduledTaskAsync(Guid taskId, CancellationToken cancellationToken)
+    {
+        return await GetAsync<ScheduledTaskSummary>($"api/scheduled-tasks/{taskId}", cancellationToken);
+    }
+
+    public async Task<ApiResult<ScheduledTaskSummary>> UpdateScheduledTaskAsync(Guid taskId, UpdateScheduledTaskRequest request, CancellationToken cancellationToken)
+    {
+        using var message = new HttpRequestMessage(HttpMethod.Put, $"api/scheduled-tasks/{taskId}")
+        {
+            Content = JsonContent.Create(request, options: JsonOptions)
+        };
+
+        return await SendAsync<ScheduledTaskSummary>(message, authenticated: true, cancellationToken);
+    }
+
+    public async Task<ApiResult<bool>> DeleteScheduledTaskAsync(Guid taskId, CancellationToken cancellationToken)
+    {
+        using var message = new HttpRequestMessage(HttpMethod.Delete, $"api/scheduled-tasks/{taskId}");
+        var token = await tokens.GetTokenAsync();
+
+        if (string.IsNullOrWhiteSpace(token))
+            return ApiResult<bool>.Failure("No hay sesión iniciada.");
+
+        message.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        try
+        {
+            using var response = await http.SendAsync(message, cancellationToken);
+
+            // El borrado responde 204 sin cuerpo, así que no hay nada que deserializar.
+            if (response.IsSuccessStatusCode)
+                return ApiResult<bool>.Success(true);
+
+            var (mensaje, codigo) = await DescribeAsync(response, cancellationToken);
+            return ApiResult<bool>.Failure(mensaje, codigo);
+        }
+        catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException)
+        {
+            logger.LogWarning("Falló el borrado de la tarea programada {TaskId}: {Motivo}", taskId, exception.Message);
+            return ApiResult<bool>.Failure(UnreachableMessage);
+        }
+    }
+
+    public async Task<ApiResult<IReadOnlyList<ScheduledTaskExecutionItem>>> GetScheduledTaskExecutionsAsync(Guid taskId, int take, CancellationToken cancellationToken)
+    {
+        return await GetAsync<IReadOnlyList<ScheduledTaskExecutionItem>>($"api/scheduled-tasks/{taskId}/executions?take={take}", cancellationToken);
+    }
+
     private async Task<ApiResult<TValue>> GetAsync<TValue>(string path, CancellationToken cancellationToken)
     {
         using var message = new HttpRequestMessage(HttpMethod.Get, path);
