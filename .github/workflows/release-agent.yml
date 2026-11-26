@@ -105,19 +105,32 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Descargar los artefactos
         uses: actions/download-artifact@v4
         with:
           path: artifacts
           merge-multiple: true
 
-      - name: Crear la release y adjuntar los zips
+      # uninstall.sh y reinstall.sh van también sueltos como assets: el README los
+      # descarga de releases/latest/download/ sin necesidad de bajar el zip.
+      - name: Preparar los scripts de Linux
+        run: |
+          set -euo pipefail
+          cp deploy/linux/uninstall.sh deploy/linux/reinstall.sh artifacts/
+
+      - name: Crear la release y adjuntar los zips y scripts
         uses: softprops/action-gh-release@v2
         with:
           # En push de tag lo toma de github.ref; en ejecución manual, del input.
           tag_name: ${{ inputs.version || github.ref_name }}
           name: ${{ inputs.version || github.ref_name }}
           prerelease: ${{ inputs.prerelease || false }}
-          files: artifacts/*.zip
+          files: |
+            artifacts/*.zip
+            artifacts/uninstall.sh
+            artifacts/reinstall.sh
           generate_release_notes: true
           fail_on_unmatched_files: true
